@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Sillons TCG</title>
+<meta name="description" content="Le TCG des vrais morceaux : chaque carte est un titre de Deezer, les plus gros tubes sont légendaires.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Instrument+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><div class="logo" aria-hidden="true"></div><div><h1>SILLONS</h1><small>Tout Deezer en cartes</small></div></div>
+    <nav class="tabs" role="tablist">
+      <button role="tab" id="tab-shop" aria-selected="true">Boosters</button>
+      <button role="tab" id="tab-binder" aria-selected="false">Collection</button>
+    </nav>
+    <div class="counters" id="counters"></div>
+  </header>
+
+  <section id="view-shop">
+    <h2>Choisis un booster</h2>
+    <p class="sub">Chaque booster pioche 5 morceaux au hasard dans tout le catalogue Deezer, dont au moins un rare. Plus un morceau est écouté, plus sa carte est rare : les légendaires sont les vrais tubes.</p>
+    <div class="shelf" id="shelf"></div>
+    <div class="table" id="table" hidden>
+      <div class="table-head"><h3 id="tableTitle">Booster</h3>
+        <div class="btns"><button class="btn" id="flipAll">Tout retourner</button><button class="btn primary" id="again">Rouvrir le même</button></div>
+      </div>
+      <div id="deal"></div>
+    </div>
+  </section>
+
+  <section id="view-binder" hidden>
+    <h2>Ta collection</h2>
+    <p class="sub">Clique sur une carte pour la voir en grand et écouter l'extrait.</p>
+    <div class="prog" id="prog"></div>
+    <div class="filters" id="filters"></div>
+    <div class="binder" id="binder"></div>
+  </section>
+
+  <footer class="note">Morceaux, pochettes et extraits : API publique Deezer, interrogée en direct. La rareté vient du classement Deezer du morceau au moment où tu le tires. Ta collection est enregistrée dans ce navigateur.</footer>
+</div>
+
+<div class="modal" id="modal" hidden role="dialog" aria-modal="true" aria-labelledby="mTitle">
+  <div class="box">
+    <div class="big" id="mCard"></div>
+    <div class="info">
+      <h3 id="mTitle"></h3><p id="mSub"></p>
+      <dl id="mDl"></dl>
+      <div class="btns">
+        <button class="btn primary" id="mPlay">Écouter l'extrait</button>
+        <a class="btn" id="mLink" href="#" target="_blank" rel="noopener">Ouvrir sur Deezer</a>
+        <button class="btn" id="mClose">Fermer</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+<script src="app.js"></script>
+</body>
+</html>
