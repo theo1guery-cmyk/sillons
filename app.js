@@ -452,9 +452,10 @@ for (const p of STORE_PACKS) {
 }
 
 /* ---------- drawing a booster (no UI) ---------- */
-async function drawPack(p, god = false) {
+async function drawPack(p, god = false, forced = null) {
   const used = new Set(), slots = [];
-  if (god) {
+  if (forced) slots.push(...forced);
+  else if (god) {
     slots.push(LEG);
     for (let s = 0; s < 4; s++) slots.push(Math.random() < .5 ? MYTH : LEG);
   } else {
@@ -495,7 +496,12 @@ async function openPack(p, opts = {}) {
   renderStock();
   document.querySelectorAll(".pack, .offer .btn, #again").forEach(b => b.disabled = true);
   const table = $("#table"), deal = $("#deal");
-  const god = opts.god ?? (p === BOOSTER && Math.random() < GOD_CHANCE);
+  // local preview only: #god turns the next booster into a GOD pack,
+  // #demo gives one with a Commune, a Peu commune, an Épique, a Mythique and a Légendaire
+  const devHash = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && p === BOOSTER ? location.hash : "";
+  if (devHash === "#god" || devHash === "#demo") history.replaceState(null, "", location.pathname);
+  if (devHash === "#demo") opts.slots = [0, 1, 3, MYTH, LEG];
+  const god = opts.god ?? (devHash === "#god" || (p === BOOSTER && Math.random() < GOD_CHANCE));
   table.hidden = false; table.classList.toggle("god", god);
   $("#tableTitle").textContent = god ? "GOD PACK" : p === BOOSTER ? "Booster" : "Booster " + p.n;
   deal.innerHTML = "";
@@ -508,7 +514,7 @@ async function openPack(p, opts = {}) {
   const lineTimer = setInterval(() => { if (!god) line.textContent = pick(LOADING_LINES); }, 1600);
 
   try {
-    const pulls = await drawPack(p, god);
+    const pulls = await drawPack(p, god, opts.slots);
     if (god) toast("GOD PACK ! Que des Mythiques et des Légendaires.");
     renderCounters();
     deal.innerHTML = "";
@@ -529,24 +535,66 @@ async function openPack(p, opts = {}) {
     renderStock();
   }
 }
+/* reveal animations for the big pulls: the face-down card charges up in its rarity colour, then bursts open */
+const REVEAL = {
+  3: { charge: 650, sparks: 14, banner: "" },                // Épique: purple charge, ring and sparks
+  4: { charge: 1150, sparks: 24, banner: "MYTHIQUE" },       // Mythique: harder shake, red shockwave, banner
+  5: { charge: 1900, sparks: 40, banner: "LÉGENDAIRE" },     // Légendaire: lights dim, golden rays, white flash, banner
+};
+const wait = ms => new Promise(r => setTimeout(r, ms));
+async function revealBig(slot, tier) {
+  const R = REVEAL[tier];
+  let dim = null;
+  slot.classList.add("charge", "charge-" + tier);
+  if (tier === LEG) {
+    dim = document.createElement("div"); dim.className = "dim"; document.body.appendChild(dim);
+    const rays = document.createElement("div"); rays.className = "rays"; slot.prepend(rays);
+    setTimeout(() => rays.remove(), R.charge + 2600);
+  }
+  await wait(R.charge);
+  slot.classList.remove("charge", "charge-" + tier);
+  const fx = document.createElement("div"); fx.className = "fx"; fx.setAttribute("aria-hidden", "true");
+  fx.innerHTML = `<span class="ring"></span><span class="ring r2"></span>` +
+    Array.from({ length: R.sparks }, () => {
+      const a = Math.random() * Math.PI * 2, d = 90 + Math.random() * (tier === LEG ? 220 : 140);
+      return `<i style="--dx:${Math.cos(a) * d}px;--dy:${Math.sin(a) * d}px;--s:${.5 + Math.random()}"></i>`;
+    }).join("") + (R.banner ? `<b class="banner">${R.banner}</b>` : "");
+  slot.appendChild(fx);
+  setTimeout(() => fx.remove(), 2600);
+  if (tier === LEG) {
+    const flash = document.createElement("div"); flash.className = "flash"; document.body.appendChild(flash);
+    setTimeout(() => flash.remove(), 900);
+  }
+  if (dim) { dim.classList.add("out"); setTimeout(() => dim.remove(), 900); }
+}
+
 function slotEl(pl, i) {
   const slot = document.createElement("div"); slot.className = "slot"; slot.style.animationDelay = (i * 90) + "ms";
+  slot.style.setProperty("--aura", RCOL[pl.c.tier]);
   const f = document.createElement("button"); f.className = "flip"; f.setAttribute("aria-label", "Retourner la carte " + (i + 1));
   const back = document.createElement("div"); back.className = "face"; back.appendChild(backEl());
   const front = document.createElement("div"); front.className = "face front"; front.appendChild(cardEl(pl.c, pl.holo));
   f.append(back, front);
   const tag = document.createElement("span"); tag.className = "tag"; tag.innerHTML = "&nbsp;";
-  f.onclick = () => {
-    if (f.classList.contains("on")) return openModal(pl.c);
+  let revealing = false;
+  f.reveal = async () => {               // resolves once the card is face up (after its animation)
+    if (f.classList.contains("on") || revealing) return;
+    revealing = true;
+    if (pl.c.tier >= 3 && !reduceMotion()) await revealBig(slot, pl.c.tier);
     f.classList.add("on"); f.setAttribute("aria-label", pl.c.t + ", " + RAR[pl.c.tier]);
     if (pl.c.tier >= 3) slot.classList.add("burst", "burst-" + pl.c.tier);
     tag.textContent = (pl.isNew ? "Nouvelle · " : "Doublon · ") + RAR[pl.c.tier] + (pl.holo ? " · Holo" : "");
     if (pl.isNew) tag.classList.add("new");
+    revealing = false;
   };
+  f.onclick = () => f.classList.contains("on") ? openModal(pl.c) : f.reveal();
   slot.append(f, tag);
   return slot;
 }
-$("#flipAll").onclick = () => document.querySelectorAll("#deal .flip:not(.on)").forEach((f, i) => setTimeout(() => f.click(), i * 160));
+// one card after the other, so each big pull gets its own moment
+$("#flipAll").onclick = async () => {
+  for (const f of document.querySelectorAll("#deal .flip:not(.on)")) { await f.reveal(); await wait(160); }
+};
 $("#again").onclick = () => openPack(lastPack);
 
 /* ---------- binder ---------- */

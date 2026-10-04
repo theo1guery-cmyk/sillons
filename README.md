@@ -33,6 +33,8 @@ Puis ouvrir http://localhost:8765.
 - **Doublons** : jamais de doublon de la Commune à l'Épique (si aucune nouveauté de la rareté voulue n'est trouvée, on prend une nouveauté de la rareté la plus proche). Mythiques et Légendaires peuvent revenir.
 - **Test** : 500 boosters puis 100 packs de genre d'affilée sur une collection vierge, soit 3 000 cartes et 0 doublon.
 - **GOD pack** : 1 booster sur 3 000 se transforme en GOD pack (pack doré animé). Il contient 1 Légendaire garantie, et chacune des 4 autres cartes a 50 % de chances d'être Mythique et 50 % d'être Légendaire. Ne s'applique pas aux packs de la Boutique.
+- **Animations de révélation** : les Épiques, Mythiques et Légendaires se chargent dans leur couleur avant de se retourner (aura, tremblement), puis éclatent (onde, étincelles). Pour les Légendaires, l'écran s'assombrit, des rayons dorés tournent et un flash blanc accompagne le bandeau. « Tout retourner » révèle les cartes une par une.
+- **Raccourcis locaux** (seulement sur localhost) : `#god` à la fin de l'adresse donne un GOD pack au prochain booster, `#demo` un booster avec une Épique, une Mythique et une Légendaire.
 - **Pitié** : après 70 boosters sans Mythique ni Légendaire, le suivant en contient une.
 - **Mode test** (`TEST_MODE` dans `app.js`) : boosters illimités. Une fois désactivé, le stock s'applique.
 - **Stock** : 10 boosters maximum, un nouveau toutes les 30 minutes quand le stock n'est pas plein. Un booster qui échoue à s'ouvrir est rendu.
