@@ -152,7 +152,27 @@ async function firstOfType(cands, typeIdx) {
 
 // Tracks already in the collection are skipped; one only comes back as a duplicate
 // when no new track of that rarity turns up after every attempt.
+// genre packs: exact rarity in the right genre if possible, otherwise the closest rarity
+// that still belongs to the genre (radios rarely hold every rarity)
+async function findGenreTrack(typeIdx, tier, used) {
+  let near = [], any = null;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const pool = (await genrePool(typeIdx, tier)).filter(t => t.readable !== false && t.album && !used.has(t.id));
+    const fresh = pool.filter(t => !S.c[t.id]);
+    const ok = await firstOfType(fresh.filter(t => inTier(t.rank, tier)), typeIdx);
+    if (ok) return ok;
+    near.push(...fresh);
+    any = any || pool[0];
+  }
+  near = [...new Map(near.map(t => [t.id, t])).values()].sort((a, b) => tierDistance(a.rank, tier) - tierDistance(b.rank, tier));
+  for (let i = 0; i < near.length && i < 24; i += 6) {
+    const ok = await firstOfType(near.slice(i, i + 6), typeIdx);
+    if (ok) return ok;
+  }
+  return near[0] || any;
+}
 async function findTrack(typeIdx, tier, used) {
+  if (typeIdx >= 0) return findGenreTrack(typeIdx, tier, used);
   let best = null, ownedHit = null;
   const attempts = tier >= MYTH ? 10 : 6;
   for (let attempt = 0; attempt < attempts; attempt++) {
