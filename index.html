@@ -7,7 +7,7 @@
 <meta name="description" content="Le TCG des vrais morceaux : chaque carte est un titre de Deezer, les plus gros tubes sont légendaires.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Instrument+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="styles.css?v=7">
+<link rel="stylesheet" href="styles.css?v=8">
 </head>
 <body>
 <div class="wrap">
@@ -51,6 +51,13 @@
     <div class="prog" id="prog"></div>
     <div class="filters" id="filters"></div>
     <div class="binder" id="binder"></div>
+    <div class="reset" id="reset">
+      <button class="btn danger" id="resetAsk">Réinitialiser ma collection</button>
+      <div class="reset-confirm" id="resetConfirm" hidden role="alertdialog" aria-labelledby="resetQ">
+        <p id="resetQ"><b>Tout effacer ?</b> Tes cartes, le nombre de boosters ouverts et le compteur de Mythique garantie repartent de zéro. Impossible d'annuler.</p>
+        <div class="btns"><button class="btn" id="resetNo">Annuler</button><button class="btn danger solid" id="resetYes">Oui, tout effacer</button></div>
+      </div>
+    </div>
   </section>
 
   <section id="view-catalog" hidden>
@@ -85,6 +92,6 @@
   </div>
 </div>
 <div class="toast" id="toast" hidden></div>
-<script src="app.js?v=7"></script>
+<script src="app.js?v=8"></script>
 </body>
 </html>

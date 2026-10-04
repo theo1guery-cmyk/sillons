@@ -584,6 +584,18 @@ function renderBinder() {
   bd.appendChild(frag);
 }
 
+/* ---------- reset (confirmation lives in the page) ---------- */
+$("#resetAsk").onclick = () => { $("#resetConfirm").hidden = false; $("#resetAsk").hidden = true; $("#resetNo").focus(); };
+$("#resetNo").onclick = () => { $("#resetConfirm").hidden = true; $("#resetAsk").hidden = false; $("#resetAsk").focus(); };
+$("#resetYes").onclick = () => {
+  S = { c: {}, opened: 0, stock: STOCK_MAX, stockAt: Date.now(), dry: 0 };
+  save();
+  $("#resetConfirm").hidden = true; $("#resetAsk").hidden = false;
+  $("#table").hidden = true; $("#deal").innerHTML = "";
+  renderCounters(); renderStock(); renderBinder();
+  toast("Collection réinitialisée.");
+};
+
 /* ---------- catalogue: any Deezer track, searchable ---------- */
 const PAGE = 24;
 const CAT = { q: "", order: "", items: [], index: 0, total: 0, loaded: false, seq: 0, r: -1, own: "all" };

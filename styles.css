@@ -223,3 +223,10 @@ img{max-width:100%}
 .offer .price small{color:var(--muted);font-size:.78rem;font-family:var(--mono)}
 .offer .btn{width:100%}
 .test-badge{display:inline-block;font-family:var(--mono);font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;color:var(--brass);border:1px solid var(--brass);border-radius:99px;padding:1px 8px}
+
+/* ---------- reset ---------- */
+.reset{margin-top:36px;padding-top:20px;border-top:1px solid var(--line);display:grid;gap:12px;justify-items:start}
+.btn.danger{color:#ff8a7a;border-color:#5a2f3a}
+.btn.danger.solid{background:#d9465a;border-color:#d9465a;color:#fff}
+.reset-confirm{border:1px solid #5a2f3a;border-radius:14px;padding:14px 16px;max-width:62ch;background:#21141c}
+.reset-confirm p{margin:0 0 12px;font-size:.9rem;color:var(--ink)}
