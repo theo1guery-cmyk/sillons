@@ -32,6 +32,7 @@ Puis ouvrir http://localhost:8765.
 - **Tirage** : les 5 cartes ont les mêmes chances (pas de carte garantie) et sont révélées de la moins rare à la plus rare. En moyenne, une Légendaire tous les 1 000 boosters.
 - **Doublons** : jamais de doublon de la Commune à l'Épique (si aucune nouveauté de la rareté voulue n'est trouvée, on prend une nouveauté de la rareté la plus proche). Mythiques et Légendaires peuvent revenir.
 - **Test** : 500 boosters puis 100 packs de genre d'affilée sur une collection vierge, soit 3 000 cartes et 0 doublon.
+- **GOD pack** : 1 booster sur 3 000 se transforme en GOD pack (pack doré animé). Il contient 1 Légendaire garantie, et chacune des 4 autres cartes a 50 % de chances d'être Mythique et 50 % d'être Légendaire. Ne s'applique pas aux packs de la Boutique.
 - **Pitié** : après 70 boosters sans Mythique ni Légendaire, le suivant en contient une.
 - **Mode test** (`TEST_MODE` dans `app.js`) : boosters illimités. Une fois désactivé, le stock s'applique.
 - **Stock** : 10 boosters maximum, un nouveau toutes les 30 minutes quand le stock n'est pas plein. Un booster qui échoue à s'ouvrir est rendu.

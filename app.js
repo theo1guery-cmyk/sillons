@@ -64,6 +64,7 @@ const tierDistance = (rank, t) => rank < TIER_MIN[t] ? TIER_MIN[t] - rank : t < 
 // Every card of a booster uses the same odds (no guaranteed slot).
 const DROP = [70, 21, 7, 1.7, 0.28, 0.02];
 const PITY = 70;                         // boosters without a Mythique or better before one is guaranteed
+const GOD_CHANCE = 1 / 3000;             // a booster turns into a GOD pack: 1 Légendaire + 4 cards that are Mythique or Légendaire (50/50)
 const STOCK_MAX = 10, REFILL_MS = 30 * 60 * 1000;
 const TEST_MODE = true;                 // unlimited free boosters while the game is being tested
 
@@ -451,10 +452,15 @@ for (const p of STORE_PACKS) {
 }
 
 /* ---------- drawing a booster (no UI) ---------- */
-async function drawPack(p) {
+async function drawPack(p, god = false) {
   const used = new Set(), slots = [];
-  for (let s = 0; s < 5; s++) slots.push(rollTier());   // same odds for every card
-  if (S.dry + 1 >= PITY && Math.max(...slots) < MYTH) slots[0] = rollTopTier();
+  if (god) {
+    slots.push(LEG);
+    for (let s = 0; s < 4; s++) slots.push(Math.random() < .5 ? MYTH : LEG);
+  } else {
+    for (let s = 0; s < 5; s++) slots.push(rollTier());   // same odds for every card
+    if (S.dry + 1 >= PITY && Math.max(...slots) < MYTH) slots[0] = rollTopTier();
+  }
   const raws = [];
   for (const tier of slots) {             // sequential so one slot can't pick a track another slot already took
     const t = await findTrack(p.g, tier, used);
@@ -468,6 +474,7 @@ async function drawPack(p) {
     return { c, holo, isNew: !prev, wanted: slots[i], src: raws[i]._src };
   }).sort((a, b) => a.c.tier - b.c.tier || a.c.rank - b.c.rank);   // weakest first, best card last
   S.dry = pulls.some(pl => pl.c.tier >= MYTH) ? 0 : S.dry + 1;
+  if (god) S.gods = (S.gods || 0) + 1;
   S.opened++; save();
   return pulls;
 }
@@ -475,7 +482,7 @@ async function drawPack(p) {
 /* ---------- opening ---------- */
 let busy = false, lastPack = BOOSTER;
 const LOADING_LINES = ["On fouille Deezer…", "On feuillette les bacs…", "On souffle sur les vinyles…", "On écoute les 30 premières secondes…"];
-async function openPack(p) {
+async function openPack(p, opts = {}) {
   if (busy) return;
   refill();
   if (!TEST_MODE && S.stock <= 0) { renderStock(); toast("Plus de booster pour l'instant. Le prochain arrive dans " + Math.ceil(nextRefillMs() / 60000) + " min."); return; }
@@ -488,17 +495,21 @@ async function openPack(p) {
   renderStock();
   document.querySelectorAll(".pack, .offer .btn, #again").forEach(b => b.disabled = true);
   const table = $("#table"), deal = $("#deal");
-  table.hidden = false; $("#tableTitle").textContent = p === BOOSTER ? "Booster" : "Booster " + p.n;
+  const god = opts.god ?? (p === BOOSTER && Math.random() < GOD_CHANCE);
+  table.hidden = false; table.classList.toggle("god", god);
+  $("#tableTitle").textContent = god ? "GOD PACK" : p === BOOSTER ? "Booster" : "Booster " + p.n;
   deal.innerHTML = "";
-  const rip = document.createElement("div"); rip.className = "rip loading";
+  const rip = document.createElement("div"); rip.className = "rip loading" + (god ? " god" : "");
   const pk = p.el.cloneNode(true); pk.tabIndex = -1; pk.disabled = true;
-  const line = document.createElement("p"); line.textContent = pick(LOADING_LINES);
+  if (god) { pk.className = "pack god"; pk.querySelector(".lbl").innerHTML = "<b>GOD PACK</b><span>Mythiques et Légendaires</span>"; }
+  const line = document.createElement("p"); line.textContent = god ? "GOD PACK ! 1 chance sur 3 000…" : pick(LOADING_LINES);
   rip.append(pk, line); deal.appendChild(rip);
   table.scrollIntoView({ behavior: reduceMotion() ? "auto" : "smooth", block: "start" });
-  const lineTimer = setInterval(() => line.textContent = pick(LOADING_LINES), 1600);
+  const lineTimer = setInterval(() => { if (!god) line.textContent = pick(LOADING_LINES); }, 1600);
 
   try {
-    const pulls = await drawPack(p);
+    const pulls = await drawPack(p, god);
+    if (god) toast("GOD PACK ! Que des Mythiques et des Légendaires.");
     renderCounters();
     deal.innerHTML = "";
     const grid = document.createElement("div"); grid.className = "deal"; deal.appendChild(grid);
@@ -736,4 +747,5 @@ addEventListener("keydown", e => { if (e.key === "Escape" && !modal.hidden) clos
 renderCounters();
 renderStock();
 $("#odds").innerHTML = `<table><tr><th>Rareté</th><th>Chance par carte</th><th>Classement Deezer</th></tr>${RAR.map((r, i) =>
-  `<tr><td><i style="background:${RCOL[i]}"></i>${r}</td><td>${String(DROP[i]).replace(".", ",")} %</td><td>${i === TOP ? fmt(TIER_MIN[i]) + " et plus" : fmt(TIER_MIN[i]) + " – " + fmt(TIER_MIN[i + 1] - 1)}</td></tr>`).join("")}</table>`;
+  `<tr><td><i style="background:${RCOL[i]}"></i>${r}</td><td>${String(DROP[i]).replace(".", ",")} %</td><td>${i === TOP ? fmt(TIER_MIN[i]) + " et plus" : fmt(TIER_MIN[i]) + " – " + fmt(TIER_MIN[i + 1] - 1)}</td></tr>`).join("")}</table>
+  <p class="god-odds"><b>GOD PACK</b> : 1 booster sur 3 000 se transforme en GOD pack. Il contient 1 Légendaire garantie, et ses 4 autres cartes ont chacune 50 % de chances d'être Mythique et 50 % d'être Légendaire.</p>`;

@@ -81,10 +81,11 @@ section .sub{color:var(--muted);margin:0 0 16px;font-size:.92rem;max-width:62ch}
 .flip>.face.front{transform:rotateY(180deg)}
 .slot .tag{display:block;text-align:center;margin-top:8px;font-family:var(--mono);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;min-height:1.2em;color:var(--muted)}
 .slot .tag.new{color:var(--brass)}
-.slot.burst .flip.on{animation:glow 1.6s ease-out}
-@keyframes glow{0%{filter:drop-shadow(0 0 0 transparent)}30%{filter:drop-shadow(0 0 28px var(--glow,var(--r3)))}100%{filter:drop-shadow(0 0 8px transparent)}}
+/* the glow sits on the card itself: a filter on the flipping element would flatten the 3D flip and show the back */
+.slot.burst .flip.on .front .card{animation:glow 1.6s ease-out}
+@keyframes glow{0%{box-shadow:0 8px 22px rgba(0,0,0,.5)}30%{box-shadow:0 0 34px 6px var(--glow,var(--r3))}100%{box-shadow:0 8px 22px rgba(0,0,0,.5)}}
 .slot.burst-4{--glow:var(--r4)}.slot.burst-5{--glow:var(--r5)}
-.slot.burst-5 .flip.on{animation-duration:2.6s}
+.slot.burst-5 .flip.on .front .card{animation-duration:2.6s}
 .rip{display:flex;justify-content:center;padding:20px 0}
 .rip .pack{width:150px;animation:shake .5s ease-in-out}
 @keyframes shake{0%,100%{transform:none}20%{transform:rotate(-4deg)}40%{transform:rotate(4deg)}60%{transform:rotate(-3deg) scale(1.03)}80%{transform:rotate(2deg) scale(1.06)}}
@@ -230,3 +231,18 @@ img{max-width:100%}
 .btn.danger.solid{background:#d9465a;border-color:#d9465a;color:#fff}
 .reset-confirm{border:1px solid #5a2f3a;border-radius:14px;padding:14px 16px;max-width:62ch;background:#21141c}
 .reset-confirm p{margin:0 0 12px;font-size:.9rem;color:var(--ink)}
+
+/* ---------- GOD pack ---------- */
+.pack.god{background:conic-gradient(from var(--spin,0deg),#fff4cf,#f5c24d,#a8741f,#fff4cf,#f5c24d,#a8741f,#fff4cf);box-shadow:0 0 0 2px #fff4cf,0 0 50px rgba(245,194,77,.75),0 10px 24px rgba(0,0,0,.45);color:#2a1a00}
+.pack.god .lbl b{color:#2a1a00;text-shadow:0 1px 0 rgba(255,255,255,.5)}
+.pack.god .lbl span{color:#3d2700;opacity:1}
+.pack.god .disc{background:radial-gradient(circle,#fff4cf 0 16%,#0d0d0d 17% 19%,transparent 20%),repeating-radial-gradient(circle,#2b2008 0 2px,#3a2c0c 2px 3px)}
+@property --spin{syntax:"<angle>";inherits:false;initial-value:0deg}
+.rip.god .pack{animation:shake 1s ease-in-out infinite,spin 3s linear infinite}
+@keyframes spin{to{--spin:360deg}}
+.rip.god p{color:var(--r5);font-weight:500}
+.table.god{border-color:var(--r5);box-shadow:0 0 0 1px var(--r5),0 0 70px rgba(245,194,77,.25)}
+.table.god #tableTitle{color:var(--r5);letter-spacing:.08em}
+.god-odds{margin:10px 0 0;max-width:62ch}
+.god-odds b{color:var(--r5)}
+@media (prefers-reduced-motion:reduce){.rip.god .pack{animation:none}}
