@@ -112,22 +112,133 @@ function rollTier() {
 // pity: Mythique or Légendaire with their own relative odds
 const rollTopTier = () => Math.random() < DROP[LEG] / (DROP[MYTH] + DROP[LEG]) ? LEG : MYTH;
 
-/* candidate tracks for a wanted tier, from the whole catalogue */
+/* ---------- where cards come from ----------
+   Communes: true random Deezer track numbers (every track equally likely, even ones nobody plays).
+   Higher rarities: public playlists, an artist-to-artist walk and searches, which reach known tracks.
+   Nothing already in the collection is handed out from Commune to Épique. */
+const isPlayable = t => t && t.readable !== false && t.album && t.artist;
+const tag = (list, src) => { for (const t of list) t._src = t._src || src; return list; };
+
+// 1) random track numbers: about 1 in 12 is a playable track, so a background loop keeps a reserve
+const ID_MAX = 4200000000, RESERVE_MAX = 30;
+const reserve = RAR.map(() => []);       // tracks waiting to be pulled, by rarity
+let probing = 0;
+function stash(list) {                   // keep good leftovers instead of throwing fetched tracks away
+  for (const t of list) {
+    const r = reserve[tierOf(t.rank || 0)];
+    if (isPlayable(t) && !S.c[t.id] && r.length < RESERVE_MAX && !r.some(x => x.id === t.id)) r.push(t);
+  }
+}
+async function probeRandomTrack() {
+  try { const t = await dz("track/" + (1 + randInt(ID_MAX))); if (isPlayable(t)) stash(tag([t], "id")); } catch (e) {}
+}
+setInterval(() => {                      // only when Deezer isn't busy with a booster
+  if (probing >= 2 || queue.length || reserve[0].length >= RESERVE_MAX) return;
+  probing++; probeRandomTrack().finally(() => probing--);
+}, 220);
+function takeReserve(tier, used) {
+  const r = reserve[tier];
+  for (let i = r.length - 1; i >= 0; i--) {
+    const t = r[i];
+    if (S.c[t.id] || used.has(t.id)) { r.splice(i, 1); continue; }
+    if (tier === 0 && t._src !== "id") continue;   // Communes come from true random draws when there are some
+    r.splice(i, 1); return t;
+  }
+  return null;
+}
+
+// 2) searches (random words, names, syllables; sorted by popularity for the top rarities)
 async function searchPool(tier) {
   const high = tier >= 3;
   const params = { q: randomQuery(high), limit: 100 };
   if (high) {
-    params.order = "RANKING";           // popular first, then dig a random depth so it's not always the same hits
+    params.order = "RANKING";
     params.index = tier === LEG ? randInt(2) * 100 : randInt(3) * 100;
   } else params.index = randInt(tier === 0 ? 250 : 150);
   const d = await dz("search", params);
-  return d.data || [];
+  return tag(d.data || [], high ? "ranking" : "search");
 }
 
-/* Genre boosters are set aside (future paid boosters). Kept here: Deezer genre radios,
-   with each album's real genre checked since radios mix in neighbouring styles. */
+// 3) public playlists: hundreds of thousands of known tracks, every style and era
+const PL_TERMS = ["hits", "top", "tubes", "best of", "classics", "chill", "relax", "party", "soirée", "workout", "running", "summer", "été",
+  "love", "sad", "happy", "road trip", "rap", "rap français", "hip hop", "drill", "trap", "rnb", "soul", "funk", "disco", "pop", "rock",
+  "indie", "metal", "punk", "electro", "house", "techno", "edm", "dance", "afro", "afrobeats", "amapiano", "reggae", "dancehall", "latino",
+  "reggaeton", "salsa", "bachata", "kpop", "jpop", "bollywood", "arabic", "raï", "chanson française", "variété", "jazz", "blues", "country",
+  "folk", "classique", "piano", "lofi", "ambient", "soundtrack", "anime", "gaming", "oldies", "throwback", "acoustic", "covers", "remix"];
+const PL_MODS = ["60s", "70s", "80s", "90s", "2000s", "2010s", "2020s", "années 80", "années 90", "années 2000", "2015", "2018", "2021", "2024",
+  "chill", "hits", "best", "underground", "nostalgie", "playlist", "mix", "radio"];
+const playlistQuery = base => (base || pick(PL_TERMS)) + (Math.random() < .45 ? " " + pick(PL_MODS) : "");
+async function playlistPool(base) {
+  const d = await dz("search/playlist", { q: playlistQuery(base), limit: 50, index: randInt(3) * 50 });
+  const pls = (d.data || []).filter(p => p.nb_tracks > 0);
+  if (!pls.length) return [];
+  const p = pick(pls);
+  const index = p.nb_tracks > 100 ? randInt(Math.min(p.nb_tracks - 100, 2000)) : 0;
+  const t = await dz(`playlist/${p.id}/tracks`, { limit: 100, index });
+  return tag(t.data || [], "playlist");
+}
+
+// 4) artist walk: from an artist, Deezer gives 20 similar artists and their top tracks, endlessly
+const frontiers = {};                    // "all" or a genre index → artist ids to visit
+const frontier = key => frontiers[key] = frontiers[key] || [];
+function noteArtists(list, key) {
+  const f = frontier(key);
+  for (const t of list) { const id = t.artist?.id || t.id; if (id && f.length < 4000) f.push(id); }
+}
+async function artistPool(key) {
+  const f = frontier(key);
+  if (!f.length) return [];
+  const id = pick(f);
+  const [top, rel] = await Promise.all([
+    dz(`artist/${id}/top`, { limit: 50 }).catch(() => ({})),
+    Math.random() < .5 ? dz(`artist/${id}/related`, { limit: 20 }).catch(() => ({})) : {},
+  ]);
+  noteArtists(rel.data || [], key);
+  return tag(top.data || [], "artist");
+}
+
+function poolFor(tier) {
+  const r = Math.random();
+  if (tier <= 1) return searchPool(tier);
+  if (tier <= 3) return r < .45 ? playlistPool() : r < .75 && frontier("all").length ? artistPool("all") : searchPool(tier);
+  return r < .5 ? searchPool(tier) : playlistPool();
+}
+
+async function findTrack(typeIdx, tier, used) {
+  if (typeIdx >= 0) return findGenreTrack(typeIdx, tier, used);
+  const ready = takeReserve(tier, used);
+  if (ready) return ready;
+  let best = null, ownedHit = null;
+  const attempts = tier >= MYTH ? 10 : 25;
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    const pool = (await poolFor(tier).catch(() => [])).filter(t => isPlayable(t) && !used.has(t.id));
+    if (pool[0]?._src === "playlist") noteArtists(pool, "all");
+    const fresh = pool.filter(t => !S.c[t.id]);
+    const hits = fresh.filter(t => inTier(t.rank, tier));
+    if (hits.length) { const t = pick(hits); stash(fresh.filter(x => x !== t && tierOf(x.rank) >= 1)); return t; }
+    stash(fresh.filter(x => tierOf(x.rank) >= 1));
+    if (!ownedHit) ownedHit = pool.find(t => inTier(t.rank, tier)) || null;
+    for (const t of fresh) { const d = tierDistance(t.rank, tier); if (!best || d < best.d) best = { t, d }; }
+  }
+  // Commune → Épique never repeat: a new track of the nearest rarity beats a duplicate
+  return tier <= 3 ? (best && best.t) || ownedHit : ownedHit || (best && best.t);
+}
+
+/* ---------- genre boosters (boutique) ---------- */
+const GENRE_TERMS = {
+  rap: ["rap", "rap français", "hip hop", "drill", "trap", "rap us", "boom bap", "rap old school", "rap belge", "uk rap"],
+  pop: ["pop", "pop hits", "pop française", "kpop", "dance pop", "pop rock", "teen pop", "synthpop"],
+  rock: ["rock", "rock classique", "indie rock", "metal", "punk", "grunge", "hard rock", "rock français", "alternative rock"],
+  electro: ["electro", "house", "techno", "edm", "french touch", "drum and bass", "trance", "deep house"],
+  soul: ["rnb", "soul", "funk", "neo soul", "r&b", "motown", "rnb français"],
+  chanson: ["chanson française", "variété française", "chanson", "nouvelle scène française", "chansons françaises"],
+  jazz: ["jazz", "blues", "jazz piano", "bebop", "smooth jazz", "jazz vocal", "jazz classics", "delta blues"],
+  latino: ["reggaeton", "latino", "salsa", "bachata", "musica latina", "brasil", "bossa nova", "cumbia"],
+  afro: ["afrobeats", "reggae", "dancehall", "afro", "coupé décalé", "amapiano", "zouk", "roots reggae"],
+  classique: ["classique", "musique classique", "piano classique", "bande originale", "soundtrack", "orchestre", "opéra"],
+};
 const genreCache = {};
-async function genrePool(typeIdx, tier) {
+async function genrePool(typeIdx, tier) {   // Deezer genre radios
   const t = TYPES[typeIdx];
   if (!genreCache.radios) {
     const d = await dz("radio/genres");
@@ -138,63 +249,49 @@ async function genrePool(typeIdx, tier) {
   if (!radios.length) return searchPool(tier);
   const rid = pick(radios), key = "radio" + rid;
   genreCache[key] = genreCache[key] || dz(`radio/${rid}/tracks`, { limit: 100 }).then(d => d.data || []);
-  return genreCache[key];
+  return tag((await genreCache[key]).slice(), "radio");
+}
+function genreSource(typeIdx, tier) {
+  const r = Math.random();
+  if (r < .5) return playlistPool(pick(GENRE_TERMS[TYPES[typeIdx].k]));
+  if (r < .85 && frontier(typeIdx).length) return artistPool(typeIdx);
+  return genrePool(typeIdx, tier);
 }
 const albumCache = {};
 const getAlbum = id => albumCache[id] = albumCache[id] || dz("album/" + id).catch(() => ({}));
-async function firstOfType(cands, typeIdx) {
+async function firstOfType(cands, typeIdx) {   // checks each album's real genre
   for (const t of cands.sort(() => Math.random() - .5).slice(0, 6)) {
     const g = typeOfGenre((await getAlbum(t.album.id)).genre_id);
-    if (g === typeIdx) return t;
+    if (g === typeIdx) { noteArtists([t], typeIdx); return t; }
   }
   return null;
 }
-
-// Tracks already in the collection are skipped; one only comes back as a duplicate
-// when no new track of that rarity turns up after every attempt.
-// genre packs: exact rarity in the right genre if possible, otherwise the closest rarity
-// that still belongs to the genre (radios rarely hold every rarity)
 async function findGenreTrack(typeIdx, tier, used) {
-  let near = [], any = null;
-  for (let attempt = 0; attempt < 4; attempt++) {
-    const pool = (await genrePool(typeIdx, tier)).filter(t => t.readable !== false && t.album && !used.has(t.id));
-    const fresh = pool.filter(t => !S.c[t.id]);
+  let near = [];
+  const attempts = tier >= MYTH ? 10 : 18;
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    const fresh = (await genreSource(typeIdx, tier).catch(() => [])).filter(t => isPlayable(t) && !used.has(t.id) && !S.c[t.id]);
     const ok = await firstOfType(fresh.filter(t => inTier(t.rank, tier)), typeIdx);
     if (ok) return ok;
     near.push(...fresh);
-    any = any || pool[0];
   }
+  // nothing of that exact rarity: the new track of the right genre with the nearest rarity
   near = [...new Map(near.map(t => [t.id, t])).values()].sort((a, b) => tierDistance(a.rank, tier) - tierDistance(b.rank, tier));
-  for (let i = 0; i < near.length && i < 24; i += 6) {
+  for (let i = 0; i < near.length && i < 36; i += 6) {
     const ok = await firstOfType(near.slice(i, i + 6), typeIdx);
     if (ok) return ok;
   }
-  return near[0] || any;
-}
-async function findTrack(typeIdx, tier, used) {
-  if (typeIdx >= 0) return findGenreTrack(typeIdx, tier, used);
-  let best = null, ownedHit = null;
-  const attempts = tier >= MYTH ? 10 : 6;
-  for (let attempt = 0; attempt < attempts; attempt++) {
-    const pool = (typeIdx < 0 ? await searchPool(tier) : await genrePool(typeIdx, tier))
-      .filter(t => t.readable !== false && t.album && !used.has(t.id));
-    const hits = pool.filter(t => inTier(t.rank, tier));
-    const fresh = hits.filter(t => !S.c[t.id]);
-    if (fresh.length) {
-      if (typeIdx < 0) return pick(fresh);
-      const ok = await firstOfType(fresh, typeIdx);
-      if (ok) return ok;
-      continue;
-    }
-    if (hits.length && !ownedHit) ownedHit = pick(hits);
-    for (const t of pool) if (!S.c[t.id]) { const d = tierDistance(t.rank, tier); if (!best || d < best.d) best = { t, d }; }
-  }
-  return ownedHit || (best && best.t);
+  if (near[0]) return near[0];
+  const mine = Object.values(S.c).filter(c => c.g === typeIdx && c.tier === tier);   // last resort: a random owned card, never a fixed one
+  if (!mine.length) return null;
+  const c = pick(mine);
+  return { id: c.id, _card: c, _src: "owned" };
 }
 
 async function enrich(t, typeIdx) {
+  if (t._card) return { ...t._card };
   const [full, album] = await Promise.all([
-    dz("track/" + t.id).catch(() => ({})),
+    t._src === "id" ? t : dz("track/" + t.id).catch(() => ({})),   // random draws already are full track records
     getAlbum(t.album.id),
   ]);
   const rank = full.rank ?? t.rank ?? 0;
@@ -353,6 +450,28 @@ for (const p of STORE_PACKS) {
   offer.append(b, price, buy); $("#store").appendChild(offer);
 }
 
+/* ---------- drawing a booster (no UI) ---------- */
+async function drawPack(p) {
+  const used = new Set(), slots = [];
+  for (let s = 0; s < 5; s++) slots.push(rollTier());   // same odds for every card
+  if (S.dry + 1 >= PITY && Math.max(...slots) < MYTH) slots[0] = rollTopTier();
+  const raws = [];
+  for (const tier of slots) {             // sequential so one slot can't pick a track another slot already took
+    const t = await findTrack(p.g, tier, used);
+    if (t) { used.add(t.id); raws.push(t); }
+  }
+  if (raws.length < 5) throw { code: "short" };
+  const cards = await Promise.all(raws.map(t => enrich(t, p.g)));
+  const pulls = cards.map((c, i) => {
+    const holo = Math.random() < .04, prev = S.c[c.id];
+    S.c[c.id] = { ...c, n: (prev?.n || 0) + 1, holo: (prev?.holo || 0) + (holo ? 1 : 0), at: prev?.at || Date.now() };
+    return { c, holo, isNew: !prev, wanted: slots[i], src: raws[i]._src };
+  }).sort((a, b) => a.c.tier - b.c.tier || a.c.rank - b.c.rank);   // weakest first, best card last
+  S.dry = pulls.some(pl => pl.c.tier >= MYTH) ? 0 : S.dry + 1;
+  S.opened++; save();
+  return pulls;
+}
+
 /* ---------- opening ---------- */
 let busy = false, lastPack = BOOSTER;
 const LOADING_LINES = ["On fouille Deezer…", "On feuillette les bacs…", "On souffle sur les vinyles…", "On écoute les 30 premières secondes…"];
@@ -379,26 +498,8 @@ async function openPack(p) {
   const lineTimer = setInterval(() => line.textContent = pick(LOADING_LINES), 1600);
 
   try {
-    const used = new Set(), slots = [];
-    for (let s = 0; s < 5; s++) slots.push(rollTier());   // same odds for every card
-    if (S.dry + 1 >= PITY && Math.max(...slots) < MYTH) slots[0] = rollTopTier();
-    const raws = [];
-    for (const tier of slots) {           // sequential so one slot can't pick a track another slot already took
-      const t = await findTrack(p.g, tier, used);
-      if (t) { used.add(t.id); raws.push(t); }
-    }
-    if (raws.length < 5) throw { code: "short" };
-    const cards = await Promise.all(raws.map(t => enrich(t, p.g)));
-    const pulls = cards.map(c => {
-      const holo = Math.random() < .04, prev = S.c[c.id];
-      S.c[c.id] = { ...c, n: (prev?.n || 0) + 1, holo: (prev?.holo || 0) + (holo ? 1 : 0), at: prev?.at || Date.now() };
-      return { c, holo, isNew: !prev };
-    }).sort((a, b) => a.c.tier - b.c.tier || a.c.rank - b.c.rank);   // weakest first, best card last
-    S.dry = pulls.some(pl => pl.c.tier >= MYTH) ? 0 : S.dry + 1;
-    S.opened++; save(); renderCounters();
-renderStock();
-$("#odds").innerHTML = `<table><tr><th>Rareté</th><th>Chance par carte</th><th>Classement Deezer</th></tr>${RAR.map((r, i) =>
-  `<tr><td><i style="background:${RCOL[i]}"></i>${r}</td><td>${String(DROP[i]).replace(".", ",")} %</td><td>${i === TOP ? fmt(TIER_MIN[i]) + " et plus" : fmt(TIER_MIN[i]) + " – " + fmt(TIER_MIN[i + 1] - 1)}</td></tr>`).join("")}</table>`;
+    const pulls = await drawPack(p);
+    renderCounters();
     deal.innerHTML = "";
     const grid = document.createElement("div"); grid.className = "deal"; deal.appendChild(grid);
     pulls.forEach((pl, i) => grid.appendChild(slotEl(pl, i)));

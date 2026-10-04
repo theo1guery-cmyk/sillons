@@ -13,8 +13,10 @@ Puis ouvrir http://localhost:8765.
 ## Comment ça marche
 
 - **Pas de serveur.** Le navigateur appelle directement l'API publique Deezer en JSONP (l'API n'autorise pas les appels `fetch` depuis un autre site).
-- **Booster** : un seul type de booster, 5 cartes tirées dans tout Deezer. La recherche aléatoire mélange des milliers de mots, prénoms, villes, années et syllabes inventées, à une profondeur de résultats aléatoire, pour atteindre des millions de morceaux. 
-- **Boutique** : des boosters d'un seul genre (Deezer genre radios, avec vérification du genre de l'album), gratuits pendant les tests, payants plus tard (vinyles ou argent réel).
+- **Booster** : 5 cartes tirées dans tout Deezer.
+  - **Communes** : tirage d'un numéro de morceau au hasard (de 1 à 4,2 milliards), donc chaque morceau a la même chance, même ceux que personne n'écoute. Environ 1 numéro sur 12 est un morceau jouable, alors une boucle en arrière-plan garde une réserve prête quand Deezer n'est pas occupé. Si la réserve est vide, recherche aléatoire (mots, prénoms, villes, années, syllabes).
+  - **Raretés plus hautes** : playlists publiques, marche d'artiste en artiste (artistes similaires) et recherches triées par popularité. Les morceaux trouvés en route sont gardés en réserve pour les tirages suivants.
+- **Boutique** : des boosters d'un seul genre (playlists du genre, artistes du genre et radios Deezer, avec vérification du genre de l'album), gratuits pendant les tests, payants plus tard (vinyles ou argent réel).
 - **Catalogue** : recherche dans tout Deezer (titre ou artiste), avec les tubes du moment par défaut. Chaque carte montre sa rareté et si tu l'as déjà. Le genre, le BPM et l'année ne sont chargés que pour les cartes visibles à l'écran.
 - **Rareté** : selon le classement Deezer (`rank`, de 0 à 1 000 000).
 
@@ -28,7 +30,8 @@ Puis ouvrir http://localhost:8765.
   | Légendaire | 950 000 et plus | 0,02 % |
 
 - **Tirage** : les 5 cartes ont les mêmes chances (pas de carte garantie) et sont révélées de la moins rare à la plus rare. En moyenne, une Légendaire tous les 1 000 boosters.
-- **Doublons** : un morceau déjà possédé est écarté. Il ne revient que si aucun nouveau morceau de cette rareté n'est trouvé.
+- **Doublons** : jamais de doublon de la Commune à l'Épique (si aucune nouveauté de la rareté voulue n'est trouvée, on prend une nouveauté de la rareté la plus proche). Mythiques et Légendaires peuvent revenir.
+- **Test** : 500 boosters puis 100 packs de genre d'affilée sur une collection vierge, soit 3 000 cartes et 0 doublon.
 - **Pitié** : après 70 boosters sans Mythique ni Légendaire, le suivant en contient une.
 - **Mode test** (`TEST_MODE` dans `app.js`) : boosters illimités. Une fois désactivé, le stock s'applique.
 - **Stock** : 10 boosters maximum, un nouveau toutes les 30 minutes quand le stock n'est pas plein. Un booster qui échoue à s'ouvrir est rendu.
