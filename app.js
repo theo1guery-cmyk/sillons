@@ -188,10 +188,11 @@ function toast(m) { const t = $("#toast"); t.textContent = m; t.hidden = false; 
 const reduceMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /* ---------- card markup ---------- */
+const PENDING_TYPE = { n: "…", h: 250, s: "Rythme" };   // genre not fetched yet (catalogue)
 function cardEl(c, holo) {
-  const T = TYPES[c.g] || TYPES[AUTRE], st = stats(c);
+  const T = c.g == null ? PENDING_TYPE : TYPES[c.g] || TYPES[AUTRE], st = stats(c);
   const el = document.createElement("div");
-  el.className = "card" + (holo ? " holo" : ""); el.dataset.r = c.tier;
+  el.className = "card" + (holo ? " holo" : "") + (c.g == null ? " pending" : ""); el.dataset.r = c.tier;
   el.style.setProperty("--h", T.h); el.style.setProperty("--rc", RCOL[c.tier]);
   const art = c.cov
     ? `<img class="bg" src="${esc(c.cov.replace(/\/\d+x\d+-/, "/120x120-"))}" alt="" loading="lazy" decoding="async"><img class="cover" src="${esc(c.cov.replace(/\/\d+x\d+-/, "/500x500-"))}" alt="Pochette de ${esc(c.al)}" loading="lazy" decoding="async">`
@@ -215,13 +216,15 @@ function cardEl(c, holo) {
 function backEl() { const w = document.createElement("div"); w.className = "cq"; w.innerHTML = '<div class="back"><div class="in"><b>SILLONS</b></div></div>'; return w; }
 
 /* ---------- views ---------- */
-const views = { shop: $("#view-shop"), binder: $("#view-binder") };
+const views = { shop: $("#view-shop"), binder: $("#view-binder"), catalog: $("#view-catalog") };
 function show(v) {
   for (const k in views) { views[k].hidden = k !== v; $("#tab-" + k).setAttribute("aria-selected", k === v); }
   if (v === "binder") renderBinder();
+  if (v === "catalog") { if (!CAT.loaded) catLoad(true); else renderCatalog(); }
 }
 $("#tab-shop").onclick = () => show("shop");
 $("#tab-binder").onclick = () => show("binder");
+$("#tab-catalog").onclick = () => show("catalog");
 
 const owned = () => Object.values(S.c);
 function renderCounters() {
@@ -355,6 +358,102 @@ function renderBinder() {
   }
   bd.appendChild(frag);
 }
+
+/* ---------- catalogue: any Deezer track, searchable ---------- */
+const PAGE = 24;
+const CAT = { q: "", order: "", items: [], index: 0, total: 0, loaded: false, seq: 0, r: -1, own: "all" };
+const fullCards = {};                     // id → card with genre, BPM and year fetched
+function quickCard(t) {                   // what a search result alone tells us
+  return {
+    id: t.id, t: t.title_short || t.title, a: t.artist?.name || "?", al: t.album?.title || "",
+    cov: (t.album?.cover_big || t.album?.cover_medium || "").replace(/^http:/, "https:"),
+    d: t.duration || 0, rank: t.rank || 0, bpm: 0, y: 0, x: t.explicit_lyrics ? 1 : 0, g: null, tier: tierOf(t.rank || 0),
+  };
+}
+const catCard = t => S.c[t.id] || fullCards[t.id] || quickCard(t);
+
+async function catLoad(reset) {
+  const seq = ++CAT.seq;
+  if (reset) { CAT.items = []; CAT.index = 0; CAT.total = 0; $("#catalog").innerHTML = ""; }
+  CAT.loaded = true;
+  $("#catMore").hidden = true;
+  $("#catStatus").textContent = "Chargement des cartes…";
+  try {
+    let data, total;
+    if (!CAT.q) {
+      const d = await dz("chart/0/tracks", { limit: 100 });
+      data = d.data || []; total = data.length;
+    } else {
+      const params = { q: CAT.q, limit: PAGE, index: CAT.index };
+      if (CAT.order) params.order = CAT.order;
+      const d = await dz("search", params);
+      data = d.data || []; total = d.total || 0;
+    }
+    if (seq !== CAT.seq) return;          // a newer search replaced this one
+    const seen = new Set(CAT.items.map(t => t.id));
+    CAT.items.push(...data.filter(t => t.album && !seen.has(t.id)));
+    CAT.index += data.length || PAGE; CAT.total = total;
+    renderCatalog();
+  } catch (e) {
+    if (seq !== CAT.seq) return;
+    $("#catStatus").textContent = e.code === 4 ? "Deezer limite le nombre de demandes. Attends quelques secondes puis réessaie." : "Deezer ne répond pas. Vérifie ta connexion puis réessaie.";
+  }
+}
+
+let catObserver = null;
+function renderCatalog() {
+  $("#catFilters").innerHTML = [-1, 0, 1, 2, 3, 4].map(r => `<button class="chip" data-r="${r}" aria-pressed="${CAT.r === r}">${r < 0 ? "Toutes raretés" : `<i style="background:${RCOL[r]}"></i>${RAR[r]}`}</button>`).join("") +
+    `<label for="catOwn">Afficher <select id="catOwn"><option value="all">toutes les cartes</option><option value="own">mes cartes</option><option value="miss">à trouver</option></select></label>`;
+  $("#catOwn").value = CAT.own;
+  $("#catFilters").querySelectorAll(".chip").forEach(b => b.onclick = () => { CAT.r = +b.dataset.r; renderCatalog(); });
+  $("#catOwn").onchange = e => { CAT.own = e.target.value; renderCatalog(); };
+
+  const list = CAT.items.filter(t => (CAT.r < 0 || tierOf(catCard(t).rank) === CAT.r) &&
+    (CAT.own === "all" || (CAT.own === "own") === !!S.c[t.id]));
+  const ownedHere = CAT.items.filter(t => S.c[t.id]).length;
+  $("#catStatus").textContent = !CAT.items.length
+    ? (CAT.q ? `Aucun morceau trouvé pour « ${CAT.q} ».` : "Aucune carte à afficher.")
+    : `${CAT.q ? fmt(CAT.total) + " résultats pour « " + CAT.q + " »" : "Les 100 tubes du moment sur Deezer"} · ${fmt(CAT.items.length)} affichées, dont ${ownedHere} dans ta collection`;
+  $("#catMore").hidden = !CAT.q || CAT.index >= CAT.total;
+
+  const grid = $("#catalog"); grid.innerHTML = "";
+  if (catObserver) catObserver.disconnect();
+  catObserver = new IntersectionObserver(es => es.forEach(e => {
+    if (!e.isIntersecting) return;
+    catObserver.unobserve(e.target); completeCell(e.target);
+  }), { rootMargin: "300px" });
+  if (CAT.items.length && !list.length) { grid.innerHTML = `<div class="empty">Aucune carte ne correspond à ces filtres.</div>`; return; }
+  const frag = document.createDocumentFragment();
+  for (const t of list) { const cell = catCell(t); frag.appendChild(cell); if (catCard(t).g == null) catObserver.observe(cell); }
+  grid.appendChild(frag);
+}
+function catCell(t) {
+  const c = catCard(t), own = S.c[t.id];
+  const b = document.createElement("button");
+  b.className = "cell" + (own ? "" : " locked"); b.dataset.id = t.id; b.track = t;
+  b.setAttribute("aria-label", c.t + " de " + c.a + (own ? ", dans ta collection" : ", pas encore trouvée"));
+  b.appendChild(cardEl(c, own?.holo > 0));
+  if (own) { if (own.n > 1) { const n = document.createElement("span"); n.className = "cnt"; n.textContent = "×" + own.n; b.appendChild(n); } }
+  else { const l = document.createElement("span"); l.className = "lock"; l.textContent = "À trouver"; b.appendChild(l); }
+  b.onclick = async () => openModal(catCard(t).g == null ? await completeCell(b) : catCard(t));
+  return b;
+}
+// fetch genre, BPM and release year only for cards that scroll into view
+async function completeCell(cell) {
+  const t = cell.track;
+  if (!fullCards[t.id]) fullCards[t.id] = await enrich(t, -1);
+  if (cell.isConnected) cell.replaceWith(catCell(t));
+  return fullCards[t.id];
+}
+
+let searchTimer;
+$("#q").addEventListener("input", () => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => { CAT.q = $("#q").value.trim(); catLoad(true); }, 350);
+});
+$("#qOrder").onchange = () => { CAT.order = $("#qOrder").value; if (CAT.q) catLoad(true); };
+$("#searchForm").onsubmit = e => { e.preventDefault(); clearTimeout(searchTimer); CAT.q = $("#q").value.trim(); catLoad(true); };
+$("#catMore").onclick = () => catLoad(false);
 
 /* ---------- detail + preview audio ---------- */
 const modal = $("#modal"), audio = new Audio();

@@ -15,6 +15,7 @@ Puis ouvrir http://localhost:8765.
 - **Pas de serveur.** Le navigateur appelle directement l'API publique Deezer en JSONP (l'API n'autorise pas les appels `fetch` depuis un autre site).
 - **Booster Mix** : recherches aléatoires dans tout Deezer (mots courants en plusieurs langues et combinaisons de lettres). Pour les raretés hautes, les résultats sont triés par popularité.
 - **Boosters par genre** : radios de genre de Deezer, en vérifiant le vrai genre de l'album.
+- **Catalogue** : recherche dans tout Deezer (titre ou artiste), avec les tubes du moment par défaut. Chaque carte montre sa rareté et si tu l'as déjà. Le genre, le BPM et l'année ne sont chargés que pour les cartes visibles à l'écran.
 - **Rareté** : selon le classement Deezer (`rank`, de 0 à 1 000 000).
 
   | Rareté | Classement Deezer |

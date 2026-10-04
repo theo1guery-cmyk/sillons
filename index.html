@@ -16,6 +16,7 @@
     <nav class="tabs" role="tablist">
       <button role="tab" id="tab-shop" aria-selected="true">Boosters</button>
       <button role="tab" id="tab-binder" aria-selected="false">Collection</button>
+      <button role="tab" id="tab-catalog" aria-selected="false">Catalogue</button>
     </nav>
     <div class="counters" id="counters"></div>
   </header>
@@ -38,6 +39,20 @@
     <div class="prog" id="prog"></div>
     <div class="filters" id="filters"></div>
     <div class="binder" id="binder"></div>
+  </section>
+
+  <section id="view-catalog" hidden>
+    <h2>Catalogue</h2>
+    <p class="sub">Toutes les cartes du jeu, c'est-à-dire tout Deezer. Cherche un titre ou un artiste pour voir sa carte, sa rareté et si tu l'as déjà.</p>
+    <form class="search" id="searchForm" role="search">
+      <label class="sr" for="q">Titre ou artiste</label>
+      <input id="q" type="search" placeholder="Titre ou artiste : Daft Punk, Bohemian Rhapsody…" autocomplete="off">
+      <select id="qOrder" aria-label="Ordre des résultats"><option value="">Pertinence</option><option value="RANKING">Les plus rares d'abord</option></select>
+    </form>
+    <div class="filters" id="catFilters"></div>
+    <p class="cat-status" id="catStatus" aria-live="polite"></p>
+    <div class="binder" id="catalog"></div>
+    <div class="more"><button class="btn" id="catMore" hidden>Voir plus de cartes</button></div>
   </section>
 
   <footer class="note">Morceaux, pochettes et extraits : API publique Deezer, interrogée en direct. La rareté vient du classement Deezer du morceau au moment où tu le tires. Ta collection est enregistrée dans ce navigateur.</footer>

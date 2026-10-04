@@ -179,3 +179,16 @@ footer.note{margin-top:40px;color:#6f6680;font-size:.78rem;max-width:70ch}
 img{max-width:100%}
 
 .prog .legs{font-family:var(--mono);font-size:.7rem;color:var(--muted)}
+
+/* ---------- catalogue ---------- */
+.search{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 14px}
+.search input{flex:1 1 260px;min-width:0;background:var(--felt-2);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font:inherit;font-size:1rem}
+.search input:focus{outline:2px solid var(--brass);outline-offset:1px}
+.search select{background:var(--felt-2);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:0 10px;font:inherit;font-size:.86rem;min-height:46px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.cat-status{margin:0 0 14px;color:var(--muted);font-size:.86rem;min-height:1.3em}
+.more{display:flex;justify-content:center;margin-top:20px}
+.cell.locked .cq{filter:saturate(.35) brightness(.72);transition:filter .2s ease}
+.cell.locked:hover .cq,.cell.locked:focus-visible .cq{filter:none}
+.cell .lock{position:absolute;left:50%;bottom:-8px;transform:translateX(-50%);z-index:2;background:var(--felt-2);border:1px solid var(--line);color:var(--muted);font-family:var(--mono);font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;border-radius:99px;padding:1px 8px;white-space:nowrap;pointer-events:none}
+.card.pending .ty{opacity:.6}
