@@ -7,7 +7,7 @@
 <meta name="description" content="Le TCG des vrais morceaux : chaque carte est un titre de Deezer, les plus gros tubes sont légendaires.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Instrument+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="styles.css?v=3">
+<link rel="stylesheet" href="styles.css?v=5">
 </head>
 <body>
 <div class="wrap">
@@ -15,6 +15,7 @@
     <div class="brand"><div class="logo" aria-hidden="true"></div><div><h1>SILLONS</h1><small>Tout Deezer en cartes</small></div></div>
     <nav class="tabs" role="tablist">
       <button role="tab" id="tab-shop" aria-selected="true">Boosters</button>
+      <button role="tab" id="tab-store" aria-selected="false">Boutique</button>
       <button role="tab" id="tab-binder" aria-selected="false">Collection</button>
       <button role="tab" id="tab-catalog" aria-selected="false">Catalogue</button>
     </nav>
@@ -22,16 +23,27 @@
   </header>
 
   <section id="view-shop">
-    <h2>Choisis un booster</h2>
-    <p class="sub">Chaque booster pioche 5 morceaux au hasard dans tout le catalogue Deezer, dont au moins un rare. Plus un morceau est écouté, plus sa carte est rare : les légendaires sont les vrais tubes.</p>
+    <h2>Ouvre un booster</h2>
+    <p class="sub">5 morceaux tirés au hasard dans tout le catalogue Deezer, révélés du moins rare au plus rare. Plus un morceau est écouté, plus sa carte est rare : seuls les tubes mondiaux sont Légendaires.</p>
+    <details class="odds"><summary>Voir les chances par carte</summary><div id="odds"></div></details>
     <div class="shelf" id="shelf"></div>
+  </section>
+
+  <section id="view-store" hidden>
+    <h2>Boutique</h2>
+    <p class="sub">Des boosters d'un seul genre : 5 cartes du style que tu choisis, avec les mêmes chances de rareté que le booster classique.</p>
+    <p class="store-note">Version test : tous les packs sont gratuits. Ils deviendront payants, en vinyles (la monnaie du jeu) ou en argent réel.</p>
+    <div class="store" id="store"></div>
+  </section>
+
+  <div id="tableWrap">
     <div class="table" id="table" hidden>
       <div class="table-head"><h3 id="tableTitle">Booster</h3>
-        <div class="btns"><button class="btn" id="flipAll">Tout retourner</button><button class="btn primary" id="again">Rouvrir le même</button></div>
+        <div class="btns"><button class="btn" id="flipAll">Tout retourner</button><button class="btn primary" id="again">Ouvrir un autre booster</button></div>
       </div>
       <div id="deal"></div>
     </div>
-  </section>
+  </div>
 
   <section id="view-binder" hidden>
     <h2>Ta collection</h2>
@@ -73,6 +85,6 @@
   </div>
 </div>
 <div class="toast" id="toast" hidden></div>
-<script src="app.js?v=3"></script>
+<script src="app.js?v=5"></script>
 </body>
 </html>

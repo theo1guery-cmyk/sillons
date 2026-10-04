@@ -51,46 +51,81 @@ const TYPES = [
 const AUTRE = TYPES.length - 1;
 function typeOfGenre(gid) { const i = TYPES.findIndex(t => t.g.includes(gid)); return i < 0 ? AUTRE : i; }
 
-const RAR = ["Commune", "Peu commune", "Rare", "Épique", "Légendaire"];
-const RCOL = ["var(--r0)", "var(--r1)", "var(--r2)", "var(--r3)", "var(--r4)"];
-// Deezer rank (0 – 1 000 000) → rarity. Calibrated on random catalogue samples:
-// about half of all tracks are commons, only the real hits reach 850 000.
-const TIER_MIN = [0, 200000, 400000, 650000, 850000];
+const RAR = ["Commune", "Peu commune", "Rare", "Épique", "Mythique", "Légendaire"];
+const RCOL = ["var(--r0)", "var(--r1)", "var(--r2)", "var(--r3)", "var(--r4)", "var(--r5)"];
+const MYTH = 4, LEG = 5, TOP = RAR.length - 1;
+// Deezer rank (0 – 1 000 000) → rarity. 950 000+ is the global-hit club
+// (Billie Jean, Bohemian Rhapsody…): a few thousand tracks out of 100+ million.
+const TIER_MIN = [0, 250000, 450000, 700000, 850000, 950000];
 const tierOf = rank => TIER_MIN.reduce((t, m, i) => rank >= m ? i : t, 0);
-const inTier = (rank, t) => rank >= TIER_MIN[t] && (t === 4 || rank < TIER_MIN[t + 1]);
-const tierDistance = (rank, t) => rank < TIER_MIN[t] ? TIER_MIN[t] - rank : t < 4 && rank >= TIER_MIN[t + 1] ? rank - TIER_MIN[t + 1] + 1 : 0;
+const inTier = (rank, t) => rank >= TIER_MIN[t] && (t === TOP || rank < TIER_MIN[t + 1]);
+const tierDistance = (rank, t) => rank < TIER_MIN[t] ? TIER_MIN[t] - rank : t < TOP && rank >= TIER_MIN[t + 1] ? rank - TIER_MIN[t + 1] + 1 : 0;
+
+// Every card of a booster uses the same odds (no guaranteed slot).
+const DROP = [70, 21, 7, 1.7, 0.28, 0.02];
+const PITY = 70;                         // boosters without a Mythique or better before one is guaranteed
+const STOCK_MAX = 10, REFILL_MS = 30 * 60 * 1000;
+const TEST_MODE = true;                 // unlimited free boosters while the game is being tested
 
 const WORDS = ("amour love night fire heart soleil baby dance rain moon party road summer life dream girl boy city sky street gold blue black red " +
-  "money time world king queen star ocean paris tokyo london new york corazon vida noche fuego liebe nacht herz amore notte cuore mama papa " +
+  "money time world king queen star ocean corazon vida noche fuego liebe nacht herz amore notte cuore mama papa " +
   "freedom home light dark sun angel devil crazy wild young forever tonight tomorrow yesterday sweet bad good happy sad lonely alone together " +
   "music song radio rock roll soul funk disco house techno bass beat flow rap hip hop jazz blues reggae samba salsa tango bossa afro " +
-  "mon ma ton ta la le les une un des toi moi nous elle lui pourquoi jamais toujours encore ciel mer terre feu eau vent nuit jour rêve " +
-  "coeur fille garçon ville rue route fête danse chanson musique liberté paradis enfer temps vie mort amour belle beau fou folle " +
-  "el la los las mi tu te quiero bailar dinero calle playa sol luna fiesta cielo mujer hombre loco loca " +
-  "ich du wir mein dein und der die das o meu minha samba saudade amor eu você baila kuduro wahala lagos dakar abidjan " +
-  "boom bang hey yeah oh no yes ok fly high low down up run fall rise shine glow break wake stay go come back").split(" ");
+  "pourquoi jamais toujours encore ciel mer terre feu eau vent nuit jour rêve coeur fille garçon ville rue route fête danse chanson " +
+  "musique liberté paradis enfer temps vie mort belle beau fou folle quiero bailar dinero calle playa sol luna fiesta cielo mujer hombre loco loca " +
+  "mein dein liebe welt zeit leben saudade eu você baila kuduro wahala " +
+  "boom bang hey yeah fly high low down run fall rise shine glow break wake stay come back river mountain window mirror letter " +
+  "summer winter autumn spring morning evening midnight sunrise sunset thunder storm snow ice smoke shadow ghost dragon tiger wolf lion " +
+  "bird butterfly flower rose garden forest desert island highway train plane car bike boat bridge tower castle church school hospital " +
+  "doctor teacher soldier pirate cowboy queen prince princess hero villain friend enemy brother sister mother father daughter son lover " +
+  "kiss hug tears smile laugh cry scream whisper silence noise echo memory secret promise lie truth faith hope fear anger peace war " +
+  "blood bones skin eyes lips hands feet wings crown diamond silver money cash gun knife poison medicine wine beer coffee tea sugar honey").split(" ");
+const NAMES = ("maria anna sofia julia emma lea chloe ines sarah laura camille manon alice lina nina lola rosa elena clara carmen lucia " +
+  "jose juan carlos pedro luis miguel antonio pablo diego paul pierre jean louis lucas hugo leo nathan theo adam ali omar karim yasmine " +
+  "fatou aminata moussa mamadou ibrahim kofi kwame ama akira yuki hana kenji min jin seo ivan olga natasha dmitri sven lars ingrid " +
+  "johnny jimmy billy bobby tommy frankie charlie eddie sammy danny joey mickey lucy molly peggy sally susie annie katie betty").split(" ");
+const PLACES = ("paris london berlin madrid roma lisboa tokyo seoul lagos dakar abidjan kinshasa cairo dubai mumbai delhi bangkok sydney " +
+  "chicago detroit memphis nashville atlanta miami texas california brooklyn harlem bronx compton havana kingston rio bahia salvador " +
+  "bogota medellin lima santiago mexico tijuana montreal quebec marseille lyon toulouse bordeaux lille nice napoli milano venezia " +
+  "amsterdam bruxelles zurich wien praha moscow istanbul athens africa europe america asia jamaica brasil argentina colombia").split(" ");
 const LETTERS = "abcdefghijklmnopqrstuvwxyz";
+const CONS = "bcdfghjklmnprstvz", VOW = "aeiou";
 const pick = a => a[Math.floor(Math.random() * a.length)];
 const randInt = n => Math.floor(Math.random() * n);
+// pronounceable nonsense ("kelo", "maribu") hits titles and artist names in every language
+const syllables = () => Array.from({ length: 2 + randInt(2) }, () => pick(CONS) + pick(VOW)).join("");
+function randomQuery(meaningful) {
+  const r = Math.random();
+  if (meaningful || r < .45) {
+    const r2 = Math.random();
+    return r2 < .55 ? pick(WORDS) : r2 < .8 ? pick(NAMES) : r2 < .95 ? pick(PLACES) : String(1955 + randInt(71));
+  }
+  if (r < .8) return syllables();
+  return Array.from({ length: 2 + randInt(3) }, () => pick(LETTERS)).join("");
+}
 
-function rollTier(guaranteed) {
-  const w = guaranteed ? [0, 0, 70, 23, 7] : [62, 25, 9.2, 3, .8];
-  let r = Math.random() * w.reduce((a, b) => a + b);
-  for (let i = 0; i < 5; i++) if ((r -= w[i]) < 0) return i;
+function rollTier() {
+  let r = Math.random() * DROP.reduce((a, b) => a + b);
+  for (let i = 0; i < DROP.length; i++) if ((r -= DROP[i]) < 0) return i;
   return 0;
 }
+// pity: Mythique or Légendaire with their own relative odds
+const rollTopTier = () => Math.random() < DROP[LEG] / (DROP[MYTH] + DROP[LEG]) ? LEG : MYTH;
 
 /* candidate tracks for a wanted tier, from the whole catalogue */
 async function searchPool(tier) {
   const high = tier >= 3;
-  const q = high || Math.random() < .6 ? pick(WORDS) : pick(LETTERS) + pick(LETTERS) + (Math.random() < .5 ? pick(LETTERS) : "");
-  const params = { q, limit: 100 };
-  if (high) params.order = "RANKING";
-  else params.index = randInt(tier <= 1 ? 200 : 100);
+  const params = { q: randomQuery(high), limit: 100 };
+  if (high) {
+    params.order = "RANKING";           // popular first, then dig a random depth so it's not always the same hits
+    params.index = tier === LEG ? randInt(2) * 100 : randInt(3) * 100;
+  } else params.index = randInt(tier === 0 ? 250 : 150);
   const d = await dz("search", params);
   return d.data || [];
 }
-/* candidate tracks for one genre: Deezer's genre radios (its per-genre charts return the global chart, so they are not used) */
+
+/* Genre boosters are set aside (future paid boosters). Kept here: Deezer genre radios,
+   with each album's real genre checked since radios mix in neighbouring styles. */
 const genreCache = {};
 async function genrePool(typeIdx, tier) {
   const t = TYPES[typeIdx];
@@ -105,10 +140,8 @@ async function genrePool(typeIdx, tier) {
   genreCache[key] = genreCache[key] || dz(`radio/${rid}/tracks`, { limit: 100 }).then(d => d.data || []);
   return genreCache[key];
 }
-
 const albumCache = {};
 const getAlbum = id => albumCache[id] = albumCache[id] || dz("album/" + id).catch(() => ({}));
-// genre radios mix in neighbouring styles, so a genre booster checks each album's real genre
 async function firstOfType(cands, typeIdx) {
   for (const t of cands.sort(() => Math.random() - .5).slice(0, 6)) {
     const g = typeOfGenre((await getAlbum(t.album.id)).genre_id);
@@ -116,22 +149,27 @@ async function firstOfType(cands, typeIdx) {
   }
   return null;
 }
+
+// Tracks already in the collection are skipped; one only comes back as a duplicate
+// when no new track of that rarity turns up after every attempt.
 async function findTrack(typeIdx, tier, used) {
-  let best = null;
-  for (let attempt = 0; attempt < 5; attempt++) {
+  let best = null, ownedHit = null;
+  const attempts = tier >= MYTH ? 10 : 6;
+  for (let attempt = 0; attempt < attempts; attempt++) {
     const pool = (typeIdx < 0 ? await searchPool(tier) : await genrePool(typeIdx, tier))
       .filter(t => t.readable !== false && t.album && !used.has(t.id));
     const hits = pool.filter(t => inTier(t.rank, tier));
-    if (hits.length) {
-      if (typeIdx < 0) return pick(hits);
-      const ok = await firstOfType(hits, typeIdx);
+    const fresh = hits.filter(t => !S.c[t.id]);
+    if (fresh.length) {
+      if (typeIdx < 0) return pick(fresh);
+      const ok = await firstOfType(fresh, typeIdx);
       if (ok) return ok;
       continue;
     }
-    // keep the track closest to the wanted tier, so a booster never comes back short
-    for (const t of pool) { const d = tierDistance(t.rank, tier); if (!best || d < best.d) best = { t, d }; }
+    if (hits.length && !ownedHit) ownedHit = pick(hits);
+    for (const t of pool) if (!S.c[t.id]) { const d = tierDistance(t.rank, tier); if (!best || d < best.d) best = { t, d }; }
   }
-  return best && best.t;
+  return ownedHit || (best && best.t);
 }
 
 async function enrich(t, typeIdx) {
@@ -172,6 +210,19 @@ function stats(c) {
 const LS = "sillons-live-v1";
 let S = { c: {}, opened: 0 };
 try { const p = JSON.parse(localStorage.getItem(LS)); if (p && p.c) S = p; } catch (e) {}
+// rarities v2: re-tier every saved card from the Deezer rank it had when it was pulled
+for (const c of Object.values(S.c)) c.tier = tierOf(c.rank || 0);
+if (S.stock == null) { S.stock = STOCK_MAX; S.stockAt = Date.now(); }
+if (S.dry == null) S.dry = 0;            // boosters opened since the last Mythique or better
+
+/* booster stock: one more every 30 min, up to 10 */
+function refill() {
+  const now = Date.now();
+  if (S.stock >= STOCK_MAX) { S.stockAt = now; return; }
+  const gained = Math.floor((now - S.stockAt) / REFILL_MS);
+  if (gained > 0) { S.stock = Math.min(STOCK_MAX, S.stock + gained); S.stockAt = S.stock >= STOCK_MAX ? now : S.stockAt + gained * REFILL_MS; }
+}
+const nextRefillMs = () => S.stock >= STOCK_MAX ? 0 : S.stockAt + REFILL_MS - Date.now();
 function save() {
   try { localStorage.setItem(LS, JSON.stringify(S)); }
   catch (e) { toast("Le navigateur n'a plus de place pour sauvegarder ta collection."); }
@@ -216,46 +267,92 @@ function cardEl(c, holo) {
 function backEl() { const w = document.createElement("div"); w.className = "cq"; w.innerHTML = '<div class="back"><div class="in"><b>SILLONS</b></div></div>'; return w; }
 
 /* ---------- views ---------- */
-const views = { shop: $("#view-shop"), binder: $("#view-binder"), catalog: $("#view-catalog") };
+const views = { shop: $("#view-shop"), store: $("#view-store"), binder: $("#view-binder"), catalog: $("#view-catalog") };
 function show(v) {
   for (const k in views) { views[k].hidden = k !== v; $("#tab-" + k).setAttribute("aria-selected", k === v); }
+  $("#tableWrap").hidden = v !== "shop" && v !== "store";   // the opening table follows the booster tabs
   if (v === "binder") renderBinder();
   if (v === "catalog") { if (!CAT.loaded) catLoad(true); else renderCatalog(); }
 }
 $("#tab-shop").onclick = () => show("shop");
+$("#tab-store").onclick = () => show("store");
 $("#tab-binder").onclick = () => show("binder");
 $("#tab-catalog").onclick = () => show("catalog");
 
 const owned = () => Object.values(S.c);
 function renderCounters() {
   const all = owned();
-  $("#counters").innerHTML = `<span>Cartes <b>${fmt(all.length)}</b></span><span class="leg">Légendaires <b>${all.filter(c => c.tier === 4).length}</b></span><span>Boosters ouverts <b>${fmt(S.opened)}</b></span>`;
+  $("#counters").innerHTML = `<span>Cartes <b>${fmt(all.length)}</b></span><span class="myth">Mythiques <b>${all.filter(c => c.tier === MYTH).length}</b></span><span class="leg">Légendaires <b>${all.filter(c => c.tier === LEG).length}</b></span><span>Boosters ouverts <b>${fmt(S.opened)}</b></span>`;
 }
 
-/* ---------- shelf ---------- */
-const PACKS = [{ g: -1, n: "Mix", sub: "Tout Deezer" }, ...TYPES.slice(0, AUTRE).map((t, g) => ({ g, n: t.n, sub: "Booster " + t.n }))];
+/* ---------- shelf: one booster, limited stock ---------- */
+const BOOSTER = { g: -1, n: "Booster" };
 const shelf = $("#shelf");
-PACKS.forEach(p => {
-  const b = document.createElement("button"); b.className = "pack" + (p.g < 0 ? " mix" : "");
-  if (p.g >= 0) b.style.setProperty("--h", TYPES[p.g].h);
-  b.innerHTML = `<span class="disc"></span><span class="lbl"><b>${p.n}</b><span>${p.sub} · 5 cartes</span></span>`;
+const packBtn = document.createElement("button");
+packBtn.className = "pack mix";
+packBtn.innerHTML = `<span class="disc"></span><span class="lbl"><b>Booster</b><span>5 cartes · tout Deezer</span></span>`;
+packBtn.setAttribute("aria-label", "Ouvrir un booster");
+packBtn.onclick = () => openPack(BOOSTER);
+BOOSTER.el = packBtn;
+const stockEl = document.createElement("div"); stockEl.className = "stock"; stockEl.setAttribute("aria-live", "polite");
+shelf.append(packBtn, stockEl);
+function renderStock() {
+  if (TEST_MODE) {
+    stockEl.innerHTML = `<b>Boosters illimités</b><span class="test-badge">Mode test</span>
+      <small>Le stock de 10 boosters (un nouveau toutes les 30 min) sera activé à la sortie du jeu.</small>
+      <small>Mythique garantie dans ${Math.max(1, PITY - S.dry)} booster${PITY - S.dry > 1 ? "s" : ""} si tu n'en tires pas avant</small>`;
+    if (!busy) { packBtn.disabled = false; $("#again").disabled = false; }
+    return;
+  }
+  refill();
+  const left = nextRefillMs(), min = Math.max(1, Math.ceil(left / 60000));
+  const pips = Array.from({ length: STOCK_MAX }, (_, i) => `<i class="${i < S.stock ? "on" : ""}"></i>`).join("");
+  stockEl.innerHTML = `<b>${S.stock} / ${STOCK_MAX}</b> booster${S.stock > 1 ? "s" : ""} disponible${S.stock > 1 ? "s" : ""}
+    <span class="pips" aria-hidden="true">${pips}</span>
+    <small>${S.stock >= STOCK_MAX ? "Stock plein. Un nouveau booster arrive toutes les 30 min quand le stock n'est pas plein." : `Prochain booster dans ${min >= 60 ? "1 h" : min + " min"}`}</small>
+    <small>Mythique garantie dans ${Math.max(1, PITY - S.dry)} booster${PITY - S.dry > 1 ? "s" : ""} si tu n'en tires pas avant</small>`;
+  const empty = S.stock <= 0;
+  if (!busy) { packBtn.disabled = empty; $("#again").disabled = empty; }
+}
+setInterval(() => { renderStock(); save(); }, 30000);
+
+/* ---------- boutique: one-genre boosters (free while testing, paid later) ---------- */
+const STORE_PACKS = TYPES.slice(0, AUTRE).map((t, g) => ({ g, n: t.n }));
+for (const p of STORE_PACKS) {
+  const offer = document.createElement("div"); offer.className = "offer";
+  const b = document.createElement("button"); b.className = "pack"; b.style.setProperty("--h", TYPES[p.g].h);
+  b.innerHTML = `<span class="disc"></span><span class="lbl"><b>${p.n}</b><span>5 cartes ${p.n}</span></span>`;
   b.setAttribute("aria-label", "Ouvrir un booster " + p.n);
   b.onclick = () => openPack(p);
-  shelf.appendChild(b);
-});
+  p.el = b;
+  const price = document.createElement("div"); price.className = "price";
+  price.innerHTML = `<b>Gratuit</b><small>bientôt payant</small>`;
+  const buy = document.createElement("button"); buy.className = "btn primary"; buy.textContent = "Ouvrir";
+  buy.setAttribute("aria-label", "Ouvrir un booster " + p.n + " gratuitement");
+  buy.onclick = () => openPack(p);
+  offer.append(b, price, buy); $("#store").appendChild(offer);
+}
 
 /* ---------- opening ---------- */
-let lastPack = null, busy = false;
+let busy = false, lastPack = BOOSTER;
 const LOADING_LINES = ["On fouille Deezer…", "On feuillette les bacs…", "On souffle sur les vinyles…", "On écoute les 30 premières secondes…"];
 async function openPack(p) {
   if (busy) return;
+  refill();
+  if (!TEST_MODE && S.stock <= 0) { renderStock(); toast("Plus de booster pour l'instant. Le prochain arrive dans " + Math.ceil(nextRefillMs() / 60000) + " min."); return; }
   busy = true; lastPack = p;
-  document.querySelectorAll(".pack, #again").forEach(b => b.disabled = true);
+  const paid = !TEST_MODE && p === BOOSTER;          // shop packs are free while testing
+  if (paid) {
+    if (S.stock >= STOCK_MAX) S.stockAt = Date.now();   // the refill clock starts when the stock drops below full
+    S.stock--; save();
+  }
+  renderStock();
+  document.querySelectorAll(".pack, .offer .btn, #again").forEach(b => b.disabled = true);
   const table = $("#table"), deal = $("#deal");
-  table.hidden = false; $("#tableTitle").textContent = "Booster " + p.n;
+  table.hidden = false; $("#tableTitle").textContent = p === BOOSTER ? "Booster" : "Booster " + p.n;
   deal.innerHTML = "";
   const rip = document.createElement("div"); rip.className = "rip loading";
-  const pk = shelf.children[PACKS.indexOf(p)].cloneNode(true); pk.tabIndex = -1; pk.disabled = true;
+  const pk = p.el.cloneNode(true); pk.tabIndex = -1; pk.disabled = true;
   const line = document.createElement("p"); line.textContent = pick(LOADING_LINES);
   rip.append(pk, line); deal.appendChild(rip);
   table.scrollIntoView({ behavior: reduceMotion() ? "auto" : "smooth", block: "start" });
@@ -263,7 +360,8 @@ async function openPack(p) {
 
   try {
     const used = new Set(), slots = [];
-    for (let s = 0; s < 5; s++) slots.push(rollTier(s === 4));
+    for (let s = 0; s < 5; s++) slots.push(rollTier());   // same odds for every card
+    if (S.dry + 1 >= PITY && Math.max(...slots) < MYTH) slots[0] = rollTopTier();
     const raws = [];
     for (const tier of slots) {           // sequential so one slot can't pick a track another slot already took
       const t = await findTrack(p.g, tier, used);
@@ -275,22 +373,28 @@ async function openPack(p) {
       const holo = Math.random() < .04, prev = S.c[c.id];
       S.c[c.id] = { ...c, n: (prev?.n || 0) + 1, holo: (prev?.holo || 0) + (holo ? 1 : 0), at: prev?.at || Date.now() };
       return { c, holo, isNew: !prev };
-    }).sort((a, b) => a.c.tier - b.c.tier);
+    }).sort((a, b) => a.c.tier - b.c.tier || a.c.rank - b.c.rank);   // weakest first, best card last
+    S.dry = pulls.some(pl => pl.c.tier >= MYTH) ? 0 : S.dry + 1;
     S.opened++; save(); renderCounters();
+renderStock();
+$("#odds").innerHTML = `<table><tr><th>Rareté</th><th>Chance par carte</th><th>Classement Deezer</th></tr>${RAR.map((r, i) =>
+  `<tr><td><i style="background:${RCOL[i]}"></i>${r}</td><td>${String(DROP[i]).replace(".", ",")} %</td><td>${i === TOP ? fmt(TIER_MIN[i]) + " et plus" : fmt(TIER_MIN[i]) + " – " + fmt(TIER_MIN[i + 1] - 1)}</td></tr>`).join("")}</table>`;
     deal.innerHTML = "";
     const grid = document.createElement("div"); grid.className = "deal"; deal.appendChild(grid);
     pulls.forEach((pl, i) => grid.appendChild(slotEl(pl, i)));
   } catch (err) {
+    if (paid) { S.stock = Math.min(STOCK_MAX, S.stock + 1); save(); }   // a failed opening gives the booster back
     rip.classList.remove("loading");
     line.className = "err";
     line.textContent = err.code === "network" || err.code === "timeout"
-      ? "Deezer ne répond pas. Vérifie ta connexion puis réessaie."
-      : err.code === 4 ? "Deezer limite le nombre de demandes. Attends quelques secondes puis réessaie."
-      : "Le booster n'a pas pu être rempli. Réessaie.";
+      ? "Deezer ne répond pas. Vérifie ta connexion puis réessaie. Ton booster t'a été rendu."
+      : err.code === 4 ? "Deezer limite le nombre de demandes. Attends quelques secondes puis réessaie. Ton booster t'a été rendu."
+      : "Le booster n'a pas pu être rempli. Ton booster t'a été rendu, réessaie.";
   } finally {
     clearInterval(lineTimer);
     busy = false;
-    document.querySelectorAll(".pack, #again").forEach(b => b.disabled = false);
+    document.querySelectorAll(".pack, .offer .btn").forEach(b => b.disabled = false);
+    renderStock();
   }
 }
 function slotEl(pl, i) {
@@ -303,7 +407,7 @@ function slotEl(pl, i) {
   f.onclick = () => {
     if (f.classList.contains("on")) return openModal(pl.c);
     f.classList.add("on"); f.setAttribute("aria-label", pl.c.t + ", " + RAR[pl.c.tier]);
-    if (pl.c.tier >= 3) slot.classList.add("burst");
+    if (pl.c.tier >= 3) slot.classList.add("burst", "burst-" + pl.c.tier);
     tag.textContent = (pl.isNew ? "Nouvelle · " : "Doublon · ") + RAR[pl.c.tier] + (pl.holo ? " · Holo" : "");
     if (pl.isNew) tag.classList.add("new");
   };
@@ -311,7 +415,7 @@ function slotEl(pl, i) {
   return slot;
 }
 $("#flipAll").onclick = () => document.querySelectorAll("#deal .flip:not(.on)").forEach((f, i) => setTimeout(() => f.click(), i * 160));
-$("#again").onclick = () => { if (lastPack) openPack(lastPack); };
+$("#again").onclick = () => openPack(lastPack);
 
 /* ---------- binder ---------- */
 const F = { g: -1, r: -1, sort: "recent" };
@@ -321,13 +425,13 @@ function renderBinder() {
   const rows = [{ g: -1, n: "Tout", h: 42 }].concat(TYPES.map((t, g) => ({ g, n: t.n, h: t.h })));
   pg.innerHTML = rows.map(t => {
     const list = t.g < 0 ? all : all.filter(c => c.g === t.g);
-    const leg = list.filter(c => c.tier === 4).length;
+    const leg = list.filter(c => c.tier === LEG).length;
     return `<button data-g="${t.g}" style="--h:${t.h}" aria-pressed="${F.g === t.g}"><span class="row">${t.n}<small>${fmt(list.length)}</small></span><span class="meter"><s style="width:${all.length ? list.length / all.length * 100 : 0}%"></s></span><small class="legs">${leg} légendaire${leg > 1 ? "s" : ""}</small></button>`;
   }).join("");
   pg.querySelectorAll("button").forEach(b => b.onclick = () => { F.g = +b.dataset.g; renderBinder(); });
 
   const fl = $("#filters");
-  fl.innerHTML = [-1, 0, 1, 2, 3, 4].map(r => `<button class="chip" data-r="${r}" aria-pressed="${F.r === r}">${r < 0 ? "Toutes raretés" : `<i style="background:${RCOL[r]}"></i>${RAR[r]}`}</button>`).join("") +
+  fl.innerHTML = [-1, ...RAR.keys()].map(r => `<button class="chip" data-r="${r}" aria-pressed="${F.r === r}">${r < 0 ? "Toutes raretés" : `<i style="background:${RCOL[r]}"></i>${RAR[r]}`}</button>`).join("") +
     `<label for="fSort">Trier par <select id="fSort"><option value="recent">plus récentes</option><option value="rarity">rareté</option><option value="pw">puissance</option><option value="year">année de sortie</option><option value="dup">doublons</option></select></label>`;
   $("#fSort").value = F.sort;
   fl.querySelectorAll(".chip").forEach(b => b.onclick = () => { F.r = +b.dataset.r; renderBinder(); });
@@ -402,7 +506,7 @@ async function catLoad(reset) {
 
 let catObserver = null;
 function renderCatalog() {
-  $("#catFilters").innerHTML = [-1, 0, 1, 2, 3, 4].map(r => `<button class="chip" data-r="${r}" aria-pressed="${CAT.r === r}">${r < 0 ? "Toutes raretés" : `<i style="background:${RCOL[r]}"></i>${RAR[r]}`}</button>`).join("") +
+  $("#catFilters").innerHTML = [-1, ...RAR.keys()].map(r => `<button class="chip" data-r="${r}" aria-pressed="${CAT.r === r}">${r < 0 ? "Toutes raretés" : `<i style="background:${RCOL[r]}"></i>${RAR[r]}`}</button>`).join("") +
     `<label for="catOwn">Afficher <select id="catOwn"><option value="all">toutes les cartes</option><option value="own">mes cartes</option><option value="miss">à trouver</option></select></label>`;
   $("#catOwn").value = CAT.own;
   $("#catFilters").querySelectorAll(".chip").forEach(b => b.onclick = () => { CAT.r = +b.dataset.r; renderCatalog(); });
@@ -497,3 +601,6 @@ modal.onclick = e => { if (e.target === modal) closeModal(); };
 addEventListener("keydown", e => { if (e.key === "Escape" && !modal.hidden) closeModal(); });
 
 renderCounters();
+renderStock();
+$("#odds").innerHTML = `<table><tr><th>Rareté</th><th>Chance par carte</th><th>Classement Deezer</th></tr>${RAR.map((r, i) =>
+  `<tr><td><i style="background:${RCOL[i]}"></i>${r}</td><td>${String(DROP[i]).replace(".", ",")} %</td><td>${i === TOP ? fmt(TIER_MIN[i]) + " et plus" : fmt(TIER_MIN[i]) + " – " + fmt(TIER_MIN[i + 1] - 1)}</td></tr>`).join("")}</table>`;
