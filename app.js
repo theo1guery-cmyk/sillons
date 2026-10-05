@@ -20,8 +20,9 @@ function jsonp(path, params = {}) {
 }
 // Deezer allows about 50 requests per 5 s; keep a few in flight and back off on quota errors (code 4).
 const queue = []; let inFlight = 0;
-function dz(path, params) {
-  return new Promise((resolve, reject) => { queue.push({ path, params, resolve, reject, tries: 0 }); pump(); });
+// urgent requests (what the player is waiting for) jump ahead of background ones
+function dz(path, params, urgent = false) {
+  return new Promise((resolve, reject) => { const job = { path, params, resolve, reject, tries: 0 }; urgent ? queue.unshift(job) : queue.push(job); pump(); });
 }
 function pump() {
   while (inFlight < 4 && queue.length) {
@@ -798,28 +799,31 @@ const catCard = t => S.c[t.id] || fullCards[t.id] || quickCard(t);
 
 async function catLoad(reset) {
   const seq = ++CAT.seq;
-  if (reset) { CAT.items = []; CAT.index = 0; CAT.total = 0; $("#catalog").innerHTML = ""; }
+  CAT.loading = true;
+  if (reset) { CAT.items = []; CAT.index = 0; CAT.total = 0; CAT.wanted = 24; $("#catalog").innerHTML = ""; }
   CAT.loaded = true;
   $("#catMore").hidden = true;
   $("#catStatus").textContent = "Chargement des cartes…";
   try {
     let data, total;
     if (!CAT.q) {
-      const d = await dz("chart/0/tracks", { limit: 100 });
+      const d = await dz("chart/0/tracks", { limit: 100 }, true);
       data = d.data || []; total = data.length;
     } else {
       const params = { q: CAT.q, limit: PAGE, index: CAT.index };
       if (CAT.order) params.order = CAT.order;
-      const d = await dz("search", params);
+      const d = await dz("search", params, true);
       data = d.data || []; total = d.total || 0;
     }
     if (seq !== CAT.seq) return;          // a newer search replaced this one
     const seen = new Set(CAT.items.map(t => t.id));
     CAT.items.push(...data.filter(t => t.album && !seen.has(t.id)));
     CAT.index += data.length || PAGE; CAT.total = total;
+    CAT.loading = false;
     renderCatalog();
   } catch (e) {
     if (seq !== CAT.seq) return;
+    CAT.loading = false;
     $("#catStatus").textContent = e.code === 4 ? "Deezer limite le nombre de demandes. Attends quelques secondes puis réessaie." : "Deezer ne répond pas. Vérifie ta connexion puis réessaie.";
   }
 }
@@ -829,8 +833,8 @@ function renderCatalog() {
   $("#catFilters").innerHTML = [-1, ...RAR.keys()].map(r => `<button class="chip" data-r="${r}" aria-pressed="${CAT.r === r}">${r < 0 ? "Toutes raretés" : `<i style="background:${RCOL[r]}"></i>${RAR[r]}`}</button>`).join("") +
     `<label for="catOwn">Afficher <select id="catOwn"><option value="all">toutes les cartes</option><option value="own">mes cartes</option><option value="miss">à trouver</option></select></label>`;
   $("#catOwn").value = CAT.own;
-  $("#catFilters").querySelectorAll(".chip").forEach(b => b.onclick = () => { CAT.r = +b.dataset.r; renderCatalog(); });
-  $("#catOwn").onchange = e => { CAT.own = e.target.value; renderCatalog(); };
+  $("#catFilters").querySelectorAll(".chip").forEach(b => b.onclick = () => { CAT.r = +b.dataset.r; CAT.wanted = 24; renderCatalog(); });
+  $("#catOwn").onchange = e => { CAT.own = e.target.value; CAT.wanted = 24; renderCatalog(); };
 
   const list = CAT.items.filter(t => (CAT.r < 0 || tierOf(catCard(t).rank) === CAT.r) &&
     (CAT.own === "all" || (CAT.own === "own") === !!S.c[t.id]));
@@ -838,7 +842,7 @@ function renderCatalog() {
   $("#catStatus").textContent = !CAT.items.length
     ? (CAT.q ? `Aucun morceau trouvé pour « ${CAT.q} ».` : "Aucune carte à afficher.")
     : `${CAT.q ? fmt(CAT.total) + " résultats pour « " + CAT.q + " »" : "Les 100 tubes du moment sur Deezer"} · ${fmt(CAT.items.length)} affichées, dont ${ownedHere} dans ta collection`;
-  $("#catMore").hidden = !CAT.q || CAT.index >= CAT.total;
+  $("#catMore").hidden = true;            // more cards arrive by scrolling
 
   const grid = $("#catalog"); grid.innerHTML = "";
   if (catObserver) catObserver.disconnect();
@@ -847,9 +851,26 @@ function renderCatalog() {
     catObserver.unobserve(e.target); completeCell(e.target);
   }), { rootMargin: "300px" });
   if (CAT.items.length && !list.length) { grid.innerHTML = `<div class="empty">Aucune carte ne correspond à ces filtres.</div>`; return; }
+  // cards arrive 24 at a time while scrolling; at the end of what is loaded, the next search page is fetched
+  CAT.list = list; CAT.drawn = 0;
+  catalogMore(Math.max(24, CAT.wanted || 24));
+  CAT.sentinel?.remove();
+  const sentinel = document.createElement("div"); sentinel.className = "sentinel"; sentinel.setAttribute("aria-hidden", "true");
+  grid.after(sentinel); CAT.sentinel = sentinel;
+  if (CAT.endObserver) CAT.endObserver.disconnect();
+  CAT.endObserver = new IntersectionObserver(es => {
+    if (!es.some(e => e.isIntersecting)) return;
+    if (CAT.drawn < CAT.list.length) catalogMore(24);
+    else if (CAT.q && CAT.index < CAT.total && !CAT.loading) { CAT.wanted = CAT.drawn + 24; catLoad(false); }
+  }, { rootMargin: "900px 0px" });
+  CAT.endObserver.observe(sentinel);
+}
+function catalogMore(n) {
+  const grid = $("#catalog"), next = CAT.list.slice(CAT.drawn, CAT.drawn + n);
   const frag = document.createDocumentFragment();
-  for (const t of list) { const cell = catCell(t); frag.appendChild(cell); if (catCard(t).g == null) catObserver.observe(cell); }
+  for (const t of next) { const cell = catCell(t); frag.appendChild(cell); if (catCard(t).g == null) catObserver.observe(cell); }
   grid.appendChild(frag);
+  CAT.drawn += next.length;
 }
 function catCell(t) {
   const c = catCard(t), own = S.c[t.id];
