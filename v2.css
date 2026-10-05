@@ -1,0 +1,67 @@
+/* ---------- Zik Hunter v2 look ----------
+   Same structure and colours; the covers bring the colour, less text and chrome, a mini player. */
+
+/* colour from the covers: two big blurred artworks behind the whole page, cross-fading */
+#v2Amb{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+#v2Amb i{position:absolute;inset:-25%;background-size:cover;background-position:center;filter:blur(90px) saturate(1.5);opacity:0;transition:opacity 1.6s ease;transform:scale(1.1)}
+#v2Amb i.on{opacity:.62}
+#v2Amb::after{content:"";position:absolute;inset:0;background:radial-gradient(120% 90% at 50% 0,transparent,rgba(9,7,13,.35) 70%),linear-gradient(transparent 50%,rgba(9,7,13,.5))}
+.v2 .sidebar{background:linear-gradient(180deg,rgba(14,10,20,.72),rgba(9,7,13,.78));backdrop-filter:blur(18px)}
+.v2 header.top{background:transparent}
+
+/* booster page: no long paragraph, a "?" for the rules and the odds */
+.v2 #view-shop>h2{display:flex;align-items:center;gap:12px}
+.v2-help{width:30px;height:30px;border-radius:50%;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.06);color:#e9e2f3;font:700 15px/1 var(--body);cursor:pointer;flex:none}
+.v2-help:hover{background:rgba(255,255,255,.14)}
+.v2 #view-shop>.sub,.v2 #view-shop>.odds{display:none}
+.v2 #view-shop.v2-open>.sub,.v2 #view-shop.v2-open>.odds{display:block}
+.v2 #view-shop.v2-open>.odds{max-width:640px}
+
+/* the stage: a big booster in the middle, the covers of your last pulls drifting behind it */
+.v2 #view-shop .shelf{position:relative;display:grid;grid-template-columns:1fr;justify-items:center;gap:18px;padding:46px 20px 40px;min-height:560px;overflow:hidden;
+  background:none;border:0;box-shadow:none;border-radius:28px}
+.v2-wall{position:absolute;inset:0;display:grid;align-content:center;gap:18px;pointer-events:none;opacity:.55;
+  -webkit-mask:radial-gradient(70% 70% at 50% 50%,transparent 18%,#000 46%,transparent 92%);mask:radial-gradient(70% 70% at 50% 50%,transparent 18%,#000 46%,transparent 92%)}
+.v2-wall .row{display:flex;gap:18px;width:max-content;animation:v2drift 70s linear infinite}
+.v2-wall .row:nth-child(2){animation-direction:reverse;animation-duration:85s}
+.v2-wall .row:nth-child(3){animation-duration:60s}
+.v2-wall img{width:150px;height:150px;border-radius:10px;object-fit:cover;filter:saturate(1.1) brightness(.8);box-shadow:0 12px 30px rgba(0,0,0,.5)}
+@keyframes v2drift{to{transform:translateX(-50%)}}
+.v2 .pack-stage{position:relative;z-index:1;gap:26px;perspective:900px}
+.v2 .pack-stage .pack{width:270px;animation:none;transition:transform .25s ease-out;transform:rotateY(var(--ry,0deg)) rotateX(var(--rx,0deg)) translateY(var(--ty,0));
+  box-shadow:0 40px 80px rgba(0,0,0,.6),0 0 0 1px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.18),0 0 80px rgba(231,177,74,.18)}
+.v2 .pack-stage .pack:hover{--ty:-8px}
+.v2 .pack-stage .pack::before{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;border-radius:inherit;
+  background:radial-gradient(60% 50% at var(--gx,50%) var(--gy,30%),rgba(255,236,200,.28),transparent 60%)}
+.v2 #openBig{min-width:260px}
+.v2 .stock{position:relative;z-index:1;display:flex;align-items:center;gap:10px;padding:8px 16px;border-radius:999px;background:rgba(10,8,14,.55);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.1);font-size:.85rem}
+.v2 .stock b{font-size:.92rem}
+.v2 .stock small{display:none}
+.v2 .stock .pips{display:none}
+
+/* cards on the table keep their stats; they lift a little on hover */
+.v2 .slot .flip.on .front .cq{transition:transform .3s ease}
+.v2 .slot .flip.on:hover .front .cq{transform:translateY(-6px) scale(1.03)}
+.v2 #view-shop .table{background:rgba(12,9,18,.45);backdrop-filter:blur(14px)}
+
+/* mini player */
+#v2Player{position:fixed;left:50%;bottom:18px;z-index:40;translate:-50% 0;display:flex;align-items:center;gap:12px;width:min(520px,calc(100vw - 24px));padding:8px 10px 8px 8px;border-radius:16px;
+  background:rgba(16,12,22,.72);backdrop-filter:blur(20px) saturate(1.4);border:1px solid rgba(255,255,255,.12);box-shadow:0 20px 50px rgba(0,0,0,.5);
+  transition:opacity .35s ease,transform .35s ease}
+#v2Player[hidden]{display:flex;opacity:0;pointer-events:none;transform:translateY(20px)}
+#v2Player img{width:46px;height:46px;border-radius:9px;object-fit:cover;flex:none}
+#v2Player .t{flex:1;min-width:0;line-height:1.25}
+#v2Player .t b{display:block;font-size:.92rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#v2Player .t span{font-size:.78rem;color:#b7aec6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+#v2Player .eq{display:flex;align-items:flex-end;gap:3px;height:20px;width:30px}
+#v2Player .eq i{flex:1;height:30%;border-radius:1px;background:var(--pc,#e7b14a)}
+#v2Player.playing .eq i{animation:v2eq .9s ease-in-out infinite alternate}
+#v2Player .eq i:nth-child(2){animation-delay:-.3s}#v2Player .eq i:nth-child(3){animation-delay:-.6s}#v2Player .eq i:nth-child(4){animation-delay:-.15s}
+@keyframes v2eq{0%{height:20%}100%{height:100%}}
+#v2Player .bar{position:absolute;left:14px;right:14px;bottom:3px;height:2px;border-radius:1px;background:rgba(255,255,255,.08);overflow:hidden}
+#v2Player .bar s{display:block;height:100%;width:0;background:var(--pc,#e7b14a)}
+#v2Player button{width:36px;height:36px;border-radius:50%;border:0;background:rgba(255,255,255,.1);color:#fff;font-size:14px;cursor:pointer;flex:none}
+#v2Player button.pp{background:#f4ead6;color:#140f1c}
+#v2Player button:hover{filter:brightness(1.15)}
+@media (max-width:860px){#v2Player{bottom:calc(76px + env(safe-area-inset-bottom,0px))}.v2 .pack-stage .pack{width:220px}.v2-wall img{width:110px;height:110px}}
+

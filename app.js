@@ -629,6 +629,7 @@ async function openPack(p, opts = {}) {
     deal.innerHTML = "";
     const grid = document.createElement("div"); grid.className = "deal"; deal.appendChild(grid);
     pulls.forEach((pl, i) => grid.appendChild(slotEl(pl, i)));
+    window.V2?.pulls(pulls);
     if (god && !reduceMotion()) {
       const flips = [...grid.querySelectorAll(".flip")];
       if (await Stage.god(pulls, flips)) for (const f of flips) await f.reveal(true);
@@ -754,7 +755,7 @@ const Stage = (() => {
     sparks.start(col, big);
     const playTrack = async () => {
       const url = await Promise.race([pl.preview, wait(500)]);
-      if (url) { clearInterval(fading); audio.src = url; audio.volume = 0; audio.play().then(fadeIn).catch(() => {}); }
+      if (url) { clearInterval(fading); audio.src = url; audio.volume = 0; audio.play().then(() => { fadeIn(); window.NowPlaying?.(pl.c, audio); }).catch(() => {}); }
     };
     const flash = () => { const f = document.createElement("div"); f.className = "flash"; document.body.appendChild(f); setTimeout(() => f.remove(), 900); };
     const g = await Promise.race([load3d(), wait(1200)]);
@@ -868,7 +869,7 @@ const Stage = (() => {
       const r = await g.godPick(i, w * 88 / 63, small ? .4 : .42, col);
       const url = await Promise.race([pl.preview, wait(400)]);
       stopAudio(0);
-      if (url) { clearInterval(fading); audio.src = url; audio.volume = 0; audio.play().then(fadeIn).catch(() => {}); }
+      if (url) { clearInterval(fading); audio.src = url; audio.volume = 0; audio.play().then(() => { fadeIn(); window.NowPlaying?.(pl.c, audio); }).catch(() => {}); }
       Object.assign(card.style, { left: r.left + "px", top: r.top + "px", width: r.width + "px" });
       $s(".fx-title").style.top = (r.top + r.height + 14) + "px";
       void el.offsetWidth; el.classList.add("s-reveal");
@@ -1271,9 +1272,10 @@ $("#mPlay").onclick = async () => {
     if (!t.preview) throw 0;
     if (current !== c) return;
     audio.src = t.preview; await audio.play();
+    window.NowPlaying?.(c, audio);
   } catch (e) { $("#mPlay").textContent = "Écouter l'extrait"; toast("Pas d'extrait disponible pour ce morceau."); }
 };
-function closeModal() { audio.pause(); modal.hidden = true; current = null; lastFocus?.focus?.(); }
+function closeModal() { if (!window.NowPlaying) audio.pause(); modal.hidden = true; current = null; lastFocus?.focus?.(); }
 $("#mClose").onclick = closeModal;
 modal.onclick = e => { if (e.target === modal) closeModal(); };
 addEventListener("keydown", e => { if (e.key === "Escape" && !modal.hidden) closeModal(); });
