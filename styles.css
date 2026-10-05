@@ -351,3 +351,51 @@ img{max-width:100%}
 .offer-card h4{margin:0 0 8px;font-size:.78rem;font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:400}
 .offer-card .arrow{align-self:center;font-size:1.4rem;color:var(--brass)}
 .offer-card .btns{margin-top:12px}
+
+/* ---------- Streams + Défis ---------- */
+.counters .streams b{color:var(--brass)}
+.title-tag{display:block;font-family:var(--mono);font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:var(--brass);font-weight:400;line-height:1.1}
+.account .btn{display:grid;justify-items:center;line-height:1.15}
+.discard{border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:0 0 18px;background:var(--felt-2);max-width:72ch}
+.discard p{margin:0 0 10px;font-size:.9rem}
+#view-defis h3{font-family:var(--display);font-size:.95rem;margin:28px 0 12px}
+.defis-top{display:grid;grid-template-columns:minmax(0,200px) minmax(0,1fr);gap:16px}
+@media (max-width:640px){.defis-top{grid-template-columns:minmax(0,1fr)}}
+.wallet{border:1px solid var(--brass);border-radius:16px;padding:16px;display:grid;align-content:center;gap:2px;background:linear-gradient(160deg,rgba(231,177,74,.14),transparent)}
+.wallet small{color:var(--muted);font-family:var(--mono);font-size:.72rem;text-transform:uppercase;letter-spacing:.08em}
+.wallet b{font-family:var(--display);font-size:2rem;color:var(--brass);line-height:1.1;font-variant-numeric:tabular-nums}
+.wallet span{font-size:.85rem;color:var(--muted)}
+.login-box{border:1px solid var(--line);border-radius:16px;padding:14px 16px;background:var(--felt-2);display:grid;gap:12px;align-content:start}
+.login-box small{display:block;color:var(--muted);font-size:.84rem;margin-top:2px}
+.login-box .btn{justify-self:start}
+.streak{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.streak li{border:1px solid var(--line);border-radius:10px;padding:6px 0;display:grid;justify-items:center;gap:1px;background:var(--felt)}
+.streak li span{font-family:var(--mono);font-size:.66rem;color:var(--muted)}
+.streak li b{font-size:.85rem;font-variant-numeric:tabular-nums}
+.streak li.on{border-color:var(--brass);background:rgba(231,177,74,.16)}
+.streak li.on b{color:var(--brass)}
+.dailies{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.dailies .empty-line{grid-column:1/-1}
+.daily,.ach{border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:var(--felt-2);display:grid;gap:8px;align-content:start}
+.daily.ready,.ach.ready{border-color:var(--brass);box-shadow:0 0 0 1px var(--brass)}
+.daily.claimed{opacity:.6}
+.d-head,.a-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.d-head b,.a-head b{font-size:.92rem}
+.reward{font-family:var(--mono);font-size:.8rem;color:var(--brass);white-space:nowrap}
+.daily .meter,.ach .meter{height:6px;border-radius:6px;background:#2e2639;overflow:hidden}
+.daily .meter s,.ach .meter s{display:block;height:100%;background:var(--brass)}
+.d-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:30px}
+.d-foot small{color:var(--muted);font-family:var(--mono);font-size:.74rem}
+.d-foot small.ok{color:var(--r1)}
+.d-foot .btn{padding:5px 12px;font-size:.8rem}
+.ach small{color:var(--muted);font-size:.8rem}
+.ach-cat{margin:18px 0 10px;font-family:var(--mono);font-size:.74rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:400}
+.ach-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.ach.complete{border-color:#6b5420}
+.medals{display:flex;gap:4px}
+.medals i{width:14px;height:14px;border-radius:50%;background:#2e2639;border:1px solid var(--line)}
+.medals i.m0.on{background:#c98a4a;border-color:#c98a4a}
+.medals i.m1.on{background:#c9ccd6;border-color:#c9ccd6}
+.medals i.m2.on{background:var(--r5);border-color:var(--r5)}
+.title-pick{margin:-4px 0 6px;font-size:.88rem;color:var(--muted);display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.title-pick select{background:var(--felt-2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:5px 8px;font:inherit;font-size:.86rem}

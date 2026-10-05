@@ -7,7 +7,7 @@
 <meta name="description" content="Le TCG des vrais morceaux : chaque carte est un titre de Deezer, les plus gros tubes sont légendaires.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Instrument+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="styles.css?v=12">
+<link rel="stylesheet" href="styles.css?v=15">
 </head>
 <body>
 <div class="wrap">
@@ -18,6 +18,7 @@
       <button role="tab" id="tab-store" aria-selected="false">Boutique</button>
       <button role="tab" id="tab-binder" aria-selected="false">Collection</button>
       <button role="tab" id="tab-catalog" aria-selected="false">Catalogue</button>
+      <button role="tab" id="tab-defis" aria-selected="false" hidden>Défis<span class="badge" id="defisBadge" hidden></span></button>
       <button role="tab" id="tab-trades" aria-selected="false" hidden>Échanges<span class="badge" id="tradeBadge" hidden></span></button>
     </nav>
     <div class="account" id="account"></div>
@@ -51,6 +52,7 @@
     <h2>Ta collection</h2>
     <p class="sub">Clique sur une carte pour la voir en grand et écouter l'extrait.</p>
     <div class="notice" id="importBox" hidden></div>
+    <div class="discard" id="discardBox" hidden></div>
     <div class="prog" id="prog"></div>
     <div class="filters" id="filters"></div>
     <div class="binder" id="binder"></div>
@@ -75,6 +77,20 @@
     <p class="cat-status" id="catStatus" aria-live="polite"></p>
     <div class="binder" id="catalog"></div>
     <div class="more"><button class="btn" id="catMore" hidden>Voir plus de cartes</button></div>
+  </section>
+
+  <section id="view-defis" hidden>
+    <h2>Défis</h2>
+    <p class="sub">Gagne des Streams, la monnaie du jeu : une prime chaque jour, trois défis qui changent tous les jours, et des succès permanents en bronze, argent et or.</p>
+    <div class="defis-top">
+      <div class="wallet"><small>Ton solde</small><b id="walletStreams">0</b><span>Streams</span></div>
+      <div class="login-box" id="loginBox"></div>
+    </div>
+    <h3>Défis du jour</h3>
+    <div class="dailies" id="dailies"></div>
+    <h3>Succès</h3>
+    <div class="title-pick" id="titlePick"></div>
+    <div id="achievements"></div>
   </section>
 
   <section id="view-trades" hidden>
@@ -109,6 +125,7 @@
       <div class="btns">
         <button class="btn primary" id="mPlay">Écouter l'extrait</button>
         <a class="btn" id="mLink" href="#" target="_blank" rel="noopener">Ouvrir sur Deezer</a>
+        <button class="btn" id="mDiscard" hidden></button>
         <button class="btn" id="mClose">Fermer</button>
       </div>
     </div>
@@ -123,7 +140,7 @@
 </div>
 <div class="toast" id="toast" hidden></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
-<script src="app.js?v=13"></script>
-<script src="online.js?v=14"></script>
+<script src="app.js?v=15"></script>
+<script src="online.js?v=15"></script>
 </body>
 </html>

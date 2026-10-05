@@ -388,24 +388,26 @@ function cardEl(c, holo) {
 function backEl() { const w = document.createElement("div"); w.className = "cq"; w.innerHTML = '<div class="back"><div class="in"><b>SILLONS</b></div></div>'; return w; }
 
 /* ---------- views ---------- */
-const views = { shop: $("#view-shop"), store: $("#view-store"), binder: $("#view-binder"), catalog: $("#view-catalog"), trades: $("#view-trades") };
+const views = { shop: $("#view-shop"), store: $("#view-store"), binder: $("#view-binder"), catalog: $("#view-catalog"), trades: $("#view-trades"), defis: $("#view-defis") };
 function show(v) {
   for (const k in views) { views[k].hidden = k !== v; $("#tab-" + k).setAttribute("aria-selected", k === v); }
   $("#tableWrap").hidden = v !== "shop" && v !== "store";   // the opening table follows the booster tabs
-  if (v === "binder") renderBinder();
+  if (v === "binder") { renderBinder(); Online.renderDiscard?.(); }
   if (v === "catalog") { if (!CAT.loaded) catLoad(true); else renderCatalog(); }
   if (v === "trades") Online.renderTrades();
+  if (v === "defis") Online.renderDefis();
 }
 $("#tab-shop").onclick = () => show("shop");
 $("#tab-store").onclick = () => show("store");
 $("#tab-binder").onclick = () => show("binder");
 $("#tab-catalog").onclick = () => show("catalog");
 $("#tab-trades").onclick = () => show("trades");
+$("#tab-defis").onclick = () => show("defis");
 
 const owned = () => Object.values(S.c);
 function renderCounters() {
   const all = owned();
-  $("#counters").innerHTML = `<span>Cartes <b>${fmt(all.length)}</b></span><span class="myth">Mythiques <b>${all.filter(c => c.tier === MYTH).length}</b></span><span class="leg">Légendaires <b>${all.filter(c => c.tier === LEG).length}</b></span><span>Boosters ouverts <b>${fmt(S.opened)}</b></span>`;
+  $("#counters").innerHTML = (Online.active ? `<span class="streams">Streams <b>${fmt(S.streams || 0)}</b></span>` : "") + `<span>Cartes <b>${fmt(all.length)}</b></span><span class="myth">Mythiques <b>${all.filter(c => c.tier === MYTH).length}</b></span><span class="leg">Légendaires <b>${all.filter(c => c.tier === LEG).length}</b></span><span>Boosters ouverts <b>${fmt(S.opened)}</b></span>`;
 }
 
 /* ---------- shelf: one booster, limited stock ---------- */
@@ -781,6 +783,7 @@ function openModal(c) {
     <dt>${T.s}</dt><dd>${st.flow} · ${c.bpm > 0 ? c.bpm + " BPM" : "tempo estimé"}</dd><dt>Endurance</dt><dd>${st.endu} · ${fmtDur(c.d)}</dd>
     <dt>Hype</dt><dd>${st.hype}</dd><dt>Sortie</dt><dd>${c.y || "?"}</dd><dt>Possédées</dt><dd>${own.n}${own.holo ? ` (dont ${own.holo} holo)` : ""}${own.locked ? ` · ${own.locked} non échangeable${own.locked > 1 ? "s" : ""}` : ""}</dd>`;
   $("#mLink").href = "https://www.deezer.com/track/" + c.id;
+  Online.modalExtras?.(c);
   audio.pause();
   modal.hidden = false; $("#mPlay").focus();
   box.onpointermove = e => {

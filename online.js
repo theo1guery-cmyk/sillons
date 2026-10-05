@@ -24,6 +24,11 @@ const MESSAGES = {
   player_not_found: "Ce joueur n'existe pas.",
   self_trade: "Tu ne peux pas échanger avec toi-même.",
   already_imported: "Ta collection a déjà été importée.",
+  already_claimed: "Déjà récupéré.",
+  not_done: "Pas encore terminé.",
+  not_today: "Ce défi n'est plus disponible aujourd'hui.",
+  keep_one: "Tu dois garder au moins un exemplaire de chaque carte.",
+  title_not_earned: "Tu n'as pas encore gagné ce titre.",
 };
 function message(e) {
   const raw = (e && (e.message || e.code)) || "";
@@ -77,6 +82,7 @@ async function loadProfile() {
   Object.assign(me, data);
   S.opened = data.opened; S.dry = data.dry; S.gods = data.gods;
   S.stock = data.stock; S.stockAt = Date.parse(data.stock_at);
+  S.streams = data.streams;
 }
 async function loadAll() {
   const [{ data: settings }, cards] = await Promise.all([sb.from("settings").select("*").single(), fetchCards(me.id)]);
@@ -85,7 +91,8 @@ async function loadAll() {
   await loadProfile();
 }
 function refreshViews() {
-  renderCounters(); renderStock(); renderAccount(); renderImport();
+  renderCounters(); renderStock(); renderAccount(); renderImport(); renderDiscard();
+  if (!views.defis.hidden) renderDefis();
   if (!views.binder.hidden) renderBinder();
   if (!views.catalog.hidden && CAT.loaded) renderCatalog();
   if (!views.trades.hidden) renderTrades();
@@ -98,10 +105,10 @@ async function enterAccount(user) {
   try {
     await loadAll();
     Online.active = true;
-    $("#tab-trades").hidden = false;
+    $("#tab-trades").hidden = false; $("#tab-defis").hidden = false;
     $("#table").hidden = true; $("#deal").innerHTML = "";
     refreshViews();
-    pollOffers();
+    pollOffers(); updateDefisBadge();
   } catch (e) {
     me = null; toast(message(e));
   }
@@ -112,7 +119,8 @@ function leaveAccount() {
   catch (e) { S = guestS; }
   TEST_MODE = true;
   $("#tab-trades").hidden = true; $("#tradeBadge").hidden = true;
-  if (!views.trades.hidden) show("shop");
+  $("#tab-defis").hidden = true; $("#defisBadge").hidden = true;
+  if (!views.trades.hidden || !views.defis.hidden) show("shop");
   $("#table").hidden = true; $("#deal").innerHTML = "";
   refreshViews();
 }
@@ -144,6 +152,7 @@ Object.assign(Online, {
       return { c: cardFromRow(row, byId[r.track]), holo: r.holo, isNew: r.new, wanted: r.wanted };
     }).sort((a, b) => a.c.tier - b.c.tier || a.c.rank - b.c.rank);
     await loadProfile();
+    updateDefisBadge();
     return pulls;
   },
   async reset() {
@@ -151,6 +160,9 @@ Object.assign(Online, {
     await loadAll();
   },
   renderTrades: () => renderTrades(),
+  renderDefis: () => renderDefis(),
+  renderDiscard: () => renderDiscard(),
+  modalExtras: c => modalExtras(c),
 });
 
 /* ---------- header account area ---------- */
@@ -160,7 +172,7 @@ function renderAccount() {
     box.innerHTML = `<button class="btn primary" id="signIn">Se connecter</button>`;
     $("#signIn").onclick = () => openAuth("in");
   } else {
-    box.innerHTML = `<button class="btn" id="myAccount" aria-label="Mon compte">${esc(me.pseudo || "Mon compte")}</button>`;
+    box.innerHTML = `<button class="btn" id="myAccount" aria-label="Mon compte">${esc(me.pseudo || "Mon compte")}${me.title ? `<small class="title-tag">${esc(me.title)}</small>` : ""}</button>`;
     $("#myAccount").onclick = () => openAuth("account");
   }
 }
@@ -421,11 +433,11 @@ $("#playerForm").onsubmit = e => { e.preventDefault(); clearTimeout(playerTimer)
 async function findPlayers() {
   const q = $("#playerQ").value.trim(), box = $("#players");
   if (q.length < 2) { box.innerHTML = ""; return; }
-  const { data, error } = await sb.from("profiles").select("id,pseudo,created_at").ilike("pseudo", q.replace(/[%_]/g, "") + "%").neq("id", me.id).limit(8);
+  const { data, error } = await sb.from("profiles").select("id,pseudo,title,created_at").ilike("pseudo", q.replace(/[%_]/g, "") + "%").neq("id", me.id).limit(8);
   if (error) return toast(message(error));
   box.innerHTML = data.length ? "" : `<p class="empty-line">Aucun joueur avec ce pseudo.</p>`;
   for (const p of data) {
-    const b = document.createElement("button"); b.className = "chip player"; b.textContent = p.pseudo;
+    const b = document.createElement("button"); b.className = "chip player"; b.textContent = p.pseudo + (p.title ? " · " + p.title : "");
     b.onclick = () => openEditor(p);
     box.appendChild(b);
   }
@@ -509,3 +521,150 @@ sb.auth.onAuthStateChange((event, session) => {
   if (session?.user) setTimeout(() => enterAccount(session.user), 0);   // outside the auth callback, as supabase-js asks
   else if (event === "SIGNED_OUT" || (event === "INITIAL_SESSION" && me)) leaveAccount();
 });
+
+
+/* ---------- Streams: discarding duplicates ---------- */
+const DISCARD = [1, 1, 1, 10, 50, 100];   // same values as discard_value() on the server
+// the copies "tout défausser" would remove: all but the best copy of each track (holo, then rarity)
+function duplicateCopies() {
+  const out = [];
+  for (const c of Object.values(S.c)) {
+    if (!c.copies || c.copies.length < 2) continue;
+    const sorted = [...c.copies].sort((a, b) => (b.holo - a.holo) || (b.tier - a.tier));
+    out.push(...sorted.slice(1));
+  }
+  return out;
+}
+function renderDiscard() {
+  const box = $("#discardBox");
+  if (!me) { box.hidden = true; return; }
+  const dups = duplicateCopies(), gain = dups.reduce((a, cp) => a + DISCARD[cp.tier], 0);
+  box.hidden = !dups.length;
+  if (!dups.length) return;
+  box.innerHTML = `<p><b>${fmt(dups.length)} doublon${dups.length > 1 ? "s" : ""}</b> dans ta collection. Défausse-les pour gagner <b>${fmt(gain)} Streams</b> : 1 par Commune, Peu commune ou Rare, 10 par Épique, 50 par Mythique, 100 par Légendaire. Tu gardes toujours un exemplaire de chaque carte (le plus beau).</p>
+    <div class="btns"><button class="btn primary" id="discardAsk">Défausser mes doublons</button></div>
+    <div class="reset-confirm" id="discardConfirm" hidden role="alertdialog" aria-labelledby="discardQ">
+      <p id="discardQ"><b>Défausser ${fmt(dups.length)} cartes contre ${fmt(gain)} Streams ?</b> Les doublons qui font partie d'une offre d'échange en attente ne sont pas touchés.</p>
+      <div class="btns"><button class="btn" id="discardNo">Annuler</button><button class="btn primary" id="discardYes">Oui, défausser</button></div>
+    </div>`;
+  $("#discardAsk").onclick = () => { $("#discardConfirm").hidden = false; $("#discardAsk").hidden = true; $("#discardNo").focus(); };
+  $("#discardNo").onclick = () => { $("#discardConfirm").hidden = true; $("#discardAsk").hidden = false; };
+  $("#discardYes").onclick = async () => {
+    $("#discardYes").disabled = true;
+    try {
+      const r = await rpc("discard_all_duplicates");
+      await loadAll(); refreshViews(); renderBinder(); updateDefisBadge();
+      toast(`${fmt(r.removed)} doublons défaussés : +${fmt(r.gained)} Streams.`);
+    } catch (e) { toast(message(e)); $("#discardYes").disabled = false; }
+  };
+}
+// in the card details: discard one spare copy (never the last one, never the holo when a plain copy exists)
+function modalExtras(c) {
+  const btn = $("#mDiscard"), own = S.c[c.id];
+  btn.hidden = !(Online.active && own && own.copies && own.copies.length > 1);
+  if (btn.hidden) return;
+  const spare = [...own.copies].sort((a, b) => (a.holo - b.holo) || (a.tier - b.tier))[0];
+  btn.textContent = `Défausser un doublon (+${DISCARD[spare.tier]} Stream${DISCARD[spare.tier] > 1 ? "s" : ""})`;
+  btn.onclick = async () => {
+    btn.disabled = true;
+    try {
+      const r = await rpc("discard_cards", { p_cards: [spare.id] });
+      await loadAll(); refreshViews(); if (!views.binder.hidden) renderBinder(); updateDefisBadge();
+      toast(`Doublon défaussé : +${r.gained} Stream${r.gained > 1 ? "s" : ""}.`);
+      if (S.c[c.id]) openModal(S.c[c.id]);
+    } catch (e) { toast(message(e)); }
+    btn.disabled = false;
+  };
+}
+
+/* ---------- Défis: login streak, daily challenges, achievements ---------- */
+const MEDALS = ["Bronze", "Argent", "Or"];
+async function updateDefisBadge() {
+  if (!me) return;
+  try {
+    const [daily, ach] = await Promise.all([rpc("daily_state"), rpc("achievements_state")]);
+    const n = (daily.login.claimed ? 0 : 1)
+      + daily.challenges.filter(c => !c.claimed && c.progress >= c.goal).length
+      + ach.filter(a => a.goals.some((g, i) => a.value >= g && !a.claimed.includes(i + 1))).length;
+    $("#defisBadge").hidden = !n; $("#defisBadge").textContent = n || "";
+  } catch (e) {}
+}
+async function claim(fn, args, okText) {
+  try {
+    const r = await rpc(fn, args);
+    await loadProfile(); renderCounters();
+    toast(okText(r));
+    renderDefis(); updateDefisBadge();
+  } catch (e) { toast(message(e)); }
+}
+async function renderDefis() {
+  if (!me) return;
+  $("#walletStreams").textContent = fmt(S.streams || 0);
+  let daily, ach;
+  try { [daily, ach] = await Promise.all([rpc("daily_state"), rpc("achievements_state")]); }
+  catch (e) { return toast(message(e)); }
+
+  // login streak
+  const L = daily.login, lb = $("#loginBox");
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const reward = [5, 10, 15, 20, 25, 30, 50][i];
+    const reached = L.claimed ? i < Math.min(L.streak, 7) : i < Math.min(L.streak, 6);
+    return `<li class="${reached ? "on" : ""}"><span>J${i + 1}</span><b>${reward}</b></li>`;
+  }).join("");
+  lb.innerHTML = `<div><b>Prime de connexion</b><small>${L.claimed ? `Récupérée. Série de ${L.streak} jour${L.streak > 1 ? "s" : ""}, reviens demain.` : `Série actuelle : ${L.streak} jour${L.streak > 1 ? "s" : ""}. Aujourd'hui : +${L.next} Streams.`}</small></div>
+    <ol class="streak" aria-label="Récompenses de la série">${days}</ol>
+    ${L.claimed ? "" : `<button class="btn primary" id="claimLogin">Récupérer +${L.next}</button>`}`;
+  if (!L.claimed) $("#claimLogin").onclick = () => claim("claim_login", {}, r => `+${r.reward} Streams. Série de ${r.streak} jour${r.streak > 1 ? "s" : ""} !`);
+
+  // daily challenges
+  const dl = $("#dailies"); dl.innerHTML = "";
+  for (const c of daily.challenges) {
+    const done = c.progress >= c.goal;
+    const el = document.createElement("div"); el.className = "daily" + (c.claimed ? " claimed" : done ? " ready" : "");
+    el.innerHTML = `<div class="d-head"><b>${esc(c.label)}</b><span class="reward">+${c.reward}</span></div>
+      <div class="meter" role="progressbar" aria-valuemin="0" aria-valuemax="${c.goal}" aria-valuenow="${c.progress}"><s style="width:${c.progress / c.goal * 100}%"></s></div>
+      <div class="d-foot"><small>${c.progress} / ${c.goal}</small>${c.claimed ? `<small class="ok">Récupéré</small>` : done ? `<button class="btn primary">Récupérer</button>` : ""}</div>`;
+    const b = el.querySelector("button");
+    if (b) b.onclick = () => claim("claim_daily", { p_key: c.key }, r => `Défi réussi : +${r} Streams.`);
+    dl.appendChild(el);
+  }
+  const reset = document.createElement("p"); reset.className = "empty-line"; reset.textContent = "De nouveaux défis arrivent chaque jour à minuit.";
+  dl.appendChild(reset);
+
+  // achievements, grouped by category
+  const box = $("#achievements"); box.innerHTML = "";
+  const earnedTitles = [];
+  let cat = null, grid = null;
+  for (const a of ach) {
+    if (a.category !== cat) {
+      cat = a.category;
+      const h = document.createElement("h4"); h.className = "ach-cat"; h.textContent = cat; box.appendChild(h);
+      grid = document.createElement("div"); grid.className = "ach-grid"; box.appendChild(grid);
+    }
+    a.claimed.forEach(t => earnedTitles.push(a.titles[t - 1]));
+    const next = a.goals.findIndex((g, i) => !a.claimed.includes(i + 1));
+    const ready = a.goals.some((g, i) => a.value >= g && !a.claimed.includes(i + 1));
+    const target = next < 0 ? a.goals[a.goals.length - 1] : a.goals[next];
+    const single = a.goals.length === 1;
+    const el = document.createElement("div"); el.className = "ach" + (next < 0 ? " complete" : "") + (ready ? " ready" : "");
+    el.innerHTML = `<div class="a-head"><b>${esc(a.label)}</b>
+        <span class="medals" aria-label="${a.claimed.length} palier${a.claimed.length > 1 ? "s" : ""} sur ${a.goals.length}">${a.goals.map((g, i) => `<i class="m${single ? 2 : i} ${a.claimed.includes(i + 1) ? "on" : ""}" title="${single ? "Succès" : MEDALS[i]} : ${fmt(g)}"></i>`).join("")}</span></div>
+      <small>${esc(a.description)}</small>
+      <div class="meter"><s style="width:${Math.min(100, a.value / target * 100)}%"></s></div>
+      <div class="d-foot"><small>${fmt(Math.min(a.value, target))} / ${fmt(target)}${next < 0 ? " · terminé" : ` · ${single ? "" : MEDALS[next] + " : "}+${a.rewards[next]}`}</small>${ready ? `<button class="btn primary">Récupérer</button>` : ""}</div>`;
+    const b = el.querySelector("button");
+    if (b) b.onclick = () => claim("claim_achievement", { p_key: a.key }, r => `Succès « ${a.label} » : +${r} Streams.`);
+    grid.appendChild(el);
+  }
+
+  // title under the pseudo
+  const tp = $("#titlePick");
+  tp.innerHTML = earnedTitles.length
+    ? `<label for="titleSel">Titre affiché sous ton pseudo</label> <select id="titleSel"><option value="">Aucun</option>${earnedTitles.map(t => `<option ${t === me.title ? "selected" : ""}>${esc(t)}</option>`).join("")}</select>`
+    : `<p class="empty-line">Chaque palier de succès débloque un titre à afficher à côté de ton pseudo.</p>`;
+  const sel = $("#titleSel");
+  if (sel) sel.onchange = async () => {
+    try { await rpc("set_title", { p_title: sel.value || null }); me.title = sel.value || null; renderAccount(); toast(sel.value ? `Titre « ${sel.value} » affiché.` : "Titre retiré."); }
+    catch (e) { toast(message(e)); }
+  };
+}
