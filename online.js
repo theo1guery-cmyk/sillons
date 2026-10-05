@@ -306,7 +306,7 @@ function renderImport() {
   if (!me || me.imported || !cards.length) { box.hidden = true; return; }
   const copies = cards.reduce((a, c) => a + (c.n || 1), 0);
   box.hidden = false;
-  box.innerHTML = `<p><b>Tu as ${fmt(copies)} cartes jouées sans compte sur cet appareil.</b> Tu peux les ajouter à ton compte. Elles resteront à toi, mais elles ne pourront pas être échangées.</p>
+  box.innerHTML = `<p><b>Tu as ${fmt(copies)} cartes jouées sans compte sur cet appareil.</b> Tu peux les ajouter à ton compte pour les retrouver partout et les échanger.</p>
     <div class="btns"><button class="btn primary" id="doImport">Ajouter à mon compte</button></div>`;
   $("#doImport").onclick = async () => {
     $("#doImport").disabled = true; $("#doImport").textContent = "Import…";
@@ -482,7 +482,7 @@ function renderEditor() {
         <input class="mini-search" id="edTheirsQ" type="search" placeholder="Chercher chez ${esc(p.pseudo)}" value="${esc(ED.qTheirs)}" aria-label="Chercher dans sa collection"><div id="edTheirs"></div></div>
     </div>
     <div class="editor-foot"><p id="edSummary"></p><button class="btn primary" id="edSend">Envoyer l'offre</button></div>`;
-  $("#edMine").appendChild(pickGrid(S.c, ED.give, ED.qMine, "Tu n'as pas encore de carte échangeable. Les cartes tirées depuis la création du compte s'échangent."));
+  $("#edMine").appendChild(pickGrid(S.c, ED.give, ED.qMine, "Tu n'as pas encore de carte. Ouvre un booster pour en tirer."));
   $("#edTheirs").appendChild(pickGrid(ED.theirs, ED.take, ED.qTheirs, p.pseudo + " n'a pas de carte échangeable pour l'instant."));
   $("#edSummary").textContent = ED.give.size && ED.take.size
     ? `${ED.give.size} carte${ED.give.size > 1 ? "s" : ""} contre ${ED.take.size} carte${ED.take.size > 1 ? "s" : ""}.`
