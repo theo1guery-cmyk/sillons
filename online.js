@@ -41,6 +41,9 @@ const MESSAGES = {
   own_listing: "C'est ta propre annonce.",
   album_incomplete: "Il te manque encore des titres de cet album.",
   collector_card: "Une carte Collector ne se défausse pas.",
+  wishlist_full: "Ta liste de souhaits est pleine (300 cartes).",
+  too_many_tags: "40 étiquettes maximum.",
+  tag_exists: "Tu as déjà une étiquette avec ce nom.",
   album_not_found: "Cet album n'est pas disponible.",
   discography_incomplete: "Il te manque encore des albums de cet artiste.",
   artist_not_found: "Cet artiste n'est pas disponible.",
@@ -107,7 +110,7 @@ async function loadProfile() {
   S.streams = data.streams;
 }
 async function loadAll() {
-  const [{ data: settings }, cards] = await Promise.all([sb.from("settings").select("*").single(), fetchCards(me.id)]);
+  const [{ data: settings }, cards] = await Promise.all([sb.from("settings").select("*").single(), fetchCards(me.id), loadWishAndTags()]);
   if (settings) TEST_MODE = settings.test_mode;
   S = { c: cards, opened: 0, dry: 0, stock: STOCK_MAX, stockAt: Date.now() };
   await loadProfile();
@@ -139,6 +142,8 @@ async function enterAccount(user) {
 }
 function leaveAccount() {
   me = null; Online.active = false;
+  WISH.clear(); TAGS.length = 0; CARD_TAGS.clear(); F.tag = null;
+  $("#tagBar").hidden = true; $("#marketBadge").hidden = true;
   try { const p = JSON.parse(localStorage.getItem(LS)); S = p && p.c ? p : { c: {}, opened: 0, stock: STOCK_MAX, stockAt: Date.now(), dry: 0 }; }
   catch (e) { S = guestS; }
   TEST_MODE = true;
@@ -198,7 +203,9 @@ Object.assign(Online, {
   renderTrades: () => renderTrades(),
   renderDefis: () => renderDefis(),
   renderDiscard: () => renderDiscard(),
-  modalExtras: c => { modalExtras(c); marketExtras(c); },
+  modalExtras: c => { modalExtras(c); marketExtras(c); wishExtras(c); tagExtras(c); },
+  tagsOf: c => tagsOf(c),
+  renderTagBar: () => renderTagBar(),
   renderMarket: () => renderMarket(),
   renderAlbums: () => renderAlbums(),
   askSignIn: () => openAuth("in"),
@@ -381,6 +388,7 @@ async function pollOffers() {
     const { count } = await sb.from("offers").select("id", { count: "exact", head: true }).eq("to_user", me.id).eq("status", "pending");
     $("#tradeBadge").hidden = !count; $("#tradeBadge").textContent = count || "";
   } catch (e) {}
+  checkNotifications();
   pollTimer = setTimeout(pollOffers, 30000);
 }
 
@@ -603,7 +611,7 @@ function renderDiscard() {
 function modalExtras(c) {
   const btn = $("#mDiscard"), own = S.c[c.id];
   const spares = own?.copies?.filter(cp => !cp.collector) || [];
-  btn.hidden = !(Online.active && own && own.copies.length > 1 && spares.length && (spares.length > 1 || own.copies.length > spares.length));
+  btn.hidden = !(Online.active && own?.copies && own.copies.length > 1 && spares.length && (spares.length > 1 || own.copies.length > spares.length));
   if (btn.hidden) return;
   const spare = [...spares].sort((a, b) => (a.holo - b.holo) || (a.tier - b.tier))[0];
   btn.textContent = `Défausser un doublon (+${DISCARD[spare.tier]} Stream${DISCARD[spare.tier] > 1 ? "s" : ""})`;
@@ -744,6 +752,8 @@ function renderMarketFilters() {
 
 async function renderMarket() {
   if (!me) return;
+  renderWishList();
+  rpc("notifications_read").then(() => { $("#marketBadge").hidden = true; }).catch(() => {});
   $("#marketStreams").textContent = fmt(S.streams || 0);
   renderMarketFilters();
   loadMarket(true);
@@ -1022,12 +1032,23 @@ async function openAlbum(a) {
     const li = document.createElement("li"); li.className = own ? "own" : "missing";
     li.innerHTML = `<span class="mark" aria-hidden="true">${own ? "✓" : ""}</span><span class="t">${esc(t.title)}</span>
       <span class="rar"><i style="background:${RCOL[tierOf(t.rank || 0)]}"></i>${RAR[tierOf(t.rank || 0)]}</span>
-      ${own ? `<button class="linkish">Voir</button>` : `<button class="linkish">Chercher au marché</button>`}`;
+      ${own ? `<button class="linkish">Voir</button>` : `<button class="linkish">Chercher au marché</button><button class="wish-heart" aria-pressed="${WISH.has("track:" + t.id)}" aria-label="Liste de souhaits : ${esc(t.title)}">${WISH.has("track:" + t.id) ? "♥" : "♡"}</button>`}`;
     li.querySelector("button").onclick = () => {
       if (own) { closeAlbum(); openModal(own); }
       else { closeAlbum(); show("market"); $("#mq").value = t.title; MK.q = t.title; loadMarket(true); }
     };
     li.querySelector(".mark").setAttribute("aria-label", own ? "possédé" : "manquant");
+    const heart = li.querySelector(".wish-heart");
+    if (heart) heart.onclick = async () => {
+      heart.disabled = true;
+      try {
+        const added = await rpc("wish_toggle", { p_kind: "track", p_ref: t.id, p_title: t.title, p_artist: a.artist, p_cover: a.cover || "" });
+        if (added) WISH.set("track:" + t.id, { kind: "track", ref: t.id, title: t.title, artist: a.artist, cover: a.cover || "" }); else WISH.delete("track:" + t.id);
+        heart.textContent = added ? "♥" : "♡"; heart.setAttribute("aria-pressed", added);
+        toast(added ? `« ${t.title} » ajoutée à ta liste de souhaits.` : `« ${t.title} » retirée de ta liste de souhaits.`);
+      } catch (e) { toast(message(e)); }
+      heart.disabled = false;
+    };
     $("#alTracks").appendChild(li);
   }
   if (albumReady(a)) {
@@ -1082,5 +1103,157 @@ function drawDiscos() {
       catch (e) { toast(message(e)); b.disabled = false; }
     };
     box.appendChild(el);
+  }
+}
+
+
+/* ---------- wishlist + tags ---------- */
+const WISH = new Map();          // "track:123" / "artist:27" → wishlist row
+const TAGS = [];                 // your tags {id, name, color}
+const CARD_TAGS = new Map();     // "track:123" → Set of tag ids
+const keyParts = c => isArtist(c) ? ["artist", c.aid] : ["track", c.id];
+const wishKey = c => keyParts(c).join(":");
+const TAG_COLORS = ["#e7b14a", "#ff4d6a", "#4f9cff", "#5fc48a", "#b071ff", "#4fb8b0", "#f08a24", "#e6eef8"];
+let seenNotes = new Set();
+
+async function loadWishAndTags() {
+  const [w, t, ct] = await Promise.all([
+    sb.from("wishlist").select("*").order("created_at", { ascending: false }),
+    sb.from("tags").select("id,name,color").order("created_at"),
+    sb.from("card_tags").select("tag_id,kind,ref").range(0, 49999),
+  ]);
+  WISH.clear(); for (const r of w.data || []) WISH.set(r.kind + ":" + r.ref, r);
+  TAGS.length = 0; TAGS.push(...(t.data || []));
+  CARD_TAGS.clear(); for (const r of ct.data || []) { const k = r.kind + ":" + r.ref; if (!CARD_TAGS.has(k)) CARD_TAGS.set(k, new Set()); CARD_TAGS.get(k).add(r.tag_id); }
+}
+function tagsOf(c) { const set = CARD_TAGS.get(wishKey(c)); return set ? TAGS.filter(t => set.has(t.id)) : []; }
+
+/* the ♡ button in a card's details (for cards you don't own) */
+function wishExtras(c) {
+  const btn = $("#mWish");
+  const owned = !!S.c[c.id];
+  btn.hidden = !Online.active || owned || c.collector;
+  if (btn.hidden) return;
+  const on = WISH.has(wishKey(c));
+  btn.textContent = on ? "♥ Dans ta liste de souhaits" : "♡ Ajouter à ma liste de souhaits";
+  btn.setAttribute("aria-pressed", on);
+  btn.classList.toggle("wished", on);
+  btn.onclick = async () => {
+    btn.disabled = true;
+    try {
+      const [kind, ref] = keyParts(c);
+      const added = await rpc("wish_toggle", { p_kind: kind, p_ref: ref, p_title: c.t, p_artist: isArtist(c) ? "Artiste" : c.a, p_cover: c.cov || "" });
+      if (added) WISH.set(kind + ":" + ref, { kind, ref, title: c.t, artist: isArtist(c) ? "Artiste" : c.a, cover: c.cov || "" });
+      else WISH.delete(kind + ":" + ref);
+      toast(added ? `« ${c.t} » ajoutée à ta liste de souhaits. Tu seras prévenu si elle arrive au marché.` : `« ${c.t} » retirée de ta liste de souhaits.`);
+      wishExtras(c);
+      if (!views.market.hidden) renderWishList();
+    } catch (e) { toast(message(e)); }
+    btn.disabled = false;
+  };
+}
+
+/* tags in a card's details (for cards you own) */
+function tagExtras(c) {
+  const box = $("#mTags");
+  box.hidden = !Online.active || !S.c[c.id];
+  if (box.hidden) return;
+  const mine = new Set(tagsOf(c).map(t => t.id));
+  box.innerHTML = `<b>Étiquettes</b><div class="chips">${TAGS.map(t => `<button class="chip tagchip" data-id="${t.id}" aria-pressed="${mine.has(t.id)}" style="--tc:${t.color}"><i></i>${esc(t.name)}</button>`).join("")}
+    <form class="newtag" id="newTag"><label class="sr" for="newTagName">Nouvelle étiquette</label><input id="newTagName" maxlength="24" placeholder="+ Nouvelle étiquette" autocomplete="off"></form></div>`;
+  box.querySelectorAll(".tagchip").forEach(b => b.onclick = async () => {
+    b.disabled = true;
+    try {
+      const [kind, ref] = keyParts(c), k = kind + ":" + ref;
+      const on = await rpc("tag_toggle", { p_tag: b.dataset.id, p_kind: kind, p_ref: ref });
+      if (!CARD_TAGS.has(k)) CARD_TAGS.set(k, new Set());
+      on ? CARD_TAGS.get(k).add(b.dataset.id) : CARD_TAGS.get(k).delete(b.dataset.id);
+      tagExtras(c); if (!views.binder.hidden) renderBinder();
+    } catch (e) { toast(message(e)); b.disabled = false; }
+  });
+  $("#newTag").onsubmit = async e => {
+    e.preventDefault();
+    const name = $("#newTagName").value.trim(); if (!name) return;
+    try {
+      const color = TAG_COLORS[TAGS.length % TAG_COLORS.length];
+      const id = await rpc("tag_create", { p_name: name, p_color: color });
+      TAGS.push({ id, name, color });
+      const [kind, ref] = keyParts(c), k = kind + ":" + ref;
+      await rpc("tag_toggle", { p_tag: id, p_kind: kind, p_ref: ref });
+      if (!CARD_TAGS.has(k)) CARD_TAGS.set(k, new Set()); CARD_TAGS.get(k).add(id);
+      toast(`Étiquette « ${name} » créée et posée sur la carte.`);
+      tagExtras(c); if (!views.binder.hidden) renderBinder();
+      $("#newTagName")?.focus();
+    } catch (e2) { toast(message(e2)); }
+  };
+}
+
+/* the tag filter above the collection */
+function renderTagBar() {
+  const bar = $("#tagBar");
+  bar.hidden = !Online.active || !TAGS.length;
+  if (bar.hidden) return;
+  const count = id => [...CARD_TAGS.entries()].filter(([k, set]) => set.has(id) && S.c[k.startsWith("artist:") ? "a" + k.slice(7) : +k.slice(6)]).length;
+  bar.innerHTML = `<span class="tb-label">Étiquettes</span>` +
+    `<button class="chip" data-id="" aria-pressed="${!F.tag}">Toutes</button>` +
+    TAGS.map(t => `<button class="chip tagchip" data-id="${t.id}" aria-pressed="${F.tag === t.id}" style="--tc:${t.color}"><i></i>${esc(t.name)} <small>${count(t.id)}</small></button>`).join("") +
+    (F.tag ? `<button class="linkish" id="tagDelete">Supprimer « ${esc(TAGS.find(t => t.id === F.tag)?.name || "")} »</button>` : "");
+  bar.querySelectorAll(".chip").forEach(b => b.onclick = () => { F.tag = b.dataset.id || null; renderBinder(); });
+  const del = $("#tagDelete");
+  if (del) del.onclick = async () => {
+    const t = TAGS.find(x => x.id === F.tag);
+    // the confirmation is the second click
+    if (del.dataset.armed !== "1") { del.dataset.armed = "1"; del.textContent = `Confirmer la suppression de « ${t.name} » (les cartes restent)`; return; }
+    try {
+      await rpc("tag_delete", { p_tag: t.id });
+      TAGS.splice(TAGS.indexOf(t), 1); for (const set of CARD_TAGS.values()) set.delete(t.id);
+      F.tag = null; toast(`Étiquette « ${t.name} » supprimée.`); renderBinder();
+    } catch (e) { toast(message(e)); }
+  };
+}
+
+/* the wishlist, in the market tab: is each card on sale, and from what price */
+async function renderWishList() {
+  const box = $("#wishList");
+  if (!me) return;
+  if (!WISH.size) { box.innerHTML = `<p class="empty-line">Ta liste de souhaits est vide.</p>`; return; }
+  const rows = [...WISH.values()];
+  const tracks = rows.filter(r => r.kind === "track").map(r => r.ref), artists = rows.filter(r => r.kind === "artist").map(r => r.ref);
+  const [lt, la] = await Promise.all([
+    tracks.length ? sb.from("listings").select("track_id,price").eq("status", "active").gt("expires_at", nowIso()).in("track_id", tracks) : { data: [] },
+    artists.length ? sb.from("listings").select("artist_id,price").eq("status", "active").eq("kind", "artist").gt("expires_at", nowIso()).in("artist_id", artists) : { data: [] },
+  ]);
+  const best = new Map();
+  for (const l of lt.data || []) { const k = "track:" + l.track_id; best.set(k, Math.min(best.get(k) ?? Infinity, l.price)); }
+  for (const l of la.data || []) { const k = "artist:" + l.artist_id; best.set(k, Math.min(best.get(k) ?? Infinity, l.price)); }
+  rows.sort((a, b) => (best.has(b.kind + ":" + b.ref) - best.has(a.kind + ":" + a.ref)));
+  box.innerHTML = "";
+  for (const r of rows) {
+    const k = r.kind + ":" + r.ref, price = best.get(k);
+    const el = document.createElement("div"); el.className = "wish" + (price ? " onsale" : "");
+    el.innerHTML = `${r.cover ? `<img src="${esc(r.cover.replace(/\/\d+x\d+-/, "/120x120-"))}" alt="" loading="lazy">` : `<span class="ph"></span>`}
+      <div class="w-info"><b>${esc(r.title)}</b><small>${esc(r.artist)}</small></div>
+      <div class="w-side">${price ? `<span class="w-price">En vente dès ${streamsTxt(price)}</span><button class="btn primary">Voir</button>` : `<small>Pas en vente</small>`}
+        <button class="linkish w-remove" aria-label="Retirer ${esc(r.title)} de la liste">Retirer</button></div>`;
+    const see = el.querySelector(".btn");
+    if (see) see.onclick = () => { $("#mq").value = r.title; MK.q = r.title; MK.tier = -1; renderMarketFilters(); loadMarket(true); $("#marketGrid").scrollIntoView({ behavior: reduceMotion() ? "auto" : "smooth" }); };
+    el.querySelector(".w-remove").onclick = async () => {
+      try { await rpc("wish_toggle", { p_kind: r.kind, p_ref: r.ref, p_title: r.title }); WISH.delete(k); renderWishList(); }
+      catch (e) { toast(message(e)); }
+    };
+    box.appendChild(el);
+  }
+}
+
+/* alerts: a wished card was just put on the market */
+async function checkNotifications() {
+  if (!me) return;
+  const { data } = await sb.from("notifications").select("id,title,price,created_at").eq("read", false).order("created_at", { ascending: false }).limit(20);
+  const n = (data || []).length;
+  $("#marketBadge").hidden = !n; $("#marketBadge").textContent = n || "";
+  for (const x of data || []) {
+    if (seenNotes.has(x.id)) continue;
+    seenNotes.add(x.id);
+    toast(`♥ « ${x.title} », de ta liste de souhaits, est en vente pour ${streamsTxt(x.price)} !`);
   }
 }

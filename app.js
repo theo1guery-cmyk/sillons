@@ -692,7 +692,7 @@ $("#flipAll").onclick = async () => {
 $("#again").onclick = () => openPack(lastPack);
 
 /* ---------- binder ---------- */
-const F = { g: -1, r: -1, sort: "recent", q: "" };
+const F = { g: -1, r: -1, sort: "recent", q: "", tag: null };
 function renderBinder() {
   const all = owned();
   const pg = $("#prog");
@@ -716,7 +716,9 @@ function renderBinder() {
 
   const q = F.q.trim().toLowerCase();
   let list = all.filter(c => (F.g === -1 || (F.g === -2 ? isArtist(c) : c.g === F.g && !isArtist(c))) && (F.r < 0 || c.tier === F.r)
-    && (!q || (c.t + " " + c.a + " " + (c.al || "")).toLowerCase().includes(q)));
+    && (!q || (c.t + " " + c.a + " " + (c.al || "")).toLowerCase().includes(q))
+    && (!F.tag || (Online.tagsOf?.(c) || []).some(t => t.id === F.tag)));
+  Online.renderTagBar?.();
   const power = new Map();                // computed once per card, not at every comparison
   const pw = c => { if (!power.has(c)) power.set(c, (isArtist(c) ? artistStats(c) : stats(c)).pw); return power.get(c); };
   const by = {
@@ -752,6 +754,12 @@ function binderMore() {
     b.setAttribute("aria-label", c.t + " de " + c.a);
     b.appendChild(cardEl(c, c.holo > 0));
     if (c.n > 1) { const n = document.createElement("span"); n.className = "cnt"; n.textContent = "×" + c.n; b.appendChild(n); }
+    const tags = Online.tagsOf?.(c) || [];
+    if (tags.length) {                     // your tags, as coloured dots under the card
+      const d = document.createElement("span"); d.className = "tag-dots";
+      d.innerHTML = tags.slice(0, 5).map(t => `<i style="background:${t.color}" title="${esc(t.name)}"></i>`).join("");
+      b.appendChild(d);
+    }
     b.onclick = () => openModal(c);
     frag.appendChild(b);
   }

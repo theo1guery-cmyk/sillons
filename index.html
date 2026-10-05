@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#16121f">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Instrument+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="styles.css?v=32">
+<link rel="stylesheet" href="styles.css?v=34">
 </head>
 <body>
 <div class="wrap">
@@ -22,7 +22,7 @@
       <button role="tab" id="tab-binder" aria-selected="false">Collection</button>
       <button role="tab" id="tab-catalog" aria-selected="false">Catalogue</button>
       <button role="tab" id="tab-albums" aria-selected="false" hidden>Albums<span class="badge" id="albumsBadge" hidden></span></button>
-      <button role="tab" id="tab-market" aria-selected="false" hidden>Marché</button>
+      <button role="tab" id="tab-market" aria-selected="false" hidden>Marché<span class="badge" id="marketBadge" hidden></span></button>
       <button role="tab" id="tab-defis" aria-selected="false" hidden>Défis<span class="badge" id="defisBadge" hidden></span></button>
       <button role="tab" id="tab-trades" aria-selected="false" hidden>Échanges<span class="badge" id="tradeBadge" hidden></span></button>
     </nav>
@@ -59,6 +59,7 @@
     <div class="notice" id="importBox" hidden></div>
     <div class="discard" id="discardBox" hidden></div>
     <div class="prog" id="prog"></div>
+    <div class="tag-bar" id="tagBar" hidden></div>
     <form class="search" role="search" onsubmit="return false">
       <label class="sr" for="fQ">Chercher dans ta collection</label>
       <input id="fQ" type="search" placeholder="Chercher un titre, un artiste ou un album" autocomplete="off">
@@ -131,6 +132,9 @@
     <p class="cat-status" id="mStatus" aria-live="polite"></p>
     <div class="market-grid" id="marketGrid"></div>
     <div class="more"><button class="btn" id="mMore" hidden>Voir plus</button></div>
+    <h3>Ta liste de souhaits</h3>
+    <p class="sub">Ajoute une carte avec le bouton ♡ dans sa fiche (catalogue, marché, albums). Tu es prévenu dès que quelqu'un la met en vente.</p>
+    <div class="wish-list" id="wishList"></div>
     <h3>Tes ventes en cours</h3>
     <div class="market-grid" id="myListings"></div>
     <h3>Historique</h3>
@@ -180,11 +184,13 @@
     <div class="info">
       <h3 id="mTitle"></h3><p id="mSub"></p>
       <dl id="mDl"></dl>
+      <div class="m-tags" id="mTags" hidden></div>
       <div class="btns">
         <button class="btn primary" id="mPlay">Écouter l'extrait</button>
         <a class="btn" id="mLink" href="#" target="_blank" rel="noopener">Ouvrir sur Deezer</a>
         <button class="btn" id="mDiscard" hidden></button>
         <button class="btn" id="mSell" hidden>Vendre au marché</button>
+        <button class="btn" id="mWish" hidden aria-pressed="false">♡ Liste de souhaits</button>
         <button class="btn" id="mClose">Fermer</button>
       </div>
     </div>
@@ -207,7 +213,7 @@
 </div>
 <div class="toast" id="toast" hidden></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
-<script src="app.js?v=32"></script>
-<script src="online.js?v=32"></script>
+<script src="app.js?v=33"></script>
+<script src="online.js?v=35"></script>
 </body>
 </html>
