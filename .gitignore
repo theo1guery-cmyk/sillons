@@ -6,3 +6,7 @@ covers/
 
 .claude/
 .DS_Store
+
+# logo drafts (not part of the site)
+brand/compare.html
+brand/original.webp

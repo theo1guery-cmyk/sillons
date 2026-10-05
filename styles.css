@@ -593,3 +593,14 @@ img{max-width:100%}
   background:#000;color:#f5d27a;border-block:.35cqw solid #e9c46a;font-family:var(--mono);font-size:3.1cqw;letter-spacing:.24em;text-transform:uppercase;padding:.6cqw 0;box-shadow:0 .6cqw 1.2cqw rgba(0,0,0,.6)}
 @media (prefers-reduced-motion:reduce){.card .foil,.card.shiny .foil,.acard .foil,.acard.shiny .sheen{animation:none}}
 .sentinel{height:1px}
+
+/* ---------- Zik Hunter branding ---------- */
+.brand{display:grid;gap:2px}
+.brand h1{margin:0;line-height:0}
+.brand h1 img{display:block;width:auto;height:52px;max-width:100%}
+.brand small{margin-top:0}
+@media (max-width:440px){.brand h1 img{height:42px}}
+/* card backs carry the logo */
+.back .in{display:grid;place-items:center;align-content:center;gap:5cqw;background:repeating-radial-gradient(circle,#18131f 0 1.2cqw,#1f1928 1.2cqw 1.8cqw)}
+.back .in img{width:58%;height:auto;filter:drop-shadow(0 1cqw 2cqw rgba(0,0,0,.6))}
+.back .in b{transform:none;padding:0;font-size:5cqw;letter-spacing:.2em}

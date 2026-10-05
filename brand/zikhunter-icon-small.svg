@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="258 129 736 736" role="img" aria-label="Zik Hunter">
+  <title>Zik Hunter</title>
+  <circle cx="626" cy="496.5" r="318" fill="#0E0C12"/>
+  <circle cx="626" cy="496.5" r="318" fill="none" stroke="#E7B14A" stroke-width="40"/>
+  <circle cx="626" cy="496.5" r="228" fill="none" stroke="#E7B14A" stroke-width="22"/>
+  <circle cx="626" cy="496.5" r="132" fill="#F3ECDF"/>
+  <circle cx="626" cy="496.5" r="66" fill="#0E0C12"/>
+  <circle cx="626" cy="496.5" r="48" fill="#FF4D6A"/>
+  <g fill="#E7B14A"><rect x="606" y="129" width="40" height="92" rx="6"/><rect x="606" y="772.0" width="40" height="92" rx="6"/>
+    <rect x="258" y="476.5" width="92" height="40" rx="6"/><rect x="902" y="476.5" width="92" height="40" rx="6"/></g>
+</svg>

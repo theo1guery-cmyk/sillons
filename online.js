@@ -1,5 +1,5 @@
 "use strict";
-/* Sillons TCG — accounts, server-checked boosters and trades (Supabase).
+/* Zik Hunter — accounts, server-checked boosters and trades (Supabase).
    Without an account the game keeps working as before, in this browser only. */
 
 const SUPABASE_URL = "https://gvqlxsofrkqnniuhiiyf.supabase.co";

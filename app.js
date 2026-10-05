@@ -1,5 +1,5 @@
 "use strict";
-/* Sillons TCG — every card is a live Deezer track. No server: the Deezer API is
+/* Zik Hunter — every card is a live Deezer track. No server: the Deezer API is
    called straight from the browser through JSONP (it sends no CORS headers). */
 
 /* ---------- Deezer ---------- */
@@ -459,7 +459,7 @@ function cardEl(c, holo) {
   const w = document.createElement("div"); w.className = "cq"; w.appendChild(el);
   return w;
 }
-function backEl() { const w = document.createElement("div"); w.className = "cq"; w.innerHTML = '<div class="back"><div class="in"><b>SILLONS</b></div></div>'; return w; }
+function backEl() { const w = document.createElement("div"); w.className = "cq"; w.innerHTML = '<div class="back"><div class="in"><img src="brand/zikhunter-icon.svg" alt=""><b>ZIK HUNTER</b></div></div>'; return w; }
 
 /* ---------- views ---------- */
 const views = { shop: $("#view-shop"), store: $("#view-store"), binder: $("#view-binder"), catalog: $("#view-catalog"), trades: $("#view-trades"), defis: $("#view-defis"), market: $("#view-market"), albums: $("#view-albums") };

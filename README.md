@@ -1,4 +1,4 @@
-# Sillons TCG
+# Zik Hunter
 
 Un jeu de cartes à collectionner où chaque carte est un vrai morceau de Deezer, pioché en direct dans tout le catalogue. Plus un morceau est écouté, plus sa carte est rare : les légendaires sont les vrais tubes.
 
