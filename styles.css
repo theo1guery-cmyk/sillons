@@ -634,3 +634,51 @@ img{max-width:100%}
 @media (max-width:520px){.wish{grid-template-columns:44px minmax(0,1fr)}.wish .w-side{grid-column:1/-1;justify-content:flex-start}}
 .wish-heart{background:none;border:0;color:#ff9aa9;font-size:1rem;padding:0 4px;cursor:pointer}
 .tracklist li{grid-template-columns:22px minmax(0,1fr) auto auto auto}
+
+/* ---------- duels ---------- */
+#view-duels h3{font-family:var(--display);font-size:.95rem;margin:28px 0 12px}
+.duel-actions{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 14px}
+.duel-actions .btn{padding:11px 18px;font-size:.95rem}
+.deck-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:14px;margin-bottom:12px}
+.deck-slot{display:grid;gap:6px;align-content:start}
+.deck-slot .mini{cursor:pointer}
+.fx-list{list-style:none;margin:0;padding:0;display:grid;gap:2px;font-family:var(--mono);font-size:.7rem;color:var(--muted)}
+.empty-slot{aspect-ratio:63/88;border:1px dashed var(--line);border-radius:12px;display:grid;place-items:center;align-content:center;text-align:center;color:var(--muted);font-size:.82rem}
+.deck-editor{border:1px solid var(--brass);border-radius:16px;padding:14px;display:grid;gap:10px;background:linear-gradient(#1d1729,#181322)}
+.pick-grid.small{grid-template-columns:repeat(auto-fill,minmax(80px,1fr));max-height:300px}
+.duel-card{border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px;background:var(--felt-2)}
+.duel-card header{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;font-size:.92rem}
+.duel-card header small{font-family:var(--mono);color:var(--brass);font-size:.7rem;margin-left:6px}
+.duel-card header span{font-family:var(--mono);font-size:.8rem;color:var(--muted)}
+.duel-card.incoming{border-color:var(--brass);box-shadow:0 0 0 1px var(--brass)}
+.duel-card.won{border-color:#2f6b47}.duel-card.lost{opacity:.75}
+.duel-card .btns{margin-top:10px}
+.bet{margin:8px 0 0;font-size:.86rem;color:#f5d27a}
+.bet-accept{display:flex;gap:8px;align-items:center;margin-top:8px;font-size:.88rem;cursor:pointer}
+.board{list-style:none;margin:0;padding:0;display:grid;gap:6px;max-width:620px;counter-reset:none}
+.board li{display:grid;grid-template-columns:32px minmax(0,1fr) auto auto;gap:10px;align-items:baseline;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:var(--felt-2)}
+.board li small{grid-column:2;color:var(--brass);font-family:var(--mono);font-size:.7rem;margin-top:-4px}
+.board li.me{border-color:var(--brass)}
+.board .rk{font-family:var(--display);color:var(--muted)}
+.board .rt{font-family:var(--display);color:var(--brass)}
+.board .wl{font-family:var(--mono);font-size:.74rem;color:var(--muted)}
+/* the play dialog */
+.duel-panel{width:min(640px,100%)}
+.duel-panel .btn.big{padding:13px 22px;font-size:1rem}
+.dp-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:10px}
+.dp-head b{font-family:var(--display)}
+.dp-side{font-family:var(--mono);font-size:.74rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.dp-score{font-family:var(--display);color:var(--brass)}
+.dp-bar{height:8px;border-radius:8px;background:#2e2639;overflow:hidden}
+.dp-bar s{display:block;height:100%;width:100%;background:linear-gradient(90deg,var(--r4),var(--brass));transition:width .1s linear}
+.dp-time{margin:6px 0 14px;font-family:var(--mono);font-size:.8rem;color:var(--muted)}
+.dp-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (max-width:520px){.dp-choices{grid-template-columns:minmax(0,1fr)}}
+.dp-choice{border:1px solid var(--line);background:var(--felt);color:var(--ink);border-radius:12px;padding:14px;font:inherit;font-size:.92rem;font-weight:600;text-align:left;min-height:64px;cursor:pointer;transition:transform .1s ease,border-color .1s ease}
+.dp-choice:hover:not(:disabled){border-color:var(--brass);transform:translateY(-1px)}
+.dp-choice.right{border-color:var(--r1);background:rgba(95,196,138,.18)}
+.dp-choice.wrong{border-color:var(--r4);background:rgba(255,77,106,.16)}
+.dp-choice:disabled{cursor:default}
+.dp-reveal{display:grid;grid-template-columns:110px minmax(0,1fr);gap:14px;align-items:start;margin-top:16px}
+.dp-msg{margin:0 0 6px;font-size:.95rem}
+.dp-big{font-family:var(--display);font-size:2rem;color:var(--brass);margin:6px 0}

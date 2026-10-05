@@ -42,6 +42,16 @@ const MESSAGES = {
   album_incomplete: "Il te manque encore des titres de cet album.",
   collector_card: "Une carte Collector ne se défausse pas.",
   wishlist_full: "Ta liste de souhaits est pleine (300 cartes).",
+  deck_needs_five: "Il faut 5 morceaux dans ton deck de clash.",
+  deck_bad_cards: "Une carte de ton deck n'est plus dans ta collection.",
+  self_duel: "Tu ne peux pas te lancer un clash à toi-même.",
+  too_many_duels: "Tu as déjà 10 clashs en cours.",
+  opponent_no_cards: "Ce joueur n'a pas encore assez de cartes pour un clash.",
+  bet_needs_two_cards: "Pour parier, choisis ta carte et la sienne.",
+  card_in_duel: "Cette carte est en jeu dans un pari de clash.",
+  duel_not_found: "Ce clash n'est plus disponible.",
+  bet_card_gone: "Une des cartes du pari n'est plus disponible.",
+  not_enough_cards: "Il te faut au moins 4 cartes pour un entraînement.",
   too_many_tags: "40 étiquettes maximum.",
   tag_exists: "Tu as déjà une étiquette avec ce nom.",
   album_not_found: "Cet album n'est pas disponible.",
@@ -132,7 +142,7 @@ async function enterAccount(user) {
   try {
     await loadAll();
     Online.active = true;
-    $("#tab-trades").hidden = false; $("#tab-defis").hidden = false; $("#tab-market").hidden = false; $("#tab-albums").hidden = false;
+    $("#tab-trades").hidden = false; $("#tab-defis").hidden = false; $("#tab-market").hidden = false; $("#tab-albums").hidden = false; $("#tab-duels").hidden = false;
     $("#table").hidden = true; $("#deal").innerHTML = "";
     refreshViews();
     pollOffers(); updateDefisBadge();
@@ -149,7 +159,8 @@ function leaveAccount() {
   TEST_MODE = true;
   $("#tab-trades").hidden = true; $("#tradeBadge").hidden = true;
   $("#tab-defis").hidden = true; $("#defisBadge").hidden = true; $("#tab-market").hidden = true; $("#tab-albums").hidden = true; $("#albumsBadge").hidden = true;
-  if (!views.trades.hidden || !views.defis.hidden || !views.market.hidden || !views.albums.hidden) show("shop");
+  $("#tab-duels").hidden = true; $("#duelsBadge").hidden = true;
+  if (!views.trades.hidden || !views.defis.hidden || !views.market.hidden || !views.albums.hidden || !views.duels.hidden) show("shop");
   $("#table").hidden = true; $("#deal").innerHTML = "";
   refreshViews();
 }
@@ -1248,12 +1259,16 @@ async function renderWishList() {
 /* alerts: a wished card was just put on the market */
 async function checkNotifications() {
   if (!me) return;
-  const { data } = await sb.from("notifications").select("id,title,price,created_at").eq("read", false).order("created_at", { ascending: false }).limit(20);
-  const n = (data || []).length;
-  $("#marketBadge").hidden = !n; $("#marketBadge").textContent = n || "";
+  const { data } = await sb.from("notifications").select("id,type,title,price,created_at").eq("read", false).order("created_at", { ascending: false }).limit(20);
+  const wishes = (data || []).filter(x => x.type === "wish_listed").length;
+  $("#marketBadge").hidden = !wishes; $("#marketBadge").textContent = wishes || "";
   for (const x of data || []) {
     if (seenNotes.has(x.id)) continue;
     seenNotes.add(x.id);
-    toast(`♥ « ${x.title} », de ta liste de souhaits, est en vente pour ${streamsTxt(x.price)} !`);
+    if (x.type === "wish_listed") toast(`♥ « ${x.title} », de ta liste de souhaits, est en vente pour ${streamsTxt(x.price)} !`);
+    else if (x.type === "duel_challenge") toast(`⚔️ ${x.title} te lance un clash blind test ! Va dans l'onglet Clashs.`);
+    else if (x.type === "duel_result") toast(`⚔️ ${x.title} a joué votre clash : le résultat est dans l'onglet Clashs.`);
+    else if (x.type === "duel_declined") toast(`${x.title} a refusé ton clash.`);
   }
+  if ((data || []).some(x => x.type.startsWith("duel"))) Online.updateDuelsBadge?.();
 }

@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#16121f">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Instrument+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="styles.css?v=34">
+<link rel="stylesheet" href="styles.css?v=38">
 </head>
 <body>
 <div class="wrap">
@@ -21,6 +21,7 @@
       <button role="tab" id="tab-store" aria-selected="false">Boutique</button>
       <button role="tab" id="tab-binder" aria-selected="false">Collection</button>
       <button role="tab" id="tab-catalog" aria-selected="false">Catalogue</button>
+      <button role="tab" id="tab-duels" aria-selected="false" hidden>Clashs<span class="badge" id="duelsBadge" hidden></span></button>
       <button role="tab" id="tab-albums" aria-selected="false" hidden>Albums<span class="badge" id="albumsBadge" hidden></span></button>
       <button role="tab" id="tab-market" aria-selected="false" hidden>Marché<span class="badge" id="marketBadge" hidden></span></button>
       <button role="tab" id="tab-defis" aria-selected="false" hidden>Défis<span class="badge" id="defisBadge" hidden></span></button>
@@ -88,6 +89,22 @@
     <p class="cat-status" id="catStatus" aria-live="polite"></p>
     <div class="binder" id="catalog"></div>
     <div class="more"><button class="btn" id="catMore" hidden>Voir plus de cartes</button></div>
+  </section>
+
+  <section id="view-duels" hidden>
+    <h2>Clashs blind test</h2>
+    <p class="sub">Reconnais les morceaux plus vite que ton adversaire. Chaque clash compte 6 manches : 3 morceaux de ton deck, 3 du sien. Les stats de tes cartes sont tes armes : rythme → extrait plus court, endurance → bouclier, hype basse → morceau plus dur à trouver, puissance → dégâts si l'adversaire sèche.</p>
+    <div class="duel-actions">
+      <button class="btn primary" id="duelChallenge">⚔️ Lancer un clash</button>
+      <button class="btn" id="duelTrain">🎧 Entraînement</button>
+    </div>
+    <div id="duelNew" hidden></div>
+    <h3>Ton deck</h3>
+    <div id="duelDeck"></div>
+    <h3>Clashs reçus</h3><div id="duelsIn"></div>
+    <h3>En attente de ton adversaire</h3><div id="duelsWait"></div>
+    <h3>Terminés</h3><div id="duelsDone"></div>
+    <h3>Classement</h3><div id="duelBoard"></div>
   </section>
 
   <section id="view-albums" hidden>
@@ -211,9 +228,13 @@
     <button class="btn close-x" id="alClose" aria-label="Fermer">Fermer</button>
   </div>
 </div>
+<div class="modal duel-modal" id="duelPlay" hidden role="dialog" aria-modal="true" aria-labelledby="dpTitle">
+  <div class="panel wide duel-panel" id="dpBody"></div>
+</div>
 <div class="toast" id="toast" hidden></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
-<script src="app.js?v=37"></script>
-<script src="online.js?v=35"></script>
+<script src="app.js?v=38"></script>
+<script src="online.js?v=39"></script>
+<script src="duels.js?v=39"></script>
 </body>
 </html>

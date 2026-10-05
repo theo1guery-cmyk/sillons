@@ -363,7 +363,7 @@ async function enrich(t, typeIdx) {
 function rng(seed) { let a = seed >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 function stats(c) {
-  const tempo = c.bpm > 0 ? c.bpm : Math.round(70 + rng(c.id)() * 90);
+  const tempo = c.bpm > 0 ? c.bpm : 70 + (Number(c.id) % 91);   // same estimate as the server uses in duels
   const flow = clamp(Math.round((tempo - 60) / 130 * 99), 8, 99);
   const endu = clamp(Math.round((c.d - 90) / 330 * 99), 5, 99);
   const hype = clamp(Math.round(c.rank / 1e6 * 99), 1, 99);
@@ -463,7 +463,7 @@ function cardEl(c, holo) {
 function backEl() { const w = document.createElement("div"); w.className = "cq"; w.innerHTML = '<div class="back"><div class="in"><img src="brand/zikhunter-icon.svg" alt=""><b>ZIK HUNTER</b></div></div>'; return w; }
 
 /* ---------- views ---------- */
-const views = { shop: $("#view-shop"), store: $("#view-store"), binder: $("#view-binder"), catalog: $("#view-catalog"), trades: $("#view-trades"), defis: $("#view-defis"), market: $("#view-market"), albums: $("#view-albums") };
+const views = { shop: $("#view-shop"), store: $("#view-store"), binder: $("#view-binder"), catalog: $("#view-catalog"), trades: $("#view-trades"), defis: $("#view-defis"), market: $("#view-market"), albums: $("#view-albums"), duels: $("#view-duels") };
 function show(v) {
   for (const k in views) { views[k].hidden = k !== v; $("#tab-" + k).setAttribute("aria-selected", k === v); }
   $("#tableWrap").hidden = v !== "shop" && v !== "store";   // the opening table follows the booster tabs
@@ -473,6 +473,7 @@ function show(v) {
   if (v === "defis") Online.renderDefis();
   if (v === "market") Online.renderMarket();
   if (v === "albums") Online.renderAlbums();
+  if (v === "duels") Online.renderDuels?.();
 }
 $("#tab-shop").onclick = () => show("shop");
 $("#tab-store").onclick = () => show("store");
@@ -482,6 +483,7 @@ $("#tab-trades").onclick = () => show("trades");
 $("#tab-defis").onclick = () => show("defis");
 $("#tab-market").onclick = () => show("market");
 $("#tab-albums").onclick = () => show("albums");
+$("#tab-duels").onclick = () => show("duels");
 
 const owned = () => Object.values(S.c);
 function renderCounters() {

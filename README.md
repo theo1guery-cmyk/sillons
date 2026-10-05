@@ -49,6 +49,7 @@ Puis ouvrir http://localhost:8765.
 - **Cartes d'artiste** (avec un compte) : chaque carte d'un booster a 1 chance sur 50 d'être un artiste. Rareté = certification selon les fans Deezer : Démo (< 1 000), Single (1 000+), Disque d'argent (20 000+), d'or (150 000+), de platine (1 M+), de diamant (10 M+), tirée avec les mêmes chances que les raretés des morceaux et vérifiée par le serveur. Cadre dans la matière de la certification (carton, laque, argent, or, platine, cristal taillé). Compléter une discographie donne la carte Collector de l'artiste (noire laquée, photo en noir et blanc, lettres dorées ; liée au compte : ni échangeable, ni vendable, ni défaussable). Succès « Mur des artistes ».
 - **Liste de souhaits** (avec un compte) : bouton ♡ dans la fiche d'une carte non possédée et dans la liste des titres d'un album ; section dans le Marché avec le prix le plus bas en vente ; alerte (pastille + message) dès qu'une carte de la liste est mise en vente ; une carte obtenue sort de la liste.
 - **Étiquettes** (avec un compte) : jusqu'à 40 étiquettes colorées par joueur, posées depuis la fiche d'une carte, filtre dans la Collection, points de couleur sous les cartes.
+- **Clashs blind test** (avec un compte) : deck de 5 morceaux (+ 1 carte d'artiste en bonus). Défi entre amis en différé : 6 manches (3 morceaux de chaque deck), extrait + 4 réponses ; le serveur choisit les manches, garde la bonne réponse (table `duel_rounds` illisible pour les joueurs) et chronomètre. Stats : rythme → durée de l'extrait (8 à 20 s), endurance → bouclier (jusqu'à −50 %), hype → difficulté (jusqu'à ×2), puissance → dégâts (×5) si l'adversaire sèche. Victoire +50 Streams, défaite +10, égalité +25 (10 clashs récompensés par jour), cote Elo et classement. Pari de cartes optionnel, accepté par les deux : les cartes pariées sont bloquées pendant le duel, le perdant donne la sienne. Mode Entraînement sur sa propre collection.
 - **Réglages serveur** (table `settings`) : `test_mode`, `god_chance`, `pity`, `trade_min_age`, `max_pending_offers`.
 - **Sauvegarde sans compte** : la collection, le stock et le compteur de pitié sont stockés dans le `localStorage` du navigateur.
 - **Limite de débit** : Deezer accepte environ 50 requêtes par 5 secondes par IP. Un booster en utilise 15 à 30, et le jeu temporise et réessaie tout seul.
@@ -59,4 +60,5 @@ Puis ouvrir http://localhost:8765.
 - `styles.css` : le design (cartes, boosters, collection)
 - `app.js` : les appels Deezer, les tirages, la collection, les extraits audio
 - `online.js` : comptes, collection en ligne, import et échanges (Supabase)
+- `duels.js` : clashs blind test et entraînement
 - `supabase/migrations/` : la base de données, les règles d'accès et les fonctions serveur
