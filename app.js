@@ -54,6 +54,15 @@ function typeOfGenre(gid) { const i = TYPES.findIndex(t => t.g.includes(gid)); r
 const RAR = ["Commune", "Peu commune", "Rare", "Épique", "Mythique", "Légendaire"];
 const RCOL = ["var(--r0)", "var(--r1)", "var(--r2)", "var(--r3)", "var(--r4)", "var(--r5)"];
 const MYTH = 4, LEG = 5, TOP = RAR.length - 1;
+// artist cards: their rarity is a sales certification, from Deezer fans
+const CERT = ["Démo", "Single", "Disque d'argent", "Disque d'or", "Disque de platine", "Disque de diamant"];
+const CCOL = ["var(--c0)", "var(--c1)", "var(--c2)", "var(--c3)", "var(--c4)", "var(--c5)"];
+const CERT_MIN = [0, 1000, 20000, 150000, 1000000, 10000000];
+const certOf = fans => CERT_MIN.reduce((t, m, i) => fans >= m ? i : t, 0);
+const inCert = (fans, t) => fans >= CERT_MIN[t] && (t === 5 || fans < CERT_MIN[t + 1]);
+const isArtist = c => c && c.kind === "artist";
+const rarName = c => isArtist(c) ? CERT[c.tier] : RAR[c.tier];
+const fmtFans = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 0 : 1).replace(".", ",") + " M" : n >= 1e3 ? Math.round(n / 1e3) + " k" : String(n);
 // Deezer rank (0 – 1 000 000) → rarity. 950 000+ is the global-hit club
 // (Billie Jean, Bohemian Rhapsody…): a few thousand tracks out of 100+ million.
 const TIER_MIN = [0, 250000, 450000, 700000, 850000, 950000];
@@ -64,6 +73,7 @@ const tierDistance = (rank, t) => rank < TIER_MIN[t] ? TIER_MIN[t] - rank : t < 
 // Every card of a booster uses the same odds (no guaranteed slot).
 const DROP = [70, 21, 7, 1.7, 0.28, 0.02];
 const PITY = 70;                         // boosters without a Mythique or better before one is guaranteed
+const SHINY_CHANCE = 0.01;               // a Mythique or Légendaire has 1 chance in 100 to be Shiny
 const GOD_CHANCE = 1 / 3000;             // a booster turns into a GOD pack: 1 Légendaire + 4 cards that are Mythique or Légendaire (50/50)
 const STOCK_MAX = 10, REFILL_MS = 30 * 60 * 1000;
 let TEST_MODE = true;                   // unlimited free boosters while the game is being tested (read from the server when signed in)
@@ -227,6 +237,39 @@ async function findTrack(typeIdx, tier, used) {
   return tier <= 3 ? (best && best.t) || ownedHit : ownedHit || (best && best.t);
 }
 
+/* ---------- artists for the artist slots ----------
+   Démo/Single: random artist searches. Argent/Or: searches on real words and names.
+   Platine/Diamant: from the chart's artists, walking to similar artists (which carry fan counts). */
+const famous = { seeds: null, pool: new Map() };
+async function certArtistPool(tier) {
+  if (tier >= 4) {
+    // the French chart, plus worldwide stars so the walk doesn't stay among French artists
+    if (!famous.seeds) famous.seeds = [...((await dz("chart/0/artists", { limit: 100 })).data || []).map(a => a.id),
+      246791, 13, 564, 4050205, 75798, 1424821, 1182, 27, 12246, 4495513, 5313805, 288166, 1188, 9635624];
+    const known = [...famous.pool.values()].filter(a => a.nb_fan >= CERT_MIN[3]);
+    const from = known.length && Math.random() < .6 ? pick(known).id : pick(famous.seeds);
+    const rel = (await dz(`artist/${from}/related`, { limit: 50 })).data || [];
+    for (const a of rel) famous.pool.set(a.id, a);
+    return [...famous.pool.values()];
+  }
+  const q = tier >= 2 ? randomQuery(true) : randomQuery(false);
+  const d = await dz("search/artist", { q, limit: 100, index: randInt(tier >= 2 ? 50 : 150) });
+  return d.data || [];
+}
+async function findArtist(tier, used) {
+  let best = null;
+  for (let attempt = 0; attempt < 12; attempt++) {
+    const pool = (await certArtistPool(tier).catch(() => [])).filter(a => a.id && a.nb_fan != null && !used.has(a.id) && !S.c["a" + a.id]);
+    const hits = pool.filter(a => inCert(a.nb_fan, tier));
+    if (hits.length) return pick(hits);
+    for (const a of pool) {
+      const d = a.nb_fan < CERT_MIN[tier] ? CERT_MIN[tier] - a.nb_fan : tier < 5 ? a.nb_fan - CERT_MIN[tier + 1] : 0;
+      if (!best || d < best.d) best = { a, d };
+    }
+  }
+  return best && best.a;
+}
+
 /* ---------- genre boosters (boutique) ---------- */
 const GENRE_TERMS = {
   rap: ["rap", "rap français", "hip hop", "drill", "trap", "rap us", "boom bap", "rap old school", "rap belge", "uk rap"],
@@ -361,10 +404,41 @@ const reduceMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matche
 
 /* ---------- card markup ---------- */
 const PENDING_TYPE = { n: "…", h: 250, s: "Rythme" };   // genre not fetched yet (catalogue)
+function artistStats(c) {
+  const fans = clamp(Math.round(Math.log10(Math.max(1, c.rank)) / 7.5 * 99), 1, 99);
+  const albums = clamp(Math.round((c.albums || 0) * 4), 1, 99);
+  const aura = clamp(Math.round(20 + c.tier * 15 + (c.collector ? 10 : 0)), 1, 99);
+  return { fans, albums, aura, pw: Math.round((fans * 2 + albums + aura) / 4) };
+}
+// artist cards: the photo fills the card like a track's cover, inside a frame made of the
+// certification's material (kraft, lacquer, silver, gold, platinum, cut crystal)
+function artistCardEl(c, holo) {
+  const st = artistStats(c);
+  const el = document.createElement("div");
+  el.className = "acard" + (holo && c.tier >= MYTH && !c.collector ? " shiny" : "") + (c.collector ? " collector" : ""); el.dataset.cert = c.tier; el.dataset.r = c.tier;
+  const pic = c.cov ? `<img class="bg" src="${esc(c.cov)}" alt="" loading="lazy" decoding="async"><img class="photo" src="${esc(c.cov)}" alt="Photo de ${esc(c.t)}" loading="lazy" decoding="async">`
+    : `<div class="ph">${esc(initials(c.t))}</div>`;
+  el.innerHTML = `<div class="frame"><div class="backing">${pic}
+      <div class="a-top"><span class="a-kind">Artiste</span><span class="a-pw" title="Puissance"><span class="disc" aria-hidden="true"></span>${st.pw}</span></div>
+      <div class="a-body">
+        <b class="a-name">${esc(c.t)}</b>
+        <div class="plaque">${c.collector ? "Discographie complète" : "Certifié " + CERT[c.tier]}</div>
+        <div class="st">
+          <i>FANS</i><span class="bar"><s style="width:${st.fans}%"></s></span><em>${fmtFans(c.rank)}</em>
+          <i>ALBUMS</i><span class="bar"><s style="width:${st.albums}%"></s></span><em>${c.albums || "?"}</em>
+          <i>AURA</i><span class="bar"><s style="width:${st.aura}%"></s></span><em>${st.aura}</em>
+        </div>
+      </div>
+    </div></div>
+    ${c.collector ? `<div class="ribbon">Collector</div><div class="sheen" aria-hidden="true"></div>` : holo && c.tier >= MYTH ? `<div class="ribbon">Shiny</div><div class="sheen" aria-hidden="true"></div>` : ""}<div class="foil"></div>`;
+  const w = document.createElement("div"); w.className = "cq"; w.appendChild(el);
+  return w;
+}
 function cardEl(c, holo) {
+  if (isArtist(c)) return artistCardEl(c, holo);
   const T = c.g == null ? PENDING_TYPE : TYPES[c.g] || TYPES[AUTRE], st = stats(c);
   const el = document.createElement("div");
-  el.className = "card" + (holo ? " holo" : "") + (c.g == null ? " pending" : ""); el.dataset.r = c.tier;
+  el.className = "card" + (holo && c.tier >= MYTH ? " shiny" : "") + (c.g == null ? " pending" : ""); el.dataset.r = c.tier;
   el.style.setProperty("--h", T.h); el.style.setProperty("--rc", RCOL[c.tier]);
   const art = c.cov
     ? `<img class="bg" src="${esc(c.cov.replace(/\/\d+x\d+-/, "/120x120-"))}" alt="" loading="lazy" decoding="async"><img class="cover" src="${esc(c.cov.replace(/\/\d+x\d+-/, "/500x500-"))}" alt="Pochette de ${esc(c.al)}" loading="lazy" decoding="async">`
@@ -411,7 +485,7 @@ $("#tab-albums").onclick = () => show("albums");
 const owned = () => Object.values(S.c);
 function renderCounters() {
   const all = owned();
-  $("#counters").innerHTML = (Online.active ? `<span class="streams">Streams <b>${fmt(S.streams || 0)}</b></span>` : "") + `<span>Cartes <b>${fmt(all.length)}</b></span><span class="myth">Mythiques <b>${all.filter(c => c.tier === MYTH).length}</b></span><span class="leg">Légendaires <b>${all.filter(c => c.tier === LEG).length}</b></span><span>Boosters ouverts <b>${fmt(S.opened)}</b></span>`;
+  $("#counters").innerHTML = (Online.active ? `<span class="streams">Streams <b>${fmt(S.streams || 0)}</b></span>` : "") + `<span>Cartes <b>${fmt(all.length)}</b></span><span class="myth">Mythiques <b>${all.filter(c => c.tier === MYTH && !isArtist(c)).length}</b></span><span class="leg">Légendaires <b>${all.filter(c => c.tier === LEG && !isArtist(c)).length}</b></span>${all.some(isArtist) ? `<span>Artistes <b>${all.filter(isArtist).length}</b></span>` : ""}<span>Boosters ouverts <b>${fmt(S.opened)}</b></span>`;
 }
 
 /* ---------- shelf: one booster, limited stock ---------- */
@@ -482,7 +556,7 @@ async function drawPack(p, god = false, forced = null) {
   if (raws.length < 5) throw { code: "short" };
   const cards = await Promise.all(raws.map(t => enrich(t, p.g)));
   const pulls = cards.map((c, i) => {
-    const holo = Math.random() < .04, prev = S.c[c.id];
+    const holo = c.tier >= MYTH && Math.random() < SHINY_CHANCE, prev = S.c[c.id];   // Shiny: Mythique / Légendaire only
     S.c[c.id] = { ...c, n: (prev?.n || 0) + 1, holo: (prev?.holo || 0) + (holo ? 1 : 0), at: prev?.at || Date.now() };
     return { c, holo, isNew: !prev, wanted: slots[i], src: raws[i]._src };
   }).sort((a, b) => a.c.tier - b.c.tier || a.c.rank - b.c.rank);   // weakest first, best card last
@@ -601,13 +675,13 @@ function slotEl(pl, i) {
     if (f.classList.contains("on") || revealing) return;
     revealing = true;
     if (pl.c.tier >= 3 && !reduceMotion()) await revealBig(slot, pl.c.tier);
-    f.classList.add("on"); f.setAttribute("aria-label", pl.c.t + ", " + RAR[pl.c.tier]);
+    f.classList.add("on"); f.setAttribute("aria-label", pl.c.t + ", " + rarName(pl.c));
     if (pl.c.tier >= 3) slot.classList.add("burst", "burst-" + pl.c.tier);
-    tag.textContent = (pl.isNew ? "Nouvelle · " : "Doublon · ") + RAR[pl.c.tier] + (pl.holo ? " · Holo" : "");
+    tag.textContent = (pl.isNew ? "Nouvelle · " : "Doublon · ") + (isArtist(pl.c) ? "Artiste · " : "") + rarName(pl.c) + (pl.holo && pl.c.tier >= MYTH ? " · SHINY" : "");
     if (pl.isNew) tag.classList.add("new");
     revealing = false;
   };
-  f.onclick = () => f.classList.contains("on") ? openModal(pl.c) : f.reveal();
+  f.onclick = () => f.classList.contains("on") ? openModal(pl.c, pl.holo) : f.reveal();
   slot.append(f, tag);
   return slot;
 }
@@ -623,8 +697,9 @@ function renderBinder() {
   const all = owned();
   const pg = $("#prog");
   const rows = [{ g: -1, n: "Tout", h: 42 }].concat(TYPES.map((t, g) => ({ g, n: t.n, h: t.h })));
+  if (all.some(isArtist)) rows.splice(1, 0, { g: -2, n: "Artistes", h: 42 });
   pg.innerHTML = rows.map(t => {
-    const list = t.g < 0 ? all : all.filter(c => c.g === t.g);
+    const list = t.g === -1 ? all : t.g === -2 ? all.filter(isArtist) : all.filter(c => c.g === t.g && !isArtist(c));
     const leg = list.filter(c => c.tier === LEG).length;
     return `<button data-g="${t.g}" style="--h:${t.h}" aria-pressed="${F.g === t.g}"><span class="row">${t.n}<small>${fmt(list.length)}</small></span><span class="meter"><s style="width:${all.length ? list.length / all.length * 100 : 0}%"></s></span><small class="legs">${leg} légendaire${leg > 1 ? "s" : ""}</small></button>`;
   }).join("");
@@ -637,7 +712,7 @@ function renderBinder() {
   fl.querySelectorAll(".chip").forEach(b => b.onclick = () => { F.r = +b.dataset.r; renderBinder(); });
   $("#fSort").onchange = e => { F.sort = e.target.value; renderBinder(); };
 
-  let list = all.filter(c => (F.g < 0 || c.g === F.g) && (F.r < 0 || c.tier === F.r));
+  let list = all.filter(c => (F.g === -1 || (F.g === -2 ? isArtist(c) : c.g === F.g && !isArtist(c))) && (F.r < 0 || c.tier === F.r));
   const by = {
     recent: (a, b) => b.at - a.at,
     rarity: (a, b) => b.rank - a.rank,
@@ -780,16 +855,25 @@ const modal = $("#modal"), audio = new Audio();
 let lastFocus = null, current = null;
 audio.onended = audio.onpause = () => { $("#mPlay").textContent = "Écouter l'extrait"; $("#mPlay").setAttribute("aria-pressed", "false"); };
 audio.onplay = () => { $("#mPlay").textContent = "Pause"; $("#mPlay").setAttribute("aria-pressed", "true"); };
-function openModal(c) {
+// shiny: how the clicked copy looks (a market listing, a pulled card…); by default, the best copy owned
+function openModal(c, shiny) {
   lastFocus = document.activeElement; current = c;
   const own = S.c[c.id] || { n: 0, holo: 0 }, st = stats(c), T = TYPES[c.g] || TYPES[AUTRE];
   const box = $("#mCard"); box.innerHTML = "";
-  const w = cardEl(c, own.holo > 0); box.appendChild(w);
+  const isShiny = (shiny ?? own.holo > 0) && c.tier >= MYTH && !c.collector;
+  const w = cardEl(c, isShiny); box.appendChild(w);
+  if (isArtist(c)) {
+    $("#mTitle").textContent = c.t; $("#mSub").textContent = "Carte d'artiste · " + CERT[c.tier];
+    $("#mDl").innerHTML = `<dt>Certification</dt><dd>${CERT[c.tier]}${c.collector || own.collector ? " · Collector" : ""}${isShiny ? " · Shiny" : ""}</dd><dt>Fans Deezer</dt><dd>${fmt(c.rank)}</dd>
+      <dt>Albums</dt><dd>${c.albums || "?"}</dd><dt>Possédées</dt><dd>${own.n}${own.collector ? ` (dont la Collector)` : ""}</dd>`;
+    $("#mLink").href = "https://www.deezer.com/artist/" + c.aid;
+  } else {
   $("#mTitle").textContent = c.t; $("#mSub").textContent = c.a + " · " + c.al;
-  $("#mDl").innerHTML = `<dt>Rareté</dt><dd>${RAR[c.tier]}</dd><dt>Classement</dt><dd>${fmt(c.rank)} pts Deezer</dd>
+  $("#mDl").innerHTML = `<dt>Rareté</dt><dd>${RAR[c.tier]}${isShiny ? " · Shiny" : ""}</dd><dt>Classement</dt><dd>${fmt(c.rank)} pts Deezer</dd>
     <dt>${T.s}</dt><dd>${st.flow} · ${c.bpm > 0 ? c.bpm + " BPM" : "tempo estimé"}</dd><dt>Endurance</dt><dd>${st.endu} · ${fmtDur(c.d)}</dd>
-    <dt>Hype</dt><dd>${st.hype}</dd><dt>Sortie</dt><dd>${c.y || "?"}</dd><dt>Possédées</dt><dd>${own.n}${own.holo ? ` (dont ${own.holo} holo)` : ""}${own.locked ? ` · ${own.locked} non échangeable${own.locked > 1 ? "s" : ""}` : ""}</dd>`;
+    <dt>Hype</dt><dd>${st.hype}</dd><dt>Sortie</dt><dd>${c.y || "?"}</dd><dt>Possédées</dt><dd>${own.n}${own.holo && c.tier >= MYTH ? ` (dont ${own.holo} Shiny)` : ""}${own.locked ? ` · ${own.locked} non échangeable${own.locked > 1 ? "s" : ""}` : ""}</dd>`;
   $("#mLink").href = "https://www.deezer.com/track/" + c.id;
+  }
   Online.modalExtras?.(c);
   audio.pause();
   modal.hidden = false; $("#mPlay").focus();
@@ -806,7 +890,8 @@ $("#mPlay").onclick = async () => {
   const c = current; if (!c) return;
   $("#mPlay").textContent = "Chargement…";
   try {
-    const t = await dz("track/" + c.id);
+    // an artist card plays the artist's most popular track
+    const t = isArtist(c) ? ((await dz(`artist/${c.aid}/top`, { limit: 1 })).data || [])[0] || {} : await dz("track/" + c.id);
     if (!t.preview) throw 0;
     if (current !== c) return;
     audio.src = t.preview; await audio.play();
@@ -822,3 +907,28 @@ renderStock();
 $("#odds").innerHTML = `<table><tr><th>Rareté</th><th>Chance par carte</th><th>Classement Deezer</th></tr>${RAR.map((r, i) =>
   `<tr><td><i style="background:${RCOL[i]}"></i>${r}</td><td>${String(DROP[i]).replace(".", ",")} %</td><td>${i === TOP ? fmt(TIER_MIN[i]) + " et plus" : fmt(TIER_MIN[i]) + " – " + fmt(TIER_MIN[i + 1] - 1)}</td></tr>`).join("")}</table>
   <p class="god-odds"><b>GOD PACK</b> : 1 booster sur 3 000 se transforme en GOD pack. Il contient 1 Légendaire garantie, et ses 4 autres cartes ont chacune 50 % de chances d'être Mythique et 50 % d'être Légendaire.</p>`;
+
+/* ---------- local preview only: http://localhost:8765/#galerie shows one card of every kind ---------- */
+async function buildGallery() {
+  const shop = $("#view-shop"), wrap = document.createElement("div"); wrap.id = "gameDemo"; shop.prepend(wrap);
+  const section = (title, sub) => {
+    const h = document.createElement("h2"); h.textContent = title;
+    const p = document.createElement("p"); p.className = "sub"; p.textContent = sub;
+    const g = document.createElement("div"); g.className = "binder"; wrap.append(h, p, g); return g;
+  };
+  const add = (g, c, holo) => { const b = document.createElement("button"); b.className = "cell"; b.appendChild(cardEl(c, holo)); b.onclick = () => openModal(c, holo); g.appendChild(b); };
+  const artist = (f, collector) => ({ kind: "artist", id: (collector ? "col" : "a") + f.id, aid: f.id, t: f.name, a: "Artiste",
+    cov: (f.picture_big || "").replace("http:", "https:"), rank: f.nb_fan, albums: f.nb_album || 0, tier: certOf(f.nb_fan), collector });
+  const gT = section("Les morceaux", "Une carte par rareté, de la Commune à la Légendaire, plus une Mythique et une Légendaire Shiny.");
+  const used = new Set();
+  for (const t of [0, 1, 2, 3, 4, 5]) { const raw = await findTrack(-1, t, used); if (raw) { used.add(raw.id); add(gT, await enrich(raw, -1), false); } }
+  for (const t of [MYTH, LEG]) { const sh = await findTrack(-1, t, used); if (sh) { used.add(sh.id); add(gT, await enrich(sh, -1), true); } }
+  const gA = section("Les artistes", "Une carte par certification, de la Démo au Disque de diamant.");
+  const ua = new Set();
+  for (const t of [0, 1, 2, 3, 4, 5]) { const a = await findArtist(t, ua); if (a) { ua.add(a.id); add(gA, artist(await dz("artist/" + a.id), false), false); } }
+  const gS = section("Artistes Shiny", "Un Platine et un Diamant en version Shiny.");
+  for (const id of [27, 246791]) add(gS, artist(await dz("artist/" + id), false), true);
+  const gC = section("Les Collector", "La carte noire obtenue en complétant toute la discographie d'un artiste.");
+  for (const id of [1424821, 75798, 564]) add(gC, artist(await dz("artist/" + id), true), false);
+}
+if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) && location.hash === "#galerie") buildGallery();

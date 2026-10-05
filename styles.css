@@ -11,6 +11,8 @@
   --mono:"DM Mono", ui-monospace, Menlo, monospace;
   /* rarity */
   --r0:#9a93a6; --r1:#5fc48a; --r2:#4f9cff; --r3:#b071ff; --r4:#ff4d6a; --r5:#f5c24d;
+  /* artist certifications */
+  --c0:#8d8698; --c1:#4fb8b0; --c2:#c9ccd6; --c3:#f0b93a; --c4:#e6eef8; --c5:#9fe3ff;
   color-scheme:dark;
 }
 *{box-sizing:border-box}
@@ -119,11 +121,9 @@ section .sub{color:var(--muted);margin:0 0 16px;font-size:.92rem;max-width:62ch}
 .card .ft .rn{color:var(--rc);font-weight:500;text-transform:uppercase;letter-spacing:.06em}
 .card .foil{position:absolute;inset:0;pointer-events:none;mix-blend-mode:color-dodge;opacity:0;border-radius:inherit;
   background:linear-gradient(115deg,transparent 25%,rgba(255,80,160,.55) 38%,rgba(255,220,90,.55) 46%,rgba(80,255,200,.5) 54%,rgba(90,140,255,.55) 62%,transparent 75%);
-  background-size:260% 260%;background-position:var(--fx,50%) var(--fy,50%);animation:foil 5s linear infinite}
-.card[data-r="5"] .foil,.card.holo .foil{opacity:.55}
-.card[data-r="4"] .foil{opacity:.3}
-.card.holo .foil{opacity:.8}
-.card.holo::after{content:"HOLO";position:absolute;z-index:3;top:4.4cqw;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:3cqw;letter-spacing:.2em;color:#fff;background:linear-gradient(90deg,#ff5fa2,#4f9cff);padding:0 2cqw;border-radius:99px}
+  background-size:260% 260%;background-position:var(--fx,50%) var(--fy,50%)}
+.card[data-r="5"] .foil{opacity:.55;animation:foil 5s linear infinite}
+.card[data-r="4"] .foil{opacity:.3;animation:foil 5s linear infinite}
 @keyframes foil{0%{background-position:0% 0%}50%{background-position:100% 100%}100%{background-position:0% 0%}}
 @media (prefers-reduced-motion:reduce){.card .foil{animation:none}.slot{animation-duration:.01s}.flip{transition-duration:.01s}.rip .pack{animation:none}}
 
@@ -474,3 +474,121 @@ img{max-width:100%}
 .disco .covers em{font-size:.5rem;color:var(--muted);font-style:normal;text-align:center;padding:2px;overflow:hidden}
 .album .d-foot{flex-wrap:wrap}
 .disco .ph-artist{width:64px;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;background:#2e2639;font-family:var(--display);font-weight:700;color:var(--muted)}
+
+/* ---------- artist cards: full photo inside a certification frame ---------- */
+.acard{--mat:linear-gradient(135deg,#6b6670,#a8a2b0 45%,#5d5864);--accent:#bfb8c9;
+  container-type:inline-size;position:relative;width:100%;aspect-ratio:63/88;border-radius:4cqw;padding:4.2cqw;background:var(--mat);
+  box-shadow:0 10px 24px rgba(0,0,0,.55),inset 0 0 0 .6cqw rgba(255,255,255,.4),inset 0 0 0 1.3cqw rgba(0,0,0,.15);color:#fff;user-select:none;text-align:left}
+.acard .frame{height:100%;border-radius:2.4cqw;padding:.9cqw;background:rgba(0,0,0,.45);box-shadow:inset 0 .5cqw 1.2cqw rgba(0,0,0,.7),0 .35cqw 0 rgba(255,255,255,.3)}
+.acard .backing{position:relative;height:100%;border-radius:1.8cqw;overflow:hidden;display:flex;flex-direction:column;background:#120e16}
+.acard .backing>.bg{position:absolute;inset:-12%;width:124%;height:124%;object-fit:cover;filter:blur(18px) saturate(1.2) brightness(.7)}
+.acard .backing>.photo{position:absolute;left:0;top:0;width:100%;aspect-ratio:1;object-fit:cover;object-position:center 22%;
+  -webkit-mask-image:linear-gradient(180deg,#000 80%,transparent);mask-image:linear-gradient(180deg,#000 80%,transparent)}
+.acard .backing>.ph{position:absolute;left:0;top:0;width:100%;aspect-ratio:1;display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:16cqw;color:rgba(255,255,255,.3);background:linear-gradient(160deg,#3a3342,#16121c)}
+.acard .backing::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(180deg,rgba(0,0,0,.5) 0%,transparent 15%,transparent 42%,rgba(8,6,12,.75) 60%,rgba(8,6,12,.95) 76%,rgba(8,6,12,.98) 100%)}
+.acard .a-top,.acard .a-body{position:relative;z-index:1}
+.acard .a-top{display:flex;justify-content:space-between;align-items:center;gap:2cqw;padding:3cqw 3cqw 0}
+.acard .a-kind{background:rgba(0,0,0,.55);border:.4cqw solid var(--accent);border-radius:99px;padding:.6cqw 2.6cqw;font-family:var(--mono);font-size:3.3cqw;letter-spacing:.16em;text-transform:uppercase;backdrop-filter:blur(3px)}
+.acard .a-pw{display:flex;align-items:center;gap:1.6cqw;background:rgba(0,0,0,.55);border-radius:99px;padding:.8cqw 2.6cqw .8cqw 1.2cqw;font-family:var(--display);font-weight:900;font-size:5cqw;line-height:1;backdrop-filter:blur(3px)}
+.acard .disc{width:5cqw;height:5cqw;border-radius:50%;flex:none;background:radial-gradient(circle,#111 0 14%,transparent 16%),var(--mat);box-shadow:0 0 0 .5cqw rgba(0,0,0,.45),inset 0 0 1cqw rgba(255,255,255,.5)}
+.acard .a-body{margin-top:auto;padding:0 3.6cqw 3.4cqw}
+.acard .a-name{display:block;font-family:var(--display);font-weight:700;font-size:7cqw;line-height:1.06;letter-spacing:-.01em;text-shadow:0 1px 8px rgba(0,0,0,.6);
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-wrap:balance}
+/* the engraved plaque in the frame's material */
+.acard .plaque{display:inline-block;margin-top:1.8cqw;padding:.7cqw 2.4cqw;border-radius:1cqw;background:var(--mat);color:#1a1414;
+  font-family:var(--mono);font-size:3cqw;letter-spacing:.12em;text-transform:uppercase;font-weight:500;
+  box-shadow:inset 0 .3cqw .5cqw rgba(255,255,255,.55),inset 0 -.3cqw .5cqw rgba(0,0,0,.35),0 .5cqw 1cqw rgba(0,0,0,.5)}
+.acard .st{display:grid;grid-template-columns:auto 1fr auto;align-items:center;column-gap:2.4cqw;row-gap:1.4cqw;margin-top:3cqw;font-family:var(--mono);font-size:3.3cqw}
+.acard .st i{font-style:normal;letter-spacing:.06em;color:rgba(255,255,255,.6)}
+.acard .st .bar{height:1.8cqw;border-radius:2cqw;background:rgba(255,255,255,.16);overflow:hidden}
+.acard .st .bar>s{display:block;height:100%;background:var(--mat);border-radius:inherit}
+.acard .st em{font-style:normal;font-weight:500;min-width:7cqw;text-align:right;font-variant-numeric:tabular-nums}
+.acard .foil{position:absolute;inset:0;pointer-events:none;mix-blend-mode:color-dodge;opacity:0;border-radius:inherit;
+  background:linear-gradient(115deg,transparent 25%,rgba(255,80,160,.55) 38%,rgba(255,220,90,.55) 46%,rgba(80,255,200,.5) 54%,rgba(90,140,255,.55) 62%,transparent 75%);
+  background-size:260% 260%;background-position:var(--fx,50%) var(--fy,50%)}
+
+/* frame materials, one per certification */
+.acard[data-cert="0"]{--mat:repeating-linear-gradient(90deg,rgba(0,0,0,.06) 0 .4cqw,transparent .4cqw 1.2cqw),linear-gradient(160deg,#c9a676,#a5824f 50%,#bd9967);--accent:#d8bf95}
+.acard[data-cert="1"]{--mat:linear-gradient(145deg,#0d0d10,#34343c 45%,#0b0b0e);--accent:#4fb8b0;box-shadow:0 10px 24px rgba(0,0,0,.55),inset 0 0 0 .6cqw #4fb8b0}
+.acard[data-cert="1"] .plaque{background:linear-gradient(145deg,#1d3b39,#4fb8b0 50%,#1d3b39);color:#eafffd}
+.acard[data-cert="2"]{--mat:linear-gradient(135deg,#7d828a,#f4f6f9 22%,#9ea3ab 40%,#e9ecf0 58%,#868b93 78%,#dfe2e7);--accent:#dfe3e9}
+.acard[data-cert="3"]{--mat:linear-gradient(135deg,#7a5a14,#f7e08a 22%,#b38a26 40%,#fff1b0 58%,#8f6b18 78%,#efd27a);--accent:#f5c24d}
+.acard[data-cert="4"]{--mat:linear-gradient(135deg,#8c9db0,#ffffff 22%,#b7c6d6 40%,#f4f8fc 58%,#93a5b9 78%,#e7eef6);--accent:#e6eef8}
+/* Diamant: cut corners, crystal that shifts colour, glints */
+.acard[data-cert="5"]{--mat:conic-gradient(from var(--spin,0deg),#bdf0ff,#f8c8ff,#fff7c2,#c2ffe1,#bdf0ff,#f8c8ff,#fff7c2,#bdf0ff);--accent:#bdf0ff;
+  border-radius:0;clip-path:polygon(9% 0,91% 0,100% 6.5%,100% 93.5%,91% 100%,9% 100%,0 93.5%,0 6.5%);animation:spin 6s linear infinite}
+.acard[data-cert="5"] .frame{border-radius:0;clip-path:polygon(8% 0,92% 0,100% 6%,100% 94%,92% 100%,8% 100%,0 94%,0 6%)}
+.acard[data-cert="5"] .backing{border-radius:0;clip-path:polygon(7% 0,93% 0,100% 5.5%,100% 94.5%,93% 100%,7% 100%,0 94.5%,0 5.5%)}
+.acard[data-cert="5"] .backing::before{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;
+  background:radial-gradient(circle at 22% 18%,#fff 0 .5cqw,transparent 1.5cqw),radial-gradient(circle at 80% 38%,#fff 0 .4cqw,transparent 1.2cqw),radial-gradient(circle at 64% 10%,#fff 0 .3cqw,transparent 1cqw),radial-gradient(circle at 12% 56%,#fff 0 .3cqw,transparent 1cqw);
+  animation:twinkle 2.4s ease-in-out infinite}
+@keyframes twinkle{0%,100%{opacity:.2}50%{opacity:1}}
+.acard[data-cert="5"] .foil{opacity:.35;animation:foil 5s linear infinite}
+/* Collector: a black, shiny card. Lacquered obsidian frame with a holographic sheen, black-and-white photo,
+   gold lettering. Only from a complete discography. */
+.acard.collector{--mat:linear-gradient(145deg,#050506,#24222a 30%,#0a0a0c 50%,#2c2a33 70%,#060607);--accent:#e9c46a;--gold:linear-gradient(100deg,#b8862b,#fff1b8 30%,#d9a83f 55%,#fff6cf 75%,#b8862b);
+  border-radius:4cqw;clip-path:none;overflow:hidden;animation:none;
+  box-shadow:0 12px 30px rgba(0,0,0,.7),inset 0 0 0 .4cqw #e9c46a,inset 0 0 0 1.1cqw #0b0b0d,inset 0 0 0 1.4cqw rgba(233,196,106,.45)}
+/* vinyl grooves pressed into the black lacquer */
+.acard.collector::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;border-radius:inherit;
+  background:repeating-radial-gradient(circle at 50% 120%,rgba(255,255,255,.035) 0 .5cqw,transparent .5cqw 1.1cqw)}
+.acard.collector .frame{position:relative;z-index:1;background:#000;box-shadow:inset 0 .5cqw 1.2cqw rgba(0,0,0,.9),0 0 0 .3cqw rgba(233,196,106,.6)}
+.acard.collector .backing{background:#050506}
+.acard.collector .backing>.photo,.acard.collector .backing>.bg{filter:grayscale(1) contrast(1.2) brightness(.92)}
+.acard.collector .backing>.bg{filter:grayscale(1) blur(18px) brightness(.45)}
+.acard.collector .backing::before{content:none}
+.acard.collector .a-kind{border-color:#e9c46a;color:#e9c46a;background:rgba(0,0,0,.7)}
+.acard.collector .a-pw{background:rgba(0,0,0,.7);color:#f5d27a}
+.acard.collector .disc{background:radial-gradient(circle,#000 0 14%,transparent 16%),var(--gold)}
+.acard.collector .a-name{background:var(--gold);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;filter:drop-shadow(0 .3cqw .6cqw rgba(0,0,0,.8))}
+.acard.collector .plaque{background:#000;color:#f5d27a;box-shadow:inset 0 0 0 .3cqw #e9c46a,0 .5cqw 1cqw rgba(0,0,0,.6)}
+.acard.collector .st i{color:rgba(233,196,106,.75)}
+.acard.collector .st .bar{background:rgba(233,196,106,.15)}
+.acard.collector .st .bar>s{background:var(--gold)}
+.acard.collector .st em{color:#f5d27a}
+/* a warm light sweeping slowly across the black lacquer, then resting (like light on a piano) */
+.acard.collector .sheen{position:absolute;inset:0;z-index:3;pointer-events:none;border-radius:inherit;mix-blend-mode:screen;
+  background:linear-gradient(115deg,transparent 38%,rgba(255,236,190,.10) 45%,rgba(255,248,230,.42) 50%,rgba(255,236,190,.10) 55%,transparent 62%);
+  background-size:320% 100%;background-position:120% 0;animation:sweep 7s cubic-bezier(.45,0,.25,1) infinite}
+@keyframes sweep{0%{background-position:120% 0}45%{background-position:-20% 0}100%{background-position:-20% 0}}
+/* in the big view, the light follows the tilt instead */
+.big .acard.collector .sheen{animation:none;background-position:calc(110% - var(--fx,50%) * 1.3) 0}
+.acard.collector .foil{display:none}
+.acard.collector .ribbon{position:absolute;top:5.5cqw;right:-9cqw;width:40cqw;transform:rotate(38deg);text-align:center;z-index:4;
+  background:#000;color:#f5d27a;border-block:.35cqw solid #e9c46a;font-family:var(--mono);font-size:3.1cqw;letter-spacing:.22em;text-transform:uppercase;padding:.6cqw 0;box-shadow:0 .6cqw 1.2cqw rgba(0,0,0,.6)}
+@media (prefers-reduced-motion:reduce){.acard[data-cert="5"],.acard.collector,.acard[data-cert="5"] .backing::before,.acard.collector .backing::before,.acard.collector .sheen{animation:none}}
+.slot.burst .flip.on .front .acard{animation:glow 1.6s ease-out}
+
+/* ---------- Shiny: a black, lacquered Mythique / Légendaire (1 chance in 100), cover kept in colour ---------- */
+.card.shiny{background:linear-gradient(145deg,#050506,#24222a 30%,#0a0a0c 50%,#2c2a33 70%,#060607);
+  box-shadow:0 10px 26px rgba(0,0,0,.65),inset 0 0 0 .5cqw #e9c46a,inset 0 0 0 1.2cqw #0b0b0d,inset 0 0 0 1.5cqw rgba(233,196,106,.45)}
+.card.shiny .in{box-shadow:0 0 0 .3cqw rgba(233,196,106,.6)}
+.card.shiny .nm{background:linear-gradient(100deg,#b8862b,#fff1b8 30%,#d9a83f 55%,#fff6cf 75%,#b8862b);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;filter:drop-shadow(0 .3cqw .6cqw rgba(0,0,0,.8))}
+.card.shiny .ty{border-color:#e9c46a;color:#e9c46a}
+.card.shiny .pw{color:#f5d27a}
+.card.shiny .st .bar>s{background:linear-gradient(90deg,#b8862b,#fff1b8,#d9a83f)}
+.card.shiny .ft .rn{color:#f5d27a}
+/* the slow warm light sweep, as on the Collector */
+.card.shiny .foil{opacity:1;mix-blend-mode:screen;animation:sweep 7s cubic-bezier(.45,0,.25,1) infinite;
+  background:linear-gradient(115deg,transparent 38%,rgba(255,236,190,.10) 45%,rgba(255,248,230,.42) 50%,rgba(255,236,190,.10) 55%,transparent 62%);
+  background-size:320% 100%;background-position:120% 0}
+.big .card.shiny .foil{animation:none;background-position:calc(110% - var(--fx,50%) * 1.3) 0}
+.card.shiny::before{content:"SHINY";position:absolute;top:5.5cqw;right:-9cqw;width:40cqw;transform:rotate(38deg);text-align:center;z-index:4;
+  background:#000;color:#f5d27a;border-block:.35cqw solid #e9c46a;font-family:var(--mono);font-size:3.1cqw;letter-spacing:.24em;padding:.6cqw 0;box-shadow:0 .6cqw 1.2cqw rgba(0,0,0,.6)}
+/* artist Shiny (Platine / Diamant): black lacquer frame, photo in colour, Shiny ribbon */
+.acard.shiny{--mat:linear-gradient(145deg,#050506,#24222a 30%,#0a0a0c 50%,#2c2a33 70%,#060607);--accent:#e9c46a;border-radius:4cqw;clip-path:none;animation:none;overflow:hidden;
+  box-shadow:0 12px 30px rgba(0,0,0,.7),inset 0 0 0 .4cqw #e9c46a,inset 0 0 0 1.1cqw #0b0b0d,inset 0 0 0 1.4cqw rgba(233,196,106,.45)}
+.acard.shiny .frame,.acard.shiny .backing{clip-path:none;border-radius:2.4cqw}
+.acard.shiny .backing::before{content:none}
+.acard.shiny .a-name{background:linear-gradient(100deg,#b8862b,#fff1b8 30%,#d9a83f 55%,#fff6cf 75%,#b8862b);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none}
+.acard.shiny .plaque{background:#000;color:#f5d27a;box-shadow:inset 0 0 0 .3cqw #e9c46a}
+.acard.shiny .st .bar>s{background:linear-gradient(90deg,#b8862b,#fff1b8,#d9a83f)}
+.acard.shiny .foil{display:none}
+.acard.shiny .sheen{position:absolute;inset:0;z-index:3;pointer-events:none;border-radius:inherit;mix-blend-mode:screen;
+  background:linear-gradient(115deg,transparent 38%,rgba(255,236,190,.10) 45%,rgba(255,248,230,.42) 50%,rgba(255,236,190,.10) 55%,transparent 62%);
+  background-size:320% 100%;background-position:120% 0;animation:sweep 7s cubic-bezier(.45,0,.25,1) infinite}
+.big .acard.shiny .sheen{animation:none;background-position:calc(110% - var(--fx,50%) * 1.3) 0}
+.acard.shiny .ribbon{position:absolute;top:5.5cqw;right:-9cqw;width:40cqw;transform:rotate(38deg);text-align:center;z-index:4;
+  background:#000;color:#f5d27a;border-block:.35cqw solid #e9c46a;font-family:var(--mono);font-size:3.1cqw;letter-spacing:.24em;text-transform:uppercase;padding:.6cqw 0;box-shadow:0 .6cqw 1.2cqw rgba(0,0,0,.6)}
+@media (prefers-reduced-motion:reduce){.card .foil,.card.shiny .foil,.acard .foil,.acard.shiny .sheen{animation:none}}

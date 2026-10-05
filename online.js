@@ -40,6 +40,7 @@ const MESSAGES = {
   listing_closed: "Cette carte n'est plus en vente.",
   own_listing: "C'est ta propre annonce.",
   album_incomplete: "Il te manque encore des titres de cet album.",
+  collector_card: "Une carte Collector ne se défausse pas.",
   album_not_found: "Cet album n'est pas disponible.",
   discography_incomplete: "Il te manque encore des albums de cet artiste.",
   artist_not_found: "Cet artiste n'est pas disponible.",
@@ -60,25 +61,32 @@ async function rpc(fn, args) {
 let me = null;                // { id, email, pseudo, created_at, imported, ... }
 let guestS = S;               // the browser collection, kept aside while signed in
 
-// one database card row (with its track) → the card shape the game draws
+// one database card row (with its track, or its artist) → the card shape the game draws
 function cardFromRow(r, t) {
+  if (r.kind === "artist") {
+    return { kind: "artist", id: "a" + r.artist_id, aid: r.artist_id, t: t.name, a: "Artiste", al: "", cov: t.picture || "",
+      rank: r.rank, albums: t.nb_album || 0, tier: r.tier, collector: !!r.collector, g: null };
+  }
   return {
     id: r.track_id, t: t.title, a: t.artist, al: t.album, cov: t.cover, d: t.duration, rank: r.rank,
     bpm: t.bpm, y: t.year, x: t.explicit ? 1 : 0, g: t.genre, tier: r.tier,
   };
 }
 // the collection groups copies by track; each copy keeps its own id for trades
+const cardKey = r => r.kind === "artist" ? "a" + r.artist_id : r.track_id;
 function addCopy(map, r, t) {
-  const c = map[r.track_id] || (map[r.track_id] = { ...cardFromRow(r, t), n: 0, holo: 0, locked: 0, copies: [], at: Date.parse(r.pulled_at) });
-  c.n++; if (r.holo) c.holo++; if (!r.tradeable) c.locked++;
+  const k = cardKey(r);
+  const c = map[k] || (map[k] = { ...cardFromRow(r, t), n: 0, holo: 0, locked: 0, copies: [], at: Date.parse(r.pulled_at) });
+  c.n++; if (r.holo) c.holo++; if (!r.tradeable && !r.collector) c.locked++;
+  if (r.collector) c.collector = true;
   if (r.tier > c.tier) { c.tier = r.tier; c.rank = r.rank; }
-  c.copies.push({ id: r.id, tier: r.tier, holo: r.holo, tradeable: r.tradeable });
+  c.copies.push({ id: r.id, tier: r.tier, holo: r.holo, tradeable: r.tradeable, collector: !!r.collector });
   return c;
 }
 async function fetchCards(owner, onlyTradeable) {
   const rows = [];
   for (let from = 0; ; from += 1000) {
-    let q = sb.from("cards").select("id,track_id,tier,rank,holo,tradeable,pulled_at,tracks(title,artist,album,cover,duration,bpm,year,explicit,genre)")
+    let q = sb.from("cards").select("id,kind,track_id,artist_id,collector,tier,rank,holo,tradeable,pulled_at,tracks(title,artist,album,cover,duration,bpm,year,explicit,genre),artists(name,picture,fans,nb_album)")
       .eq("owner", owner).order("pulled_at").range(from, from + 999);
     if (onlyTradeable) q = q.eq("tradeable", true);
     const { data, error } = await q;
@@ -87,7 +95,7 @@ async function fetchCards(owner, onlyTradeable) {
     if (data.length < 1000) break;
   }
   const map = {};
-  for (const r of rows) if (r.tracks) addCopy(map, r, r.tracks);
+  for (const r of rows) { const t = r.kind === "artist" ? r.artists : r.tracks; if (t) addCopy(map, r, t); }
   return map;
 }
 async function loadProfile() {
@@ -151,21 +159,33 @@ Object.assign(Online, {
   async abandon(pk) { try { await rpc("abandon_pack", { p_pack: pk.id }); await loadProfile(); } catch (e) {} },
   // the browser finds tracks for the rarities the server rolled; the server checks them on Deezer
   async drawPack(p, pk) {
-    const used = new Set(), raws = [];
-    for (const tier of pk.slots) {
-      const t = await findTrack(p.g, tier, used);
-      if (t) { used.add(t.id); raws.push(t); }
+    const used = new Set(), usedArtists = new Set(), raws = [];
+    for (const [i, tier] of pk.slots.entries()) {
+      if (pk.artists?.[i]) {                     // an artist card: the server checks its fans on Deezer
+        const a = await findArtist(tier, usedArtists);
+        if (a) { usedArtists.add(a.id); raws.push({ id: a.id }); }
+      } else {
+        const t = await findTrack(p.g, tier, used);
+        if (t) { used.add(t.id); raws.push(t); }
+      }
     }
     if (raws.length < 5) throw { code: "short" };
     const res = await rpc("finish_pack", { p_pack: pk.id, p_tracks: raws.map(t => t.id) });
-    const ids = res.map(r => r.track);
-    const { data: tracks, error } = await sb.from("tracks").select("*").in("id", ids);
-    if (error) throw error;
-    const byId = Object.fromEntries(tracks.map(t => [t.id, t]));
+    const trackIds = res.filter(r => r.kind !== "artist").map(r => r.track);
+    const artistIds = res.filter(r => r.kind === "artist").map(r => r.track);
+    const [tq, aq] = await Promise.all([
+      trackIds.length ? sb.from("tracks").select("*").in("id", trackIds) : { data: [] },
+      artistIds.length ? sb.from("artists").select("id,name,picture,fans,nb_album").in("id", artistIds) : { data: [] },
+    ]);
+    if (tq.error || aq.error) throw tq.error || aq.error;
+    const byTrack = Object.fromEntries(tq.data.map(t => [t.id, t])), byArtist = Object.fromEntries(aq.data.map(a => [a.id, a]));
     const pulls = res.map(r => {
-      const row = { id: r.card, track_id: r.track, tier: r.tier, rank: r.rank, holo: r.holo, tradeable: true, pulled_at: new Date().toISOString() };
-      addCopy(S.c, row, byId[r.track]);
-      return { c: cardFromRow(row, byId[r.track]), holo: r.holo, isNew: r.new, wanted: r.wanted };
+      const artist = r.kind === "artist";
+      const row = { id: r.card, kind: r.kind || "track", track_id: artist ? null : r.track, artist_id: artist ? r.track : null,
+        tier: r.tier, rank: r.rank, holo: r.holo, tradeable: true, pulled_at: new Date().toISOString() };
+      const meta = artist ? byArtist[r.track] : byTrack[r.track];
+      addCopy(S.c, row, meta);
+      return { c: cardFromRow(row, meta), holo: r.holo, isNew: r.new, wanted: r.wanted };
     }).sort((a, b) => a.c.tier - b.c.tier || a.c.rank - b.c.rank);
     await loadProfile();
     updateDefisBadge();
@@ -350,7 +370,7 @@ function renderImport() {
 
 /* ---------- trades ---------- */
 const OFFER_SELECT = "id,status,created_at,decided_at,from_user,to_user,from:profiles!offers_from_user_fkey(pseudo),to:profiles!offers_to_user_fkey(pseudo)," +
-  "offer_items(side,card_id,cards(track_id,tier,rank,holo,tracks(title,artist,album,cover,duration,bpm,year,explicit,genre)))";
+  "offer_items(side,card_id,cards(kind,track_id,artist_id,collector,tier,rank,holo,tracks(title,artist,album,cover,duration,bpm,year,explicit,genre),artists(name,picture,fans,nb_album)))";
 const ED = { player: null, theirs: null, give: new Map(), take: new Map(), qMine: "", qTheirs: "" };
 let pollTimer = null;
 
@@ -369,9 +389,11 @@ function offerCards(o, side) {
   const wrap = document.createElement("div"); wrap.className = "mini-row";
   for (const it of o.offer_items.filter(i => i.side === side)) {
     if (!it.cards) continue;
-    const c = cardFromRow({ track_id: it.cards.track_id, tier: it.cards.tier, rank: it.cards.rank }, it.cards.tracks);
+    const meta = it.cards.kind === "artist" ? it.cards.artists : it.cards.tracks;
+    if (!meta) continue;
+    const c = cardFromRow(it.cards, meta);
     const m = miniCard(c, it.cards.holo); m.tabIndex = 0; m.setAttribute("role", "button");
-    m.setAttribute("aria-label", c.t + " de " + c.a); m.onclick = () => openModal(c);
+    m.setAttribute("aria-label", c.t + " de " + c.a); m.onclick = () => openModal(c, it.cards.holo);
     wrap.appendChild(m);
   }
   return wrap;
@@ -549,8 +571,8 @@ function duplicateCopies() {
   const out = [];
   for (const c of Object.values(S.c)) {
     if (!c.copies || c.copies.length < 2) continue;
-    const sorted = [...c.copies].sort((a, b) => (b.holo - a.holo) || (b.tier - a.tier));
-    out.push(...sorted.slice(1));
+    const sorted = [...c.copies].sort((a, b) => (b.collector - a.collector) || (b.holo - a.holo) || (b.tier - a.tier));
+    out.push(...sorted.slice(1).filter(cp => !cp.collector));
   }
   return out;
 }
@@ -580,9 +602,10 @@ function renderDiscard() {
 // in the card details: discard one spare copy (never the last one, never the holo when a plain copy exists)
 function modalExtras(c) {
   const btn = $("#mDiscard"), own = S.c[c.id];
-  btn.hidden = !(Online.active && own && own.copies && own.copies.length > 1);
+  const spares = own?.copies?.filter(cp => !cp.collector) || [];
+  btn.hidden = !(Online.active && own && own.copies.length > 1 && spares.length && (spares.length > 1 || own.copies.length > spares.length));
   if (btn.hidden) return;
-  const spare = [...own.copies].sort((a, b) => (a.holo - b.holo) || (a.tier - b.tier))[0];
+  const spare = [...spares].sort((a, b) => (a.holo - b.holo) || (a.tier - b.tier))[0];
   btn.textContent = `Défausser un doublon (+${DISCARD[spare.tier]} Stream${DISCARD[spare.tier] > 1 ? "s" : ""})`;
   btn.onclick = async () => {
     btn.disabled = true;
@@ -691,10 +714,12 @@ async function renderDefis() {
 
 /* ---------- market: La Bourse aux disques ---------- */
 const MK = { q: "", tier: -1, genre: -1, sort: "recent", page: 0, items: [], more: false, seq: 0, sellTrack: null };
-const LISTING_SELECT = "id,seller,card_id,track_id,tier,holo,title,artist,genre,price,created_at,expires_at," +
-  "seller_p:profiles!listings_seller_fkey(pseudo,title),tracks(album,cover,duration,bpm,year,explicit),cards(rank)";
+const LISTING_SELECT = "id,seller,card_id,kind,track_id,artist_id,picture,tier,holo,title,artist,genre,price,created_at,expires_at," +
+  "seller_p:profiles!listings_seller_fkey(pseudo,title),tracks(album,cover,duration,bpm,year,explicit),artists(nb_album),cards(rank,collector)";
 const nowIso = () => new Date().toISOString();
 function listingCard(l) {
+  if (l.kind === "artist") return { kind: "artist", id: "a" + l.artist_id, aid: l.artist_id, t: l.title, a: "Artiste", al: "", cov: l.picture,
+    rank: l.cards?.rank || 0, albums: l.artists?.nb_album || 0, tier: l.tier, g: null };
   const t = l.tracks || {};
   return { id: l.track_id, t: l.title, a: l.artist, al: t.album || "", cov: t.cover || "", d: t.duration || 0, rank: l.cards?.rank || 0,
     bpm: t.bpm || 0, y: t.year || 0, x: t.explicit ? 1 : 0, g: l.genre, tier: l.tier };
@@ -751,7 +776,7 @@ function listingEl(l) {
   const mine = l.seller === me.id, c = listingCard(l);
   const el = document.createElement("div"); el.className = "listing";
   const cardBtn = document.createElement("button"); cardBtn.className = "cell"; cardBtn.setAttribute("aria-label", `${c.t} de ${c.a}`);
-  cardBtn.appendChild(cardEl(c, l.holo)); cardBtn.onclick = () => openModal(c);
+  cardBtn.appendChild(cardEl(c, l.holo)); cardBtn.onclick = () => openModal(c, l.holo);
   const days = Math.max(0, Math.ceil((Date.parse(l.expires_at) - Date.now()) / 86400000));
   const foot = document.createElement("div"); foot.className = "l-foot";
   foot.innerHTML = `<b class="price">${streamsTxt(l.price)}</b><small>${mine ? "ta vente" : "par " + esc(l.seller_p?.pseudo || "?")} · ${days} j</small>`;
@@ -854,7 +879,7 @@ async function renderSellForm(c, copies) {
         <label class="field" for="sellPrice"><span>Ton prix en Streams (minimum ${fmt(floor)})</span><input id="sellPrice" type="number" min="${floor}" max="10000000" step="1" inputmode="numeric"></label>
         <p class="form-fine" id="sellNet"></p>
         <div class="btns"><button class="btn primary" id="sellGo">Mettre en vente</button></div>
-        <p class="form-fine">${copy.holo ? "Tu vends ta copie Holo. " : ""}${(S.c[c.id]?.copies?.length || 1) === 1 ? "C'est ton seul exemplaire de cette carte." : `Tu en gardes ${S.c[c.id].copies.length - 1}.`}</p>
+        <p class="form-fine">${copy.holo && copy.tier >= MYTH ? "Tu vends ta copie Shiny. " : ""}${(S.c[c.id]?.copies?.length || 1) === 1 ? "C'est ton seul exemplaire de cette carte." : `Tu en gardes ${S.c[c.id].copies.length - 1}.`}</p>
       </div></div>`;
   $("#sellCard").appendChild(miniCard({ ...c, tier: copy.tier }, copy.holo));
   $("#sellClose").onclick = closeSell;
@@ -862,7 +887,7 @@ async function renderSellForm(c, copies) {
   const showNet = () => { const p = Math.floor(+price.value || 0); net.textContent = p >= floor ? `Tu recevras ${streamsTxt(p - Math.floor(p * 5 / 100))} après la taxe de 5 %.` : `Le prix doit être d'au moins ${fmt(floor)}.`; };
   price.oninput = showNet;
   try {
-    const st = await rpc("price_stats", { p_track: c.id });
+    const st = await rpc("price_stats", isArtist(c) ? { p_artist: c.aid } : { p_track: c.id });
     $("#sellCote").innerHTML = st.sales
       ? `<dt>Dernière vente</dt><dd>${streamsTxt(st.last)}</dd><dt>Moyenne</dt><dd>${streamsTxt(st.avg)} (${st.sales} vente${st.sales > 1 ? "s" : ""})</dd>${st.lowest_listing ? `<dt>En vente dès</dt><dd>${streamsTxt(st.lowest_listing)}</dd>` : ""}`
       : `<dt>Cote</dt><dd>Jamais vendue${st.lowest_listing ? ` · en vente dès ${streamsTxt(st.lowest_listing)}` : ""}</dd>`;
@@ -889,7 +914,7 @@ async function marketExtras(c) {
   btn.onclick = () => { closeModal(); show("market"); openSell(c.id); };
   if (!Online.active) return;
   try {
-    const st = await rpc("price_stats", { p_track: c.id });
+    const st = await rpc("price_stats", isArtist(c) ? { p_artist: c.aid } : { p_track: c.id });
     if ($("#mTitle").textContent !== c.t) return;     // another card was opened meanwhile
     const dl = $("#mDl");
     dl.querySelector(".cote")?.remove();
