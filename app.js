@@ -74,6 +74,7 @@ const tierDistance = (rank, t) => rank < TIER_MIN[t] ? TIER_MIN[t] - rank : t < 
 // Every card of a booster uses the same odds (no guaranteed slot).
 const DROP = [70, 21, 7, 1.7, 0.28, 0.02];
 const PITY = 70;                         // boosters without a Mythique or better before one is guaranteed
+let devShiny = false;                  // local preview (#shiny): every Mythique / Légendaire comes out Shiny
 const SHINY_CHANCE = 0.01;               // a Mythique or Légendaire has 1 chance in 100 to be Shiny
 const GOD_CHANCE = 1 / 3000;             // a booster turns into a GOD pack: 1 Légendaire + 4 cards that are Mythique or Légendaire (50/50)
 const STOCK_MAX = 10, REFILL_MS = 30 * 60 * 1000;
@@ -466,7 +467,7 @@ function backEl() { const w = document.createElement("div"); w.className = "cq";
 const views = { shop: $("#view-shop"), store: $("#view-store"), binder: $("#view-binder"), catalog: $("#view-catalog"), trades: $("#view-trades"), defis: $("#view-defis"), market: $("#view-market"), albums: $("#view-albums"), duels: $("#view-duels") };
 function show(v) {
   for (const k in views) { views[k].hidden = k !== v; $("#tab-" + k).setAttribute("aria-selected", k === v); }
-  $("#tableWrap").hidden = v !== "shop" && v !== "store";   // the opening table follows the booster tabs
+  if (!busy) unseatTable();   // leaving the tab puts the booster back
   if (v === "binder") { renderBinder(); Online.renderDiscard?.(); }
   if (v === "catalog") { if (!CAT.loaded) catLoad(true); else renderCatalog(); }
   if (v === "trades") Online.renderTrades();
@@ -488,7 +489,12 @@ $("#tab-duels").onclick = () => show("duels");
 const owned = () => Object.values(S.c);
 function renderCounters() {
   const all = owned();
-  $("#counters").innerHTML = (Online.active ? `<span class="streams">Streams <b>${fmt(S.streams || 0)}</b></span>` : "") + `<span>Cartes <b>${fmt(all.length)}</b></span><span class="myth">Mythiques <b>${all.filter(c => c.tier === MYTH && !isArtist(c)).length}</b></span><span class="leg">Légendaires <b>${all.filter(c => c.tier === LEG && !isArtist(c)).length}</b></span>${all.some(isArtist) ? `<span>Artistes <b>${all.filter(isArtist).length}</b></span>` : ""}<span>Boosters ouverts <b>${fmt(S.opened)}</b></span>`;
+  const pill = (cls, value, label) => `<span class="pill ${cls}"><b>${value}</b><small>${label}</small></span>`;
+  $("#counters").innerHTML = (Online.active ? `<span class="pill streams"><i class="coin" aria-hidden="true"></i><b>${fmt(S.streams || 0)}</b><small>Streams</small></span>` : "")
+    + pill("", fmt(all.length), "Cartes")
+    + pill("myth", all.filter(c => c.tier === MYTH && !isArtist(c)).length, "Mythiques")
+    + pill("leg", all.filter(c => c.tier === LEG && !isArtist(c)).length, "Légendaires")
+    + pill("opened", fmt(S.opened), "Boosters");
 }
 
 /* ---------- shelf: one booster, limited stock ---------- */
@@ -496,18 +502,22 @@ const BOOSTER = { g: -1, n: "Booster" };
 const shelf = $("#shelf");
 const packBtn = document.createElement("button");
 packBtn.className = "pack mix";
-packBtn.innerHTML = `<span class="disc"></span><span class="lbl"><b>Booster</b><span>5 cartes · tout Deezer</span></span>`;
+packBtn.innerHTML = `<span class="pack-shine" aria-hidden="true"></span><img class="pack-logo" src="brand/zikhunter-icon.svg" alt=""><span class="lbl"><b>Booster</b><span>5 cartes · tout Deezer</span></span>`;
 packBtn.setAttribute("aria-label", "Ouvrir un booster");
 packBtn.onclick = () => openPack(BOOSTER);
 BOOSTER.el = packBtn;
 const stockEl = document.createElement("div"); stockEl.className = "stock"; stockEl.setAttribute("aria-live", "polite");
-shelf.append(packBtn, stockEl);
+const packStage = document.createElement("div"); packStage.className = "pack-stage";
+const openBig = document.createElement("button"); openBig.className = "btn primary big"; openBig.id = "openBig"; openBig.textContent = "Ouvrir un booster";
+openBig.onclick = () => openPack(BOOSTER);
+packStage.append(packBtn, openBig);
+shelf.append(packStage, stockEl);
 function renderStock() {
   if (TEST_MODE) {
     stockEl.innerHTML = `<b>Boosters illimités</b><span class="test-badge">Mode test</span>
       <small>Le stock de 10 boosters (un nouveau toutes les 30 min) sera activé à la sortie du jeu.</small>
       <small>Mythique garantie dans ${Math.max(1, PITY - S.dry)} booster${PITY - S.dry > 1 ? "s" : ""} si tu n'en tires pas avant</small>`;
-    if (!busy) { packBtn.disabled = false; $("#again").disabled = false; }
+    if (!busy) { packBtn.disabled = false; openBig.disabled = false; $("#again").disabled = false; }
     return;
   }
   refill();
@@ -518,7 +528,7 @@ function renderStock() {
     <small>${S.stock >= STOCK_MAX ? "Stock plein. Un nouveau booster arrive toutes les 30 min quand le stock n'est pas plein." : `Prochain booster dans ${min >= 60 ? "1 h" : min + " min"}`}</small>
     <small>Mythique garantie dans ${Math.max(1, PITY - S.dry)} booster${PITY - S.dry > 1 ? "s" : ""} si tu n'en tires pas avant</small>`;
   const empty = S.stock <= 0;
-  if (!busy) { packBtn.disabled = empty; $("#again").disabled = empty; }
+  if (!busy) { packBtn.disabled = empty; openBig.disabled = empty; $("#again").disabled = empty; }
 }
 setInterval(() => { renderStock(); save(); }, 30000);
 
@@ -528,7 +538,7 @@ const STORE_PRICE = 100;                 // Streams, charged by the server
 for (const p of STORE_PACKS) {
   const offer = document.createElement("div"); offer.className = "offer";
   const b = document.createElement("button"); b.className = "pack"; b.style.setProperty("--h", TYPES[p.g].h);
-  b.innerHTML = `<span class="disc"></span><span class="lbl"><b>${p.n}</b><span>5 cartes ${p.n}</span></span>`;
+  b.innerHTML = `<span class="pack-shine" aria-hidden="true"></span><img class="pack-logo" src="brand/zikhunter-icon.svg" alt=""><span class="lbl"><b>${p.n}</b><span>5 cartes ${p.n}</span></span>`;
   b.setAttribute("aria-label", "Ouvrir un booster " + p.n);
   b.onclick = () => openPack(p);
   p.el = b;
@@ -559,7 +569,7 @@ async function drawPack(p, god = false, forced = null) {
   if (raws.length < 5) throw { code: "short" };
   const cards = await Promise.all(raws.map(t => enrich(t, p.g)));
   const pulls = cards.map((c, i) => {
-    const holo = c.tier >= MYTH && Math.random() < SHINY_CHANCE, prev = S.c[c.id];   // Shiny: Mythique / Légendaire only
+    const holo = c.tier >= MYTH && (devShiny || Math.random() < SHINY_CHANCE), prev = S.c[c.id];   // Shiny: Mythique / Légendaire only
     S.c[c.id] = { ...c, n: (prev?.n || 0) + 1, holo: (prev?.holo || 0) + (holo ? 1 : 0), at: prev?.at || Date.now() };
     return { c, holo, isNew: !prev, wanted: slots[i], src: raws[i]._src };
   }).sort((a, b) => a.c.tier - b.c.tier || a.c.rank - b.c.rank);   // weakest first, best card last
@@ -590,32 +600,39 @@ async function openPack(p, opts = {}) {
     S.stock--; save();
   }
   renderStock();
-  document.querySelectorAll(".pack, .offer .btn, #again").forEach(b => b.disabled = true);
-  const table = $("#table"), deal = $("#deal");
+  document.querySelectorAll(".pack, .offer .btn, #again, #openBig, #tableBack, #flipAll").forEach(b => b.disabled = true);
   // local preview only: #god turns the next booster into a GOD pack,
   // #demo gives one with a Commune, a Peu commune, an Épique, a Mythique and a Légendaire
   const devHash = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && p === BOOSTER && !serverPack ? location.hash : "";
-  if (devHash === "#god" || devHash === "#demo") history.replaceState(null, "", location.pathname);
-  if (devHash === "#demo") opts.slots = [0, 1, 3, MYTH, LEG];
+  if (devHash === "#god" || devHash === "#demo" || devHash === "#shiny") history.replaceState(null, "", location.pathname);
+  if (devHash === "#demo" || devHash === "#shiny") opts.slots = [0, 1, 3, MYTH, LEG];
+  devShiny = devHash === "#shiny";
   const god = serverPack ? serverPack.god : opts.god ?? (devHash === "#god" || (p === BOOSTER && Math.random() < GOD_CHANCE));
-  table.hidden = false; table.classList.toggle("god", god);
+
+  const table = $("#table"), deal = $("#deal");
+  seatTable(p === BOOSTER ? $("#shelf") : $("#store"));
+  table.classList.toggle("god", god);
   $("#tableTitle").textContent = god ? "GOD PACK" : p === BOOSTER ? "Booster" : "Booster " + p.n;
   deal.innerHTML = "";
   const rip = document.createElement("div"); rip.className = "rip loading" + (god ? " god" : "");
-  const pk = p.el.cloneNode(true); pk.tabIndex = -1; pk.disabled = true;
-  if (god) { pk.className = "pack god"; pk.querySelector(".lbl").innerHTML = "<b>GOD PACK</b><span>Mythiques et Légendaires</span>"; }
+  const pk = p.el.cloneNode(true); pk.tabIndex = -1; pk.disabled = true; pk.removeAttribute("id");
+  if (god) pk.classList.add("god");
   const line = document.createElement("p"); line.textContent = god ? "GOD PACK ! 1 chance sur 3 000…" : pick(LOADING_LINES);
   rip.append(pk, line); deal.appendChild(rip);
-  table.scrollIntoView({ behavior: reduceMotion() ? "auto" : "smooth", block: "start" });
   const lineTimer = setInterval(() => { if (!god) line.textContent = pick(LOADING_LINES); }, 1600);
-
   try {
     const pulls = serverPack ? await Online.drawPack(p, serverPack) : await drawPack(p, god, opts.slots);
-    if (god) toast("GOD PACK ! Que des Mythiques et des Légendaires.");
+    if (god && reduceMotion()) toast("GOD PACK ! Que des Mythiques et des Légendaires.");   // the GOD pack has its own announcement
     renderCounters();
+    if (pulls.some(Stage.isHit)) Stage.prepare();
+    for (const pl of pulls) if (Stage.isHit(pl)) Stage.warm(pl);   // the hits' tracks load while the first cards flip
     deal.innerHTML = "";
     const grid = document.createElement("div"); grid.className = "deal"; deal.appendChild(grid);
     pulls.forEach((pl, i) => grid.appendChild(slotEl(pl, i)));
+    if (god && !reduceMotion()) {
+      const flips = [...grid.querySelectorAll(".flip")];
+      if (await Stage.god(pulls, flips)) for (const f of flips) await f.reveal(true);
+    }
   } catch (err) {
     if (paid) { S.stock = Math.min(STOCK_MAX, S.stock + 1); save(); }   // a failed opening gives the booster back
     if (serverPack) await Online.abandon(serverPack);
@@ -628,9 +645,310 @@ async function openPack(p, opts = {}) {
   } finally {
     clearInterval(lineTimer);
     busy = false;
-    document.querySelectorAll(".pack, .offer .btn").forEach(b => b.disabled = false);
+    document.querySelectorAll(".pack, .offer .btn, #openBig, #tableBack, #flipAll").forEach(b => b.disabled = false);
     renderStock();
   }
+}
+
+// the opening table takes the place of the booster (or of the shop shelves), then gives it back
+function seatTable(anchor) {
+  const table = $("#table");
+  document.querySelectorAll(".stowed").forEach(x => x.classList.remove("stowed"));
+  anchor.after(table); anchor.classList.add("stowed");
+  table.hidden = false;
+  table.classList.remove("enter"); void table.offsetWidth; table.classList.add("enter");
+}
+function unseatTable() {
+  $("#table").hidden = true; $("#deal").innerHTML = "";
+  document.querySelectorAll(".stowed").forEach(x => { x.classList.remove("stowed"); x.classList.remove("back-in"); void x.offsetWidth; x.classList.add("back-in"); });
+}
+
+/* ---------- a hit (Mythique and above), full screen. A coloured record spins up in the dark, the track starts,
+   sound waves pulse at its tempo, then the card bursts out of the record, flips, and flies back to its place. ---------- */
+const Stage = (() => {
+  let el, fading = null, tapped = null, sparks;
+  const audio = new Audio(); audio.preload = "auto";
+  const isHit = pl => pl.c.tier >= MYTH;
+  const css = v => v.startsWith("var(") ? getComputedStyle(document.documentElement).getPropertyValue(v.slice(4, -1)).trim() : v;
+  const colorOf = pl => pl.holo ? "#f5d27a" : css(isArtist(pl.c) ? CCOL[pl.c.tier] : RCOL[pl.c.tier]);
+  const warm = pl => pl.preview ??= (isArtist(pl.c) ? dz(`artist/${pl.c.aid}/top`, { limit: 1 }, true).then(d => (d.data || [])[0]?.preview)
+    : dz("track/" + pl.c.id, {}, true).then(t => t.preview)).catch(() => null);
+
+  function build() {
+    el = document.createElement("div");
+    el.className = "fx-screen"; el.hidden = true;
+    el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); el.setAttribute("aria-label", "Révélation d'un hit");
+    el.innerHTML = `<div class="fx-bg" aria-hidden="true"><div class="fx-glow"></div><div class="fx-rays"></div></div>
+      <div class="fx-gl-host" aria-hidden="true"></div>
+      <canvas class="fx-canvas" aria-hidden="true"></canvas>
+      <div class="fx-center">
+        <div class="fx-waves" aria-hidden="true"><i></i><i></i><i></i></div>
+        <div class="fx-disc" aria-hidden="true">
+          <div class="rec"><div class="grooves"></div><div class="tint"></div><div class="label"><div class="ltint"></div><img src="brand/zikhunter-icon.svg" alt=""><span>ZIK HUNTER · FACE A</span></div></div>
+          <div class="gloss"></div>
+        </div>
+        <div class="fx-sleeve" aria-hidden="true"><img src="brand/zikhunter-icon.svg" alt=""><b>ZIK HUNTER</b><small>Face A · 33 tours</small></div>
+        <div class="fx-card"><div class="tilt"><div class="flipper"><div class="face back"></div><div class="face front"></div></div></div></div>
+      </div>
+      <div class="fx-title" aria-live="polite"><b></b><small></small></div>
+      <p class="fx-hint"></p>
+      <div class="fx-god" aria-live="polite"><b></b><small>1 chance sur 3 000</small></div>
+      <div class="fx-row" aria-hidden="true"></div>`;
+    document.body.appendChild(el);
+    el.querySelector(".face.back").appendChild(backEl());
+    sparks = Particles(el.querySelector(".fx-canvas"));
+    el.addEventListener("click", () => tapped?.());
+    const tilt = el.querySelector(".tilt");
+    let tiltRaf = 0;
+    el.addEventListener("pointermove", e => {       // the card leans toward the pointer, at most once per frame
+      if (tiltRaf || !el.classList.contains("s-hold")) return;
+      tiltRaf = requestAnimationFrame(() => {
+        tiltRaf = 0;
+        tilt.style.transform = `rotateY(${(e.clientX / innerWidth - .5) * 16}deg) rotateX(${(e.clientY / innerHeight - .5) * -12}deg)`;
+      });
+    });
+    addEventListener("keydown", e => {
+      if (el.hidden || !tapped) return;
+      if (e.key === " " || e.key === "Enter" || e.key === "Escape") { e.preventDefault(); e.stopPropagation(); tapped(); }
+    }, true);
+  }
+  const $s = sel => el.querySelector(sel);
+
+  // the record's rotation runs on its own clock so it can speed up and slow down smoothly
+  let spin = { a: 0, v: 0, to: 0, raf: 0, t: 0 };
+  function spinLoop(t) {
+    const dt = Math.min(.05, (t - (spin.t || t)) / 1000); spin.t = t;
+    spin.v += (spin.to - spin.v) * Math.min(1, dt * 2.2);
+    spin.a = (spin.a + spin.v * 360 * dt) % 360;
+    $s(".rec").style.transform = `rotate(${spin.a}deg)`;
+    spin.raf = requestAnimationFrame(spinLoop);
+  }
+
+  function stopAudio(ms = 500) {
+    clearInterval(fading);
+    if (audio.paused) return;
+    const step = audio.volume / Math.max(1, ms / 50);
+    fading = setInterval(() => { audio.volume = Math.max(0, audio.volume - step); if (audio.volume <= 0.01) { clearInterval(fading); audio.pause(); } }, 50);
+  }
+  function fadeIn() { clearInterval(fading); fading = setInterval(() => { audio.volume = Math.min(1, audio.volume + .06); if (audio.volume >= 1) clearInterval(fading); }, 50); }
+
+  // resolves once the player has tapped and the card has flown back into `target`
+  async function hit(pl, target) {
+    if (!el) build();
+    const big = pl.c.tier === LEG || pl.holo, col = colorOf(pl);
+    const bpm = pl.c.bpm > 0 ? pl.c.bpm : 118;
+    warm(pl);
+    el.className = "fx-screen"; el.hidden = false; document.body.classList.add("fx-on");
+    $s(".tilt").style.transform = "";
+    el.style.setProperty("--vc", "#cfc8da");
+    el.style.setProperty("--beat", (60 / bpm).toFixed(3) + "s");
+    if (big) el.classList.add("big");
+    if (pl.holo) el.classList.add("shiny");
+    const front = $s(".face.front"); front.innerHTML = ""; front.appendChild(cardEl(pl.c, pl.holo));
+    // decode the artwork now, so it doesn't freeze the animation when the card comes out
+    await Promise.race([Promise.all([...front.querySelectorAll("img")].map(i => i.decode().catch(() => {}))), wait(700)]);
+    const title = pl.holo ? "SHINY" : rarName(pl.c).toUpperCase();
+    $s(".fx-title b").innerHTML = [...title].map((ch, k) => `<span style="--k:${k}">${ch === " " ? "&nbsp;" : ch}</span>`).join("");
+    $s(".fx-title small").textContent = (pl.isNew ? "Nouvelle carte · " : "Doublon · ") + (pl.holo ? rarName(pl.c) + " · " : "") + (isArtist(pl.c) ? pl.c.t : pl.c.a);
+    $s(".fx-hint").textContent = "";
+    sparks.start(col, big);
+    const playTrack = async () => {
+      const url = await Promise.race([pl.preview, wait(500)]);
+      if (url) { clearInterval(fading); audio.src = url; audio.volume = 0; audio.play().then(fadeIn).catch(() => {}); }
+    };
+    const flash = () => { const f = document.createElement("div"); f.className = "flash"; document.body.appendChild(f); setTimeout(() => f.remove(), 900); };
+    const g = await Promise.race([load3d(), wait(1200)]);
+    let r;
+    if (g) {
+      // the 3D turntable: intro, the needle lands (the music starts on the touch), the card rises out of the record
+      el.classList.add("three");
+      void el.offsetWidth; el.classList.add("s-in");
+      await g.intro({ shiny: !!pl.holo, big });
+      el.style.setProperty("--vc", col);
+      const n = await g.needle(col, bpm, big);
+      playTrack();
+      el.classList.add("s-charge"); sparks.embers(big ? 3 : 2);
+      n.swell();
+      await wait(big ? 1500 : 1150);
+      const small = innerWidth <= 600;
+      const w = small ? Math.min(innerWidth * .62, 260) : Math.min(Math.min(innerWidth, innerHeight) * .44, 300);
+      const cy = small ? .42 : .46;
+      r = await g.emerge(w * 88 / 63, cy);
+      const card = $s(".fx-card");
+      Object.assign(card.style, { left: r.left + "px", top: r.top + "px", width: r.width + "px" });
+      $s(".fx-title").style.top = (r.top + r.height + 18) + "px";
+      el.classList.remove("s-charge"); el.classList.add("s-reveal");
+      g.hold(big);
+    } else {
+      // no 3D (old phone, offline CDN): the record and its sleeve in plain CSS
+      spin = { a: 0, v: 0, to: 0, raf: 0, t: 0 };
+      spin.raf = requestAnimationFrame(spinLoop);
+      void el.offsetWidth; el.classList.add("s-in");             // 1. the sleeve appears, the record slides out of it
+      await wait(380); el.classList.add("s-slide");
+      await wait(620); el.classList.add("s-free"); spin.to = .55;   // out of the sleeve, it starts turning
+      await wait(520);
+      el.style.setProperty("--vc", col);                          // 2. it takes the colour of the hit, the needle is down
+      el.classList.add("s-charge"); spin.to = big ? 1.1 : .8;
+      sparks.embers(big ? 3 : 2);
+      await playTrack();
+      await wait(big ? 1450 : 1100);
+      el.classList.remove("s-charge"); el.classList.add("s-reveal");   // 3. burst: the card comes out of the record
+      spin.to = .35;
+    }
+    r = $s(".fx-card").getBoundingClientRect();
+    sparks.burst(r.left + r.width / 2, r.top + r.height / 2, big ? 260 : 150);
+    if (big) flash();
+    await wait(1100);
+    el.classList.add("s-hold");
+    $s(".fx-hint").textContent = "Touche pour continuer";
+    await new Promise(r => { tapped = r; });
+    tapped = null;
+
+    stopAudio(600);                                             // 4. the card flies back to its place on the table
+    $s(".fx-hint").textContent = "";
+    el.classList.add("s-out"); $s(".tilt").style.transform = "";
+    sparks.embers(0);
+    const card = $s(".fx-card"), from = card.getBoundingClientRect(), to = target?.getBoundingClientRect();
+    if (to && to.width && to.bottom > 0 && to.top < innerHeight) {
+      const dx = to.left + to.width / 2 - (from.left + from.width / 2), dy = to.top + to.height / 2 - (from.top + from.height / 2);
+      await card.animate([{ transform: "none" }, { transform: `translate(${dx}px,${dy}px) scale(${to.width / from.width})` }],
+        { duration: 560, easing: "cubic-bezier(.6,0,.2,1)", fill: "forwards" }).finished;
+    } else await card.animate([{ opacity: 1 }, { opacity: 0, transform: "scale(.6)" }], { duration: 400, fill: "forwards" }).finished;
+    el.hidden = true; document.body.classList.remove("fx-on");
+    card.getAnimations().forEach(a => a.cancel());
+    card.removeAttribute("style"); $s(".fx-title").removeAttribute("style");
+    cancelAnimationFrame(spin.raf); sparks.stop(); hit3d?.stop();
+  }
+  // the 3D scene is a separate file, fetched only when a booster holds a hit; null if WebGL or the CDN fails
+  let hit3d = null, hit3dP = null;
+  const load3d = () => hit3dP ??= import("./hit3d.js?v=15").then(m => m.create($s(".fx-gl-host"))).then(async x => { await x.warmup(); return hit3d = x; })
+    .catch(e => { console.warn("3D indisponible, animation simple", e); return null; });
+  /* GOD pack: "GOD PACK" is written in gold in the dark, the lamp lights a solid gold record, the needle lands, light
+     leaks out of the grooves and the record bursts into five cards turning in a ring around the deck. Each tap brings
+     one card to the front (its colour, its track); at the end the five fly down to the table. False if no 3D. */
+  async function god(pulls, flips) {
+    if (!el) build();
+    const g = await Promise.race([load3d(), wait(2500)]);
+    if (!g) return false;
+    const tap = () => new Promise(r => { tapped = r; }).then(() => { tapped = null; });
+    const flash = () => { const f = document.createElement("div"); f.className = "flash"; document.body.appendChild(f); setTimeout(() => f.remove(), 900); };
+    el.className = "fx-screen three god"; el.hidden = false; document.body.classList.add("fx-on");
+    $s(".tilt").style.transform = ""; $s(".fx-hint").textContent = "";
+    $s(".fx-title b").innerHTML = ""; $s(".fx-title small").textContent = "";
+    el.style.setProperty("--vc", "#f5c24d");
+    $s(".fx-god b").innerHTML = [..."GOD PACK"].map((ch, k) => `<span style="--k:${k}">${ch === " " ? "&nbsp;" : ch}</span>`).join("");
+    const row = $s(".fx-row"); row.innerHTML = pulls.map(() => `<i></i>`).join("");
+    pulls.forEach(warm);
+    sparks.start("#f5c24d", true);
+    void el.offsetWidth; el.classList.add("s-ann");              // 1. the announcement, in the dark (the letters start a
+    await wait(3000);                                            //    little late: the 3D may still be warming up just then)
+    el.classList.add("s-ann-out", "s-in");                       // 2. the lamp, the gold record, the needle
+    await g.intro({ god: true, big: true });
+    await g.needle("#f5c24d", 120, true);
+    sparks.embers(3);
+    const colors = pulls.map(colorOf);
+    await g.godBurst(colors, () => {                             // 3. light leaks out, the record bursts
+      flash(); sparks.burst(innerWidth / 2, innerHeight * .45, 340);
+    });
+    $s(".fx-hint").textContent = "Touche pour révéler · 1 / 5";
+    await tap();
+    const small = innerWidth <= 600;
+    const w = (small ? Math.min(innerWidth * .56, 230) : Math.min(Math.min(innerWidth, innerHeight) * .38, 270));
+    const card = $s(".fx-card"), front = $s(".face.front");
+    for (let i = 0; i < pulls.length; i++) {                     // 4. one card at a time
+      const pl = pulls[i], col = colorOf(pl), big = pl.c.tier === LEG || pl.holo;
+      $s(".fx-hint").textContent = "";
+      el.classList.remove("s-reveal", "s-hold", "big", "shiny");
+      if (big) el.classList.add("big"); if (pl.holo) el.classList.add("shiny");
+      el.style.setProperty("--vc", col);
+      front.innerHTML = ""; front.appendChild(cardEl(pl.c, pl.holo));
+      const title = pl.holo ? "SHINY" : rarName(pl.c).toUpperCase();
+      $s(".fx-title b").innerHTML = [...title].map((ch, k) => `<span style="--k:${k}">${ch === " " ? "&nbsp;" : ch}</span>`).join("");
+      $s(".fx-title small").textContent = (pl.isNew ? "Nouvelle carte · " : "Doublon · ") + (pl.holo ? rarName(pl.c) + " · " : "") + (isArtist(pl.c) ? pl.c.t : pl.c.a);
+      const r = await g.godPick(i, w * 88 / 63, small ? .4 : .42, col);
+      const url = await Promise.race([pl.preview, wait(400)]);
+      stopAudio(0);
+      if (url) { clearInterval(fading); audio.src = url; audio.volume = 0; audio.play().then(fadeIn).catch(() => {}); }
+      Object.assign(card.style, { left: r.left + "px", top: r.top + "px", width: r.width + "px" });
+      $s(".fx-title").style.top = (r.top + r.height + 14) + "px";
+      void el.offsetWidth; el.classList.add("s-reveal");
+      sparks.burst(r.left + r.width / 2, r.top + r.height / 2, big ? 220 : 130);
+      if (big) flash();
+      await wait(1000);
+      el.classList.add("s-hold");
+      $s(".fx-hint").textContent = i < pulls.length - 1 ? `Touche pour la suivante · ${i + 2} / 5` : "Touche pour finir";
+      await tap();
+      // the card goes down into its place in the row
+      const slot = row.children[i], from = card.getBoundingClientRect(), to = slot.getBoundingClientRect();
+      const mini = front.querySelector(".cq").cloneNode(true); slot.appendChild(mini); slot.classList.add("on");
+      el.classList.remove("s-reveal", "s-hold");
+      mini.animate([{ transform: `translate(${from.left - to.left}px,${from.top - to.top}px) scale(${from.width / to.width})` }, { transform: "none" }],
+        { duration: 480, easing: "cubic-bezier(.3,0,.2,1)" });
+      if (i < pulls.length - 1) g.godRelease();
+    }
+    stopAudio(700);                                              // 5. the five cards fly down to the table
+    $s(".fx-hint").textContent = "";
+    el.classList.add("s-out");
+    sparks.embers(0);
+    await wait(150);
+    await Promise.all([...row.children].map((slot, i) => {
+      const mini = slot.firstElementChild, a = mini.getBoundingClientRect(), b = flips[i]?.getBoundingClientRect();
+      if (!b || !b.width || b.bottom < 0 || b.top > innerHeight) return mini.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 400, fill: "forwards" }).finished;
+      return mini.animate([{ transform: "none" }, { transform: `translate(${b.left - a.left}px,${b.top - a.top}px) scale(${b.width / a.width})` }],
+        { duration: 650, delay: i * 70, easing: "cubic-bezier(.6,0,.2,1)", fill: "forwards" }).finished;
+    }));
+    el.hidden = true; document.body.classList.remove("fx-on");
+    row.innerHTML = ""; card.removeAttribute("style"); $s(".fx-title").removeAttribute("style");
+    el.className = "fx-screen";
+    cancelAnimationFrame(spin.raf); sparks.stop(); hit3d?.stop();
+    return true;
+  }
+  // built and decoded ahead of time (when the pack holds a hit), so the screen opens without a hitch
+  function prepare() {
+    if (!el) build();
+    el.querySelectorAll("img").forEach(i => i.decode().catch(() => {}));
+    load3d();
+  }
+  return { isHit, warm, hit, god, prepare };
+})();
+
+// light particles for the hit screen: slow embers rising during the charge, a burst when the card comes out
+function Particles(cv) {
+  const ctx = cv.getContext("2d");
+  let list = [], raf = 0, col = "#fff", rate = 0, last = 0, dpr = 1;
+  const fit = () => { dpr = Math.min(1.5, devicePixelRatio || 1); cv.width = innerWidth * dpr; cv.height = innerHeight * dpr; };
+  function frame(t) {
+    const dt = Math.min(.05, (t - (last || t)) / 1000); last = t;
+    for (let k = 0; k < rate; k++) if (Math.random() < .6) list.push({   // embers drift up from the bottom
+      x: Math.random() * innerWidth, y: innerHeight + 10, vx: (Math.random() - .5) * 20, vy: -40 - Math.random() * 90,
+      life: 0, max: 2.5 + Math.random() * 2, s: .8 + Math.random() * 2, c: Math.random() < .25 ? "#fff" : col, drag: 0, g: 0, streak: false });
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, innerWidth, innerHeight);
+    ctx.globalCompositeOperation = "lighter";
+    list = list.filter(p => (p.life += dt) < p.max);
+    if (list.length > 420) list.splice(0, list.length - 420);
+    for (const p of list) {
+      p.vx *= 1 - p.drag * dt; p.vy = p.vy * (1 - p.drag * dt) + p.g * dt;
+      p.x += p.vx * dt; p.y += p.vy * dt;
+      const a = Math.max(0, 1 - p.life / p.max);
+      ctx.globalAlpha = a; ctx.fillStyle = ctx.strokeStyle = p.c;
+      if (p.streak) { ctx.lineCap = "round"; ctx.lineWidth = p.s; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - p.vx * .045, p.y - p.vy * .045); ctx.stroke(); }
+      else { const r = p.s * (.4 + a * .6); ctx.globalAlpha = a * .25; ctx.fillRect(p.x - r * 2, p.y - r * 2, r * 4, r * 4); ctx.globalAlpha = a; ctx.fillRect(p.x - r / 2, p.y - r / 2, r, r); }
+    }
+    raf = requestAnimationFrame(frame);
+  }
+  return {
+    start(c) { col = c; list = []; fit(); last = 0; cancelAnimationFrame(raf); raf = requestAnimationFrame(frame); },
+    embers(n) { rate = n; },
+    burst(x, y, n) {
+      for (let k = 0; k < n; k++) {
+        const a = Math.random() * Math.PI * 2, v = 250 + Math.random() * 900;
+        list.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 0, max: .7 + Math.random() * 1.1, s: 1 + Math.random() * 2.4,
+          c: Math.random() < .3 ? "#fff" : col, drag: 2.6, g: 160, streak: Math.random() < .6 });
+      }
+    },
+    stop() { cancelAnimationFrame(raf); list = []; ctx.clearRect(0, 0, cv.width, cv.height); },
+  };
 }
 /* reveal animations for the big pulls: the face-down card charges up in its rarity colour, then bursts open */
 const REVEAL = {
@@ -674,10 +992,15 @@ function slotEl(pl, i) {
   f.append(back, front);
   const tag = document.createElement("span"); tag.className = "tag"; tag.innerHTML = "&nbsp;";
   let revealing = false;
-  f.reveal = async () => {               // resolves once the card is face up (after its animation)
+  f.reveal = async (instant = false) => {   // resolves once the card is face up (after its animation)
     if (f.classList.contains("on") || revealing) return;
     revealing = true;
-    if (pl.c.tier >= 3 && !reduceMotion()) await revealBig(slot, pl.c.tier);
+    if (instant) { f.style.transition = "none"; f.classList.add("on"); void f.offsetWidth; f.style.transition = ""; }
+    else if (Stage.isHit(pl) && !reduceMotion()) {
+      await Stage.hit(pl, f);
+      f.style.transition = "none"; f.classList.add("on"); void f.offsetWidth; f.style.transition = "";   // the card landed face up
+    }
+    else if (pl.c.tier >= 3 && !reduceMotion()) await revealBig(slot, pl.c.tier);
     f.classList.add("on"); f.setAttribute("aria-label", pl.c.t + ", " + rarName(pl.c));
     if (pl.c.tier >= 3) slot.classList.add("burst", "burst-" + pl.c.tier);
     tag.textContent = (pl.isNew ? "Nouvelle · " : "Doublon · ") + (isArtist(pl.c) ? "Artiste · " : "") + rarName(pl.c) + (pl.holo && pl.c.tier >= MYTH ? " · SHINY" : "");
@@ -693,6 +1016,7 @@ $("#flipAll").onclick = async () => {
   for (const f of document.querySelectorAll("#deal .flip:not(.on)")) { await f.reveal(); await wait(160); }
 };
 $("#again").onclick = () => openPack(lastPack);
+$("#tableBack").onclick = unseatTable;
 
 /* ---------- binder ---------- */
 const F = { g: -1, r: -1, sort: "recent", q: "", tag: null };
@@ -781,7 +1105,7 @@ $("#resetYes").onclick = async () => {
     save();
   }
   $("#resetConfirm").hidden = true; $("#resetAsk").hidden = false;
-  $("#table").hidden = true; $("#deal").innerHTML = "";
+  unseatTable();
   renderCounters(); renderStock(); renderBinder();
   toast("Collection réinitialisée.");
 };

@@ -142,7 +142,7 @@ async function enterAccount(user) {
   try {
     await loadAll();
     Online.active = true;
-    $("#tab-trades").hidden = false; $("#tab-defis").hidden = false; $("#tab-market").hidden = false; $("#tab-albums").hidden = false; $("#tab-duels").hidden = false;
+    $("#tab-trades").hidden = false; $("#tab-defis").hidden = false; $("#tab-market").hidden = false; $("#tab-albums").hidden = false; $("#tab-duels").hidden = false; $("#navCommunity").hidden = false;
     $("#table").hidden = true; $("#deal").innerHTML = "";
     refreshViews();
     pollOffers(); updateDefisBadge();
@@ -159,7 +159,7 @@ function leaveAccount() {
   TEST_MODE = true;
   $("#tab-trades").hidden = true; $("#tradeBadge").hidden = true;
   $("#tab-defis").hidden = true; $("#defisBadge").hidden = true; $("#tab-market").hidden = true; $("#tab-albums").hidden = true; $("#albumsBadge").hidden = true;
-  $("#tab-duels").hidden = true; $("#duelsBadge").hidden = true;
+  $("#tab-duels").hidden = true; $("#duelsBadge").hidden = true; $("#navCommunity").hidden = true;
   if (!views.trades.hidden || !views.defis.hidden || !views.market.hidden || !views.albums.hidden || !views.duels.hidden) show("shop");
   $("#table").hidden = true; $("#deal").innerHTML = "";
   refreshViews();
@@ -229,7 +229,7 @@ function renderAccount() {
     box.innerHTML = `<button class="btn primary" id="signIn">Se connecter</button>`;
     $("#signIn").onclick = () => openAuth("in");
   } else {
-    box.innerHTML = `<button class="btn" id="myAccount" aria-label="Mon compte">${esc(me.pseudo || "Mon compte")}${me.title ? `<small class="title-tag">${esc(me.title)}</small>` : ""}</button>`;
+    box.innerHTML = `<button class="player" id="myAccount" aria-label="Mon compte"><span class="avatar" aria-hidden="true">${esc((me.pseudo || "?").slice(0, 1).toUpperCase())}</span><span class="who"><b>${esc(me.pseudo || "Mon compte")}</b>${me.title ? `<small>${esc(me.title)}</small>` : `<small>Joueur</small>`}</span></button>`;
     $("#myAccount").onclick = () => openAuth("account");
   }
 }
@@ -237,12 +237,19 @@ function renderAccount() {
 /* ---------- sign-in / sign-up / password / account dialog ---------- */
 const authModal = $("#authModal");
 let authLastFocus = null;
+// the sign-in forms render either in the dialog or on the welcome page
+const AUTH_DIALOG = { title: $("#authTitle"), body: $("#authBody"), done: () => closeAuth() };
+let AUTH = AUTH_DIALOG;
 function openAuth(mode) {
   authLastFocus = document.activeElement;
+  AUTH = AUTH_DIALOG;
   authModal.hidden = false;
   renderAuth(mode);
 }
-function closeAuth() { authModal.hidden = true; authLastFocus?.focus?.(); }
+function closeAuth() {
+  authModal.hidden = true; authLastFocus?.focus?.();
+  if (!$("#landing").hidden) AUTH = { title: $("#landAuthTitle"), body: $("#landAuthBody"), done: () => {} };   // back to the welcome page's forms
+}
 $("#authClose").onclick = closeAuth;
 authModal.addEventListener("click", e => { if (e.target === authModal) closeAuth(); });
 addEventListener("keydown", e => { if (e.key === "Escape" && !authModal.hidden) closeAuth(); });
@@ -251,7 +258,8 @@ function field(id, label, type, extra = "") {
   return `<label class="field" for="${id}"><span>${label}</span><input id="${id}" type="${type}" ${extra}></label>`;
 }
 function renderAuth(mode, note = "") {
-  const title = $("#authTitle"), body = $("#authBody");
+  const title = AUTH.title, body = AUTH.body;
+  document.querySelectorAll(".land-tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.mode === mode));
   const say = (msg, ok) => { const p = body.querySelector(".form-msg"); p.textContent = msg; p.classList.toggle("ok", !!ok); };
   if (mode === "in") {
     title.textContent = "Connexion";
@@ -268,7 +276,7 @@ function renderAuth(mode, note = "") {
       const { error } = await sb.auth.signInWithPassword({ email: $("#inEmail").value.trim(), password: $("#inPass").value });
       if (error) return say(/confirm/i.test(error.message) ? "Ton adresse n'est pas encore vérifiée : clique sur le lien reçu par e-mail."
         : /invalid/i.test(error.message) ? "E-mail ou mot de passe incorrect." : message(error));
-      closeAuth(); toast("Connecté.");
+      AUTH.done(); toast("Connecté.");
     };
     $("#inEmail").focus();
   } else if (mode === "up") {
@@ -332,7 +340,7 @@ function renderAuth(mode, note = "") {
       e.preventDefault(); say("Enregistrement…");
       const { error } = await sb.auth.updateUser({ password: $("#npPass").value });
       if (error) return say(message(error));
-      closeAuth(); toast("Mot de passe changé.");
+      AUTH.done(); toast("Mot de passe changé.");
     };
     $("#npPass").focus();
   } else if (mode === "account") {
@@ -574,13 +582,15 @@ function renderEditor() {
   };
 }
 
-/* ---------- start ---------- */
+/* ---------- start: the welcome page for visitors, the game for players ---------- */
 renderAccount();
 sb.auth.onAuthStateChange((event, session) => {
-  if (event === "PASSWORD_RECOVERY") { openAuth("newpass"); }
-  if (session?.user) setTimeout(() => enterAccount(session.user), 0);   // outside the auth callback, as supabase-js asks
-  else if (event === "SIGNED_OUT" || (event === "INITIAL_SESSION" && me)) leaveAccount();
+  if (event === "PASSWORD_RECOVERY") { showGame(); openAuth("newpass"); }
+  if (session?.user) { try { localStorage.removeItem(GUEST); } catch (e) {} showGame(); setTimeout(() => enterAccount(session.user), 0); }   // outside the auth callback, as supabase-js asks
+  else if (event === "SIGNED_OUT") { leaveAccount(); showLanding(); }
+  else if (event === "INITIAL_SESSION") { if (me) leaveAccount(); wantsGame() ? showGame() : showLanding(); }
 });
+setTimeout(() => { if (document.body.classList.contains("booting")) showGame(); }, 5000);   // if the account service is unreachable
 
 
 /* ---------- Streams: discarding duplicates ---------- */
@@ -1271,4 +1281,68 @@ async function checkNotifications() {
     else if (x.type === "duel_declined") toast(`${x.title} a refusé ton clash.`);
   }
   if ((data || []).some(x => x.type.startsWith("duel"))) Online.updateDuelsBadge?.();
+}
+
+
+/* ---------- welcome page ---------- */
+const GUEST = "zh-guest";
+const wantsGame = () => {
+  try { if (localStorage.getItem(GUEST) === "1") return true; } catch (e) {}
+  return /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && /^#(god|demo|galerie)$/.test(location.hash);   // local previews
+};
+function showGame() {
+  document.body.classList.remove("booting", "landing-on");
+  $("#landing").hidden = true;
+}
+function showLanding() {
+  document.body.classList.remove("booting");
+  document.body.classList.add("landing-on");
+  $("#landing").hidden = false;
+  AUTH = { title: $("#landAuthTitle"), body: $("#landAuthBody"), done: () => {} };
+  landTab("in");
+  buildWall();
+}
+function landTab(mode) {
+  AUTH = { title: $("#landAuthTitle"), body: $("#landAuthBody"), done: () => {} };
+  document.querySelectorAll(".land-tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.mode === mode));
+  renderAuth(mode);
+}
+document.querySelectorAll(".land-tabs button").forEach(b => b.onclick = () => landTab(b.dataset.mode));
+$("#landGuest").onclick = () => { try { localStorage.setItem(GUEST, "1"); } catch (e) {} showGame(); };
+$("#landPrivacy").onclick = () => openAuth("privacy");
+
+// the wall: real cards drifting in three columns
+let wallBuilt = false;
+async function buildWall() {
+  if (wallBuilt) return;
+  wallBuilt = true;
+  const cols = [...document.querySelectorAll(".wall-col")];
+  const fill = (col, nodes) => {
+    const track = document.createElement("div"); track.className = "wall-track";
+    for (const n of nodes) track.appendChild(n);
+    for (const n of nodes) { const copy = n.cloneNode(true); copy.setAttribute("aria-hidden", "true"); track.appendChild(copy); }   // twice, for a seamless loop
+    col.innerHTML = ""; col.appendChild(track);
+  };
+  cols.forEach(col => fill(col, Array.from({ length: 5 }, () => { const w = document.createElement("div"); w.className = "wall-card"; w.appendChild(backEl()); return w; })));
+  try {
+    const picked = [], seen = new Set();
+    for (const g of [0, 1, 3, 2, 7, 4, 5, 8]) {
+      const pool = (await genrePool(g, 0).catch(() => [])).filter(t => t.album?.cover_big && !seen.has(t.id));
+      pool.sort(() => Math.random() - .5);
+      for (const t of pool.slice(0, 4)) {
+        seen.add(t.id);
+        picked.push({ id: t.id, t: t.title_short || t.title, a: t.artist?.name || "?", al: t.album?.title || "", cov: t.album.cover_big.replace("http:", "https:"),
+          d: t.duration || 0, rank: t.rank || 0, bpm: 0, y: 0, x: t.explicit_lyrics ? 1 : 0, g, tier: tierOf(t.rank || 0) });
+      }
+    }
+    const artists = await Promise.all([246791, 27, 13].map(id => dz("artist/" + id).catch(() => null)));
+    const artistCards = artists.filter(a => a && a.id).map((a, i) => ({ kind: "artist", id: "a" + a.id, aid: a.id, t: a.name, a: "Artiste",
+      cov: (a.picture_big || "").replace("http:", "https:"), rank: a.nb_fan, albums: a.nb_album || 0, tier: certOf(a.nb_fan), collector: i === 2 }));
+    const best = picked.filter(c => c.tier >= MYTH);
+    const shinyId = best[0]?.id;
+    const all = [...picked.sort(() => Math.random() - .5)];
+    artistCards.forEach((c, i) => all.splice(4 + i * 7, 0, c));
+    const nodes = all.map(c => { const w = document.createElement("div"); w.className = "wall-card"; w.appendChild(cardEl(c, c.id === shinyId || (isArtist(c) && c.tier >= MYTH && !c.collector && c.aid === 246791))); return w; });
+    cols.forEach((col, i) => fill(col, nodes.filter((_, k) => k % cols.length === i)));
+  } catch (e) { /* the card backs keep drifting */ }
 }

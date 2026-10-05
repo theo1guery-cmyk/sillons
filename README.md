@@ -62,3 +62,8 @@ Puis ouvrir http://localhost:8765.
 - `online.js` : comptes, collection en ligne, import et échanges (Supabase)
 - `duels.js` : clashs blind test et entraînement
 - `supabase/migrations/` : la base de données, les règles d'accès et les fonctions serveur
+
+## Crédits
+
+- Platine 3D de l'ouverture des hits : « [Yamaha TT-300 Record Player](https://sketchfab.com/3d-models/yamaha-tt-300-record-player-3577a2a1a0c24218bd5d768beccf218e) » par [AleixoAlonso](https://sketchfab.com/AleixoAlonso), licence [CC BY 4.0](http://creativecommons.org/licenses/by/4.0/). Modifiée : textures compressées, marques effacées, couvercle retiré (`brand/3d/`).
+- Rendu 3D : [three.js](https://threejs.org) 0.160, chargé depuis jsDelivr seulement quand un booster contient un hit.

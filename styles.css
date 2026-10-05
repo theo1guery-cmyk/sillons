@@ -682,3 +682,387 @@ img{max-width:100%}
 .dp-reveal{display:grid;grid-template-columns:110px minmax(0,1fr);gap:14px;align-items:start;margin-top:16px}
 .dp-msg{margin:0 0 6px;font-size:.95rem}
 .dp-big{font-family:var(--display);font-size:2rem;color:var(--brass);margin:6px 0}
+
+/* ---------- welcome page: a drifting wall of cards, and the way in ---------- */
+body.booting .wrap{visibility:hidden}
+body.landing-on{overflow:hidden}
+body.landing-on .wrap{display:none}
+.landing{position:fixed;inset:0;z-index:30;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(360px,520px);background:
+  radial-gradient(900px 600px at 30% 40%,#2c2040 0%,transparent 70%),var(--felt);overflow:hidden}
+.wall{position:relative;overflow:hidden;
+  -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 12%,#000 78%,transparent 100%),linear-gradient(180deg,transparent 0,#000 14%,#000 86%,transparent 100%);
+  -webkit-mask-composite:source-in;mask-image:linear-gradient(90deg,transparent 0,#000 12%,#000 78%,transparent 100%);}
+.wall::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,var(--felt) 0,transparent 16%,transparent 84%,var(--felt) 100%)}
+.wall-tilt{position:absolute;inset:-25% -10%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:26px;
+  transform:perspective(1400px) rotateX(14deg) rotateY(-12deg) rotateZ(-9deg);transform-origin:center}
+.wall-col{overflow:visible}
+.wall-track{display:grid;gap:26px;animation:wall-up 70s linear infinite}
+.wall-col:nth-child(2) .wall-track{animation-name:wall-down;animation-duration:84s}
+.wall-col:nth-child(3) .wall-track{animation-duration:62s}
+.wall:hover .wall-track{animation-play-state:paused}
+@keyframes wall-up{from{transform:translateY(0)}to{transform:translateY(calc(-50% - 13px))}}
+@keyframes wall-down{from{transform:translateY(calc(-50% - 13px))}to{transform:translateY(0)}}
+.wall-card{width:100%;filter:drop-shadow(0 18px 30px rgba(0,0,0,.55))}
+.land-panel{position:relative;z-index:1;display:flex;flex-direction:column;justify-content:center;gap:18px;padding:40px 44px;overflow-y:auto;
+  background:linear-gradient(90deg,transparent,rgba(22,18,31,.92) 18%,var(--felt) 40%);}
+.land-logo{width:250px;height:auto;max-width:100%}
+.land-title{margin:0;font-family:var(--display);font-weight:900;font-size:clamp(1.6rem,2.6vw,2.3rem);line-height:1.08;letter-spacing:-.01em;text-wrap:balance}
+.land-pitch{margin:0;color:var(--muted);max-width:44ch}
+.land-feats{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.land-feats li{display:grid;grid-template-columns:110px minmax(0,1fr);gap:10px;align-items:baseline;font-size:.9rem}
+.land-feats b{font-weight:600}
+.land-feats span{color:var(--muted)}
+.land-auth{border:1px solid var(--line);border-radius:18px;padding:16px 18px 18px;background:var(--felt-2);box-shadow:0 20px 50px rgba(0,0,0,.35)}
+.land-tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--felt);border-radius:99px;padding:4px;margin-bottom:14px}
+.land-tabs button{border:0;background:none;padding:9px;border-radius:99px;font-weight:600;color:var(--muted)}
+.land-tabs button[aria-selected="true"]{background:var(--brass);color:#1a1206}
+.land-auth .form .btn.primary{padding:11px;font-size:.95rem}
+.land-foot{display:flex;justify-content:space-between;gap:10px;margin:0;font-size:.85rem}
+.land-foot .linkish:first-child{color:var(--ink)}
+@media (prefers-reduced-motion:reduce){.wall-track{animation:none}}
+@media (max-width:900px){
+  body.landing-on{overflow:auto}
+  .landing{position:relative;inset:auto;min-height:100vh;grid-template-columns:minmax(0,1fr);grid-template-rows:42vh auto;overflow:visible}
+  .wall-tilt{inset:-40% -30%;gap:16px;transform:perspective(1000px) rotateX(18deg) rotateZ(-10deg)}
+  .wall-track{gap:16px}
+  .land-panel{background:linear-gradient(180deg,transparent,var(--felt) 60px);margin-top:-60px;padding:24px 16px 40px;justify-content:flex-start;overflow:visible}
+  .land-logo{width:200px}
+}
+
+/* =====================================================================================
+   GAME SKIN — the shell of a video-game TCG: sidebar, HUD, glass panels, game buttons.
+   Written last on purpose: it restyles the components above without touching their logic.
+   ===================================================================================== */
+:root{
+  --bg0:#0b0910;
+  --glass:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.015));
+  --edge:rgba(255,255,255,.08);
+  --edge-hi:rgba(255,255,255,.16);
+  --gold-grad:linear-gradient(180deg,#ffe2a0 0%,#e7b14a 52%,#b4812a 100%);
+  --sidebar:236px;
+}
+html,body{background:var(--bg0)}
+body{padding:0;background:
+  radial-gradient(1100px 700px at 12% -10%,rgba(124,79,190,.22),transparent 60%),
+  radial-gradient(900px 600px at 100% 110%,rgba(231,177,74,.10),transparent 60%),
+  var(--bg0);background-attachment:fixed}
+/* film grain, very faint */
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.05;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
+
+/* ---------- shell ---------- */
+.wrap.app{position:relative;z-index:1;max-width:none;margin:0;display:grid;grid-template-columns:var(--sidebar) minmax(0,1fr);min-height:100vh}
+.sidebar{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:6px;padding:22px 14px;
+  background:linear-gradient(180deg,rgba(18,13,27,.92),rgba(11,9,16,.92));border-right:1px solid var(--edge);overflow-y:auto}
+.side-logo{display:block;padding:0 8px 14px;border-bottom:1px solid var(--edge);margin-bottom:6px}
+.side-logo img{width:176px;height:auto;display:block}
+nav.tabs{display:flex;flex-direction:column;gap:2px;background:none;border:0;border-radius:0;padding:0;overflow:visible;max-width:none}
+.nav-group{margin:16px 10px 6px;font-family:var(--mono);font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;color:#6f6681}
+nav.tabs button{position:relative;display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px;border-radius:12px;
+  font-weight:600;font-size:.92rem;color:#a99fba;background:none;transition:background .15s ease,color .15s ease}
+nav.tabs button:hover{background:rgba(255,255,255,.045);color:var(--ink)}
+nav.tabs button[aria-selected="true"]{color:#fff;background:linear-gradient(90deg,rgba(231,177,74,.20),rgba(231,177,74,.03));box-shadow:inset 0 0 0 1px rgba(231,177,74,.28)}
+nav.tabs button[aria-selected="true"]::before{content:"";position:absolute;left:-14px;top:9px;bottom:9px;width:3px;border-radius:0 3px 3px 0;background:var(--gold-grad);box-shadow:0 0 12px rgba(231,177,74,.7)}
+nav.tabs .ico{width:20px;height:20px;flex:none}
+nav.tabs button[aria-selected="true"] .ico{color:#ffd98a}
+nav.tabs .badge{margin-left:auto}
+.main{min-width:0;padding:0 34px 64px}
+.main>section,.main>#tableWrap,.main>footer{max-width:1240px}
+
+/* ---------- top HUD ---------- */
+header.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:nowrap;
+  margin:0 -34px 26px;padding:12px 34px;border-bottom:1px solid var(--edge);background:rgba(11,9,16,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.top-brand{display:none}
+.top-brand img{height:34px;width:auto;display:block}
+.hud{display:flex;align-items:center;gap:10px;margin-left:auto;min-width:0}
+.counters{display:flex;flex-wrap:nowrap;gap:8px;font-size:inherit;color:inherit;overflow:hidden}
+.pill{display:inline-flex;align-items:baseline;gap:6px;padding:7px 12px;border-radius:11px;background:var(--glass);border:1px solid var(--edge);white-space:nowrap}
+.pill b{font-family:var(--display);font-weight:700;font-size:.92rem;color:var(--ink);font-variant-numeric:tabular-nums}
+.pill small{font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.pill.streams{border-color:rgba(231,177,74,.45);background:linear-gradient(180deg,rgba(231,177,74,.16),rgba(231,177,74,.04));align-items:center}
+.pill.streams b{color:#ffd98a}
+.pill.leg b{color:var(--r5)}.pill.myth b{color:var(--r4)}
+.coin{width:15px;height:15px;border-radius:50%;flex:none;background:radial-gradient(circle,#2a1d05 0 18%,transparent 20%),var(--gold-grad);box-shadow:0 0 0 1px #8a6218,0 0 10px rgba(231,177,74,.5)}
+.account .btn{padding:9px 16px}
+.player{display:flex;align-items:center;gap:10px;padding:5px 14px 5px 5px;border-radius:99px;background:var(--glass);border:1px solid var(--edge);color:var(--ink);text-align:left}
+.player:hover{border-color:var(--edge-hi)}
+.player .avatar{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--gold-grad);color:#1c1305;font-family:var(--display);font-weight:900;font-size:.95rem;box-shadow:0 0 0 2px rgba(0,0,0,.4),0 0 14px rgba(231,177,74,.35)}
+.player .who{display:grid;line-height:1.15}
+.player .who b{font-size:.88rem}
+.player .who small{font-family:var(--mono);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--brass)}
+
+/* ---------- page titles + section labels ---------- */
+.main section>h2{font-family:var(--display);font-weight:900;font-size:clamp(1.5rem,2.3vw,2.1rem);letter-spacing:-.015em;margin:4px 0 8px;line-height:1.1}
+.main section>.sub{color:#a99fba;font-size:.95rem;max-width:72ch;margin:0 0 22px}
+#view-defis h3,#view-trades h3,#view-market h3,#view-duels h3,#view-albums h3,.main section>h3{display:flex;align-items:center;gap:12px;margin:34px 0 14px;
+  font-family:var(--mono);font-weight:500;font-size:.74rem;letter-spacing:.16em;text-transform:uppercase;color:#a99fba}
+#view-defis h3::after,#view-trades h3::after,#view-market h3::after,#view-duels h3::after,#view-albums h3::after,.main section>h3::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--edge-hi),transparent)}
+
+/* ---------- buttons, chips, fields ---------- */
+.btn{border-radius:12px;padding:9px 16px;font-weight:600;color:var(--ink);background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.02));
+  border:1px solid var(--edge-hi);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 2px 0 rgba(0,0,0,.45);transition:transform .08s ease,box-shadow .15s ease,border-color .15s ease,filter .15s ease}
+.btn:hover{filter:none;border-color:rgba(255,255,255,.28);transform:translateY(-1px)}
+.btn:active{transform:translateY(1px);box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 0 0 rgba(0,0,0,.45)}
+.btn.primary{background:var(--gold-grad);color:#1c1305;border-color:#ffe2a0;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.65),0 2px 0 #7a561a,0 8px 22px rgba(231,177,74,.22)}
+.btn.primary:hover{box-shadow:inset 0 1px 0 rgba(255,255,255,.65),0 2px 0 #7a561a,0 10px 30px rgba(231,177,74,.38)}
+.btn.big{padding:13px 26px;font-size:1rem;border-radius:14px;letter-spacing:.01em}
+.btn:disabled{opacity:.45;transform:none;cursor:not-allowed}
+.btn.danger{color:#ff9a8c;border-color:rgba(255,77,106,.35)}
+.btn.danger.solid{background:linear-gradient(180deg,#ff6b7f,#d9465a);color:#fff;border-color:#ff8a9a}
+.chip{border-radius:10px;padding:6px 12px;background:var(--glass);border:1px solid var(--edge);color:#a99fba}
+.chip:hover{border-color:var(--edge-hi);color:var(--ink)}
+.chip[aria-pressed="true"]{color:#fff;border-color:rgba(231,177,74,.55);background:linear-gradient(180deg,rgba(231,177,74,.18),rgba(231,177,74,.05))}
+.search input,.mini-search,.field input,.filters select,.search select,.title-pick select,.newtag input{background:rgba(0,0,0,.32);border:1px solid var(--edge);border-radius:12px;color:var(--ink)}
+.search input:focus,.mini-search:focus,.field input:focus{outline:none;border-color:rgba(231,177,74,.6);box-shadow:0 0 0 3px rgba(231,177,74,.18)}
+
+/* ---------- one panel style for everything ---------- */
+.table,.trade-new,.notice,.discard,.offer-card,.album,.disco,.daily,.ach,.wish,.duel-card,.login-box,.wallet,.deck-editor,#sellPanel,.prog button,.history li,.board li,.store-note,.offer,.land-auth,.reset-confirm{
+  background:var(--glass),rgba(18,14,26,.55);border:1px solid var(--edge);border-radius:16px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 12px 30px rgba(0,0,0,.22)}
+.daily.ready,.ach.ready,.album.ready,.disco.ready,.duel-card.incoming{border-color:rgba(231,177,74,.6);box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 0 0 1px rgba(231,177,74,.35),0 12px 30px rgba(231,177,74,.10)}
+.wallet{background:radial-gradient(circle at 20% 20%,rgba(231,177,74,.18),transparent 60%),var(--glass),rgba(18,14,26,.55);border-color:rgba(231,177,74,.35)}
+
+/* ---------- booster stage ---------- */
+#view-shop .shelf{display:grid;grid-template-columns:minmax(0,1fr) minmax(250px,330px);gap:30px;align-items:center;padding:36px;border-radius:24px;min-height:400px;
+  background:radial-gradient(circle at 34% 50%,rgba(231,177,74,.17),transparent 55%),radial-gradient(circle at 34% 50%,rgba(124,79,190,.20),transparent 70%),var(--glass),rgba(14,11,20,.6);
+  border:1px solid var(--edge);box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 30px 60px rgba(0,0,0,.35)}
+.pack-stage{display:grid;justify-items:center;gap:22px}
+.pack-stage .pack{width:220px;animation:float 4.5s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0) rotate(-1.5deg)}50%{transform:translateY(-10px) rotate(1deg)}}
+.pack-stage .pack:hover{transform:translateY(-12px) rotate(0) scale(1.02)}
+/* the pack itself: dark foil, gold edge, the logo embossed */
+.pack{border-radius:14px;overflow:hidden;border:1px solid rgba(231,177,74,.45);
+  background:linear-gradient(160deg,hsl(var(--h,268) 45% 28%),hsl(var(--h,268) 45% 11%) 62%,hsl(var(--h,268) 40% 20%));
+  box-shadow:0 22px 40px rgba(0,0,0,.55),0 0 0 1px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.18),0 0 40px rgba(231,177,74,.12)}
+.pack.mix{background:linear-gradient(160deg,#2c2140,#120d1b 58%,#271d38);--h:268}
+.pack::after{display:none}
+.pack .disc{display:none}
+.pack-logo{position:absolute;left:50%;top:40%;width:60%;transform:translate(-50%,-50%);filter:drop-shadow(0 6px 14px rgba(0,0,0,.6))}
+.pack-shine{position:absolute;inset:0;pointer-events:none;z-index:2;
+  background:linear-gradient(115deg,transparent 38%,rgba(255,240,210,.32) 47%,rgba(255,255,255,.08) 52%,transparent 60%);background-size:260% 100%;animation:sheen-pack 5s ease-in-out infinite}
+@keyframes sheen-pack{0%,55%{background-position:130% 0}85%,100%{background-position:-40% 0}}
+.pack .lbl{z-index:3}
+.pack .lbl b{font-size:1.05rem;letter-spacing:.06em;color:#ffe2a0}
+.pack .lbl span{color:#cdbfdc}
+.stock{padding:20px;border-radius:18px;background:var(--glass),rgba(18,14,26,.6);border:1px solid var(--edge);gap:10px}
+.stock b{font-size:1.3rem}
+.odds{margin:-8px 0 20px}
+.odds summary{color:#a99fba;font-size:.86rem}
+.odds table{border:1px solid var(--edge);border-radius:12px;overflow:hidden;background:rgba(0,0,0,.2);display:block;padding:6px 10px}
+/* the opening table is a lit stage */
+.table{border-radius:24px;padding:22px 20px 26px;background:radial-gradient(800px 260px at 50% 0,rgba(231,177,74,.10),transparent 70%),var(--glass),rgba(14,11,20,.6)}
+.table-head h3{font-family:var(--display);font-size:1.05rem;letter-spacing:.02em}
+/* the boutique: each pack on its own lit plinth */
+.store{grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:18px}
+.offer{padding:16px;gap:12px}
+.offer .pack{width:100%}
+.store-note{padding:12px 16px;border-style:solid;color:#a99fba}
+
+/* ---------- collection ---------- */
+.prog{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 10px;margin:0 0 14px;scrollbar-width:thin}
+.prog button{flex:none;min-width:148px;padding:10px 12px}
+.prog button[aria-pressed="true"]{border-color:hsl(var(--h) 70% 60%);box-shadow:inset 0 0 0 1px hsl(var(--h) 70% 60%),0 0 18px hsla(var(--h),70%,60%,.18)}
+.binder,.market-grid{gap:18px}
+.cell .cnt{background:var(--gold-grad);color:#1c1305;font-weight:600}
+
+/* ---------- card details ---------- */
+.modal{background:rgba(6,4,10,.86);backdrop-filter:blur(8px)}
+.modal .info{padding:22px;border-radius:20px;background:var(--glass),rgba(18,14,26,.75);border:1px solid var(--edge)}
+.modal dt{color:#8c82a0}
+
+/* ---------- small things ---------- */
+footer.note{color:#6f6681;border-top:1px solid var(--edge);padding-top:16px}
+.toast{background:linear-gradient(180deg,#fff4dc,#f3ecdf);box-shadow:0 10px 30px rgba(0,0,0,.5),0 0 0 1px rgba(231,177,74,.5)}
+.fx-list li{display:flex;justify-content:space-between;gap:6px}
+.fx-list li b{color:var(--ink);font-weight:500}
+.fx-list li.wide{display:block}
+.duel-actions .btn{padding:12px 22px}
+
+/* ---------- phones: the sidebar becomes a bottom tab bar ---------- */
+@media (max-width:860px){
+  .wrap.app{grid-template-columns:minmax(0,1fr)}
+  .sidebar{position:fixed;top:auto;bottom:0;left:0;right:0;height:auto;z-index:40;flex-direction:row;padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));
+    border-right:0;border-top:1px solid var(--edge);background:rgba(11,9,16,.94);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);overflow:visible}
+  .side-logo,.nav-group{display:none}
+  nav.tabs{flex-direction:row;gap:2px;overflow-x:auto;width:100%;scrollbar-width:none}
+  nav.tabs button{flex:1 0 auto;flex-direction:column;gap:3px;width:auto;min-width:64px;padding:7px 8px;font-size:.64rem;border-radius:10px}
+  nav.tabs button[aria-selected="true"]::before{left:22%;right:22%;top:-7px;bottom:auto;width:auto;height:3px;border-radius:0 0 3px 3px}
+  nav.tabs .badge{position:absolute;top:2px;right:8px;margin:0}
+  .main{padding:0 16px 104px}
+  header.top{margin:0 -16px 18px;padding:10px 16px}
+  .top-brand{display:block}
+  .pill.opened,.counters .pill:not(.streams):not(.leg){display:none}
+  .player .who{display:none}
+  .player{padding:4px}
+  #view-shop .shelf{grid-template-columns:minmax(0,1fr);padding:26px 18px;gap:22px;min-height:0}
+  .pack-stage .pack{width:180px}
+  .toast{bottom:calc(88px + env(safe-area-inset-bottom,0px))}
+}
+.stock .test-badge{justify-self:start}
+
+.stowed{display:none!important}
+.table{margin-top:0}
+.table.enter{animation:seatIn .45s cubic-bezier(.2,.9,.3,1) both}
+.back-in{animation:seatIn .4s cubic-bezier(.2,.9,.3,1) both}
+@keyframes seatIn{from{opacity:0;transform:translateY(14px) scale(.98)}}
+#view-shop .table,#view-store .table{min-height:400px}
+.rip .pack{width:min(220px,46vw)}
+@media (prefers-reduced-motion:reduce){.table.enter,.back-in{animation:none}}
+
+/* ---------- HIT SCREEN (Mythique and above) ----------
+   Only opacity and transforms move here, so the browser can animate on the graphics card. */
+body.fx-on{overflow:hidden}
+.fx-screen{position:fixed;inset:0;z-index:45;color:#fff;cursor:pointer;overflow:hidden;contain:strict;
+  --beat:.5s;--card:min(44vmin,300px);--disc:min(78vmin,600px)}
+.fx-screen[hidden]{display:none}
+.fx-bg{position:absolute;inset:0;background:#030205;transition:opacity .45s ease}
+.fx-glow{position:absolute;left:50%;top:46%;width:40vmax;aspect-ratio:1;margin:-20vmax 0 0 -20vmax;opacity:0;transition:opacity .7s ease;will-change:opacity,transform;
+  transform:scale(3.6);background:radial-gradient(closest-side,color-mix(in srgb,var(--vc) 40%,transparent),transparent)}
+.fx-rays{position:absolute;left:50%;top:46%;width:44vmax;aspect-ratio:1;margin:-22vmax 0 0 -22vmax;opacity:0;transition:opacity .9s ease;will-change:transform,opacity;
+  background:radial-gradient(closest-side,transparent 8%,#030205 100%),repeating-conic-gradient(color-mix(in srgb,var(--vc) 28%,transparent) 0 3deg,transparent 3deg 15deg);
+  animation:raysSpin 40s linear infinite}
+@keyframes raysSpin{from{transform:scale(3) rotate(0)}to{transform:scale(3) rotate(360deg)}}
+.fx-canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.fx-center{position:absolute;left:50%;top:46%;width:var(--disc);aspect-ratio:1;margin:calc(var(--disc)/-2) 0 0 calc(var(--disc)/-2);display:grid;place-items:center}
+
+/* the record: black vinyl that takes the colour of the hit; grooves and label turn, the light on it stays put */
+.fx-disc{position:absolute;inset:0;border-radius:50%;opacity:0;transform:scale(.9);will-change:transform,opacity;
+  transition:transform .6s cubic-bezier(.45,0,.2,1),opacity .3s ease}
+.fx-disc::before{content:"";position:absolute;inset:-12%;border-radius:50%;opacity:0;transition:opacity .6s ease;
+  background:radial-gradient(closest-side,color-mix(in srgb,var(--vc) 45%,transparent),transparent)}
+.rec{position:absolute;inset:0;border-radius:50%;will-change:transform;
+  background:radial-gradient(circle,transparent 0 31%,#151418 31.4%,#0b0a0d 33%,#060508 34.5%,#08070a 70%,#0c0b0e 96.6%,#2a2830 97.4%,#050406 98.6%);
+  box-shadow:0 30px 90px rgba(0,0,0,.85)}
+.rec .grooves{position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(circle,transparent 0 47%,rgba(0,0,0,.7) 47.3% 47.9%,transparent 48.2% 61%,rgba(0,0,0,.7) 61.3% 61.9%,transparent 62.2% 76%,rgba(0,0,0,.7) 76.3% 76.9%,transparent 77.2%),
+             repeating-radial-gradient(circle,rgba(255,255,255,.05) 0 1px,transparent 1px 2.5px);
+  -webkit-mask:radial-gradient(circle,transparent 0 35%,#000 35.2% 96%,transparent 96.3%);mask:radial-gradient(circle,transparent 0 35%,#000 35.2% 96%,transparent 96.3%)}
+.rec .tint{position:absolute;inset:0;border-radius:50%;opacity:0;transition:opacity .5s ease;
+  background:radial-gradient(circle,transparent 0 31%,color-mix(in srgb,var(--vc) 55%,transparent) 32%,color-mix(in srgb,var(--vc) 22%,transparent) 65%,color-mix(in srgb,var(--vc) 45%,transparent) 97%,transparent 98.6%)}
+.rec .label{position:absolute;inset:32%;border-radius:50%;display:grid;place-items:center;overflow:hidden;
+  background:radial-gradient(circle,#030303 0 4.5%,transparent 5%),radial-gradient(circle at 35% 30%,#2a2630,#141218 70%);
+  box-shadow:inset 0 0 0 1px rgba(231,177,74,.35),inset 0 0 0 6px #141218,inset 0 0 0 7px rgba(231,177,74,.2)}
+.rec .ltint{position:absolute;inset:0;opacity:0;transition:opacity .5s ease;
+  background:radial-gradient(circle,#030303 0 4.5%,transparent 5%),radial-gradient(circle at 35% 30%,color-mix(in srgb,var(--vc) 70%,#fff),var(--vc) 55%,color-mix(in srgb,var(--vc) 60%,#000))}
+.rec .label img{position:relative;width:46%;translate:0 -16%}
+.rec .label span{position:absolute;bottom:17%;font-family:var(--mono);font-size:max(8px,calc(var(--disc)*.015));letter-spacing:.2em;color:#e7b14a;font-weight:500}
+.fx-disc .gloss{position:absolute;inset:0;border-radius:50%;pointer-events:none;
+  background:conic-gradient(from 0deg,transparent 0 22deg,rgba(255,255,255,.2) 38deg,rgba(255,255,255,.04) 50deg,transparent 64deg 202deg,rgba(255,255,255,.16) 218deg,rgba(255,255,255,.03) 230deg,transparent 244deg);
+  -webkit-mask:radial-gradient(circle,transparent 0 33%,#000 34% 97%,transparent 97.5%);mask:radial-gradient(circle,transparent 0 33%,#000 34% 97%,transparent 97.5%)}
+.fx-screen.s-charge .rec .tint,.fx-screen.s-reveal .rec .tint,.fx-screen.s-charge .rec .ltint,.fx-screen.s-reveal .rec .ltint,
+.fx-screen.s-charge .fx-disc::before,.fx-screen.s-reveal .fx-disc::before{opacity:1}
+.fx-screen.s-charge .rec .label span,.fx-screen.s-reveal .rec .label span{color:rgba(0,0,0,.6)}
+.fx-screen.shiny .rec .tint{background:radial-gradient(circle,transparent 0 31%,rgba(245,210,122,.18) 32%,transparent 60%,rgba(245,210,122,.25) 97%,transparent 98.6%)}
+.fx-screen.shiny .rec .ltint{background:radial-gradient(circle,#030303 0 4.5%,transparent 5%),radial-gradient(circle at 35% 30%,#2b2418,#0c0a07 70%)}
+.fx-screen.shiny.s-charge .rec .label span,.fx-screen.shiny.s-reveal .rec .label span{color:#f5d27a}
+
+/* the sleeve the record comes out of */
+.fx-sleeve{position:absolute;inset:1%;border-radius:6px;z-index:1;display:grid;place-items:center;align-content:center;gap:2%;opacity:0;
+  transform:scale(.88);will-change:transform,opacity;transition:transform .6s cubic-bezier(.45,0,.2,1),opacity .4s ease;
+  background:radial-gradient(120% 90% at 30% 15%,#26222c,#0d0b10 60%),#0d0b10;
+  box-shadow:0 0 0 1px rgba(255,255,255,.07),0 40px 100px rgba(0,0,0,.85),inset 0 0 0 10px #0d0b10,inset 0 0 0 11px rgba(231,177,74,.25)}
+.fx-sleeve::after{content:"";position:absolute;inset:0;border-radius:inherit;background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.07) 45%,transparent 55%)}
+.fx-sleeve img{width:38%}
+.fx-sleeve b{font-family:var(--display);font-weight:900;letter-spacing:.2em;font-size:calc(var(--disc)*.05);color:#e7b14a}
+.fx-sleeve small{font-family:var(--mono);letter-spacing:.24em;text-transform:uppercase;font-size:max(9px,calc(var(--disc)*.018));color:rgba(255,255,255,.45)}
+/* 1. in: the sleeve appears, the record slides out to the right, the sleeve leaves to the left */
+.fx-screen.s-in .fx-sleeve{opacity:1;transform:none}
+.fx-screen.s-in .fx-disc{opacity:1}
+.fx-screen.s-slide .fx-disc{transform:translateX(42%) scale(.94)}
+.fx-screen.s-slide .fx-sleeve{transform:translateX(-14%)}
+.fx-screen.s-free .fx-disc{transform:none}
+.fx-screen.s-free .fx-sleeve{transform:translateX(-80%) scale(.9) rotate(-6deg);opacity:0;transition-duration:.6s,.5s}
+
+/* sound waves: one wave when the card comes out */
+.fx-waves{position:absolute;inset:0;pointer-events:none}
+.fx-waves i{position:absolute;inset:0;border-radius:50%;border:2px solid var(--vc);opacity:0;will-change:transform,opacity}
+.fx-screen.s-reveal .fx-waves i{animation:wave 1.3s cubic-bezier(.2,.6,.3,1) forwards}
+.fx-waves i:nth-child(2){animation-delay:.14s!important}
+.fx-waves i:nth-child(3){animation-delay:.28s!important}
+@keyframes wave{0%{opacity:.6;transform:scale(.9)}100%{opacity:0;transform:scale(1.6)}}
+
+/* the card: back first, it flips as it bursts out, then floats and leans toward the pointer */
+.fx-card{position:relative;width:var(--card);aspect-ratio:63/88;perspective:1200px;z-index:2;opacity:0;pointer-events:none;will-change:transform,opacity}
+.fx-card::before{content:"";position:absolute;inset:-30%;border-radius:50%;background:radial-gradient(closest-side,color-mix(in srgb,var(--vc) 55%,transparent),transparent);opacity:0;transition:opacity .6s ease .3s}
+.fx-card .tilt{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .2s ease-out}
+.fx-card .flipper{position:absolute;inset:0;transform-style:preserve-3d;will-change:transform}
+.fx-card .face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.fx-card .face.front{transform:rotateY(180deg)}
+.fx-card .face .cq{width:100%}
+
+.fx-title{position:absolute;left:0;right:0;top:calc(46% + var(--card)*.7 + 18px);display:grid;justify-items:center;gap:6px;text-align:center;pointer-events:none;padding:0 16px}
+.fx-title b{font-family:var(--display);font-weight:900;font-size:clamp(1.5rem,5vw,3rem);letter-spacing:.14em;line-height:1;white-space:nowrap;
+  color:color-mix(in srgb,var(--vc) 70%,#fff);text-shadow:0 0 18px color-mix(in srgb,var(--vc) 80%,transparent)}
+.fx-title b span{display:inline-block;opacity:0;transform:translateY(.6em) scale(.6)}
+.fx-title small{font-family:var(--mono);font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.7);opacity:0}
+.fx-hint{position:absolute;left:0;right:0;bottom:calc(18px + env(safe-area-inset-bottom,0px));margin:0;text-align:center;font-family:var(--mono);font-size:.74rem;
+  letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.55);animation:hintBlink 1.6s ease-in-out infinite}
+@keyframes hintBlink{50%{opacity:.35}}
+
+/* 2. charge */
+.fx-screen.s-charge .fx-glow{opacity:1;animation:glowBeat var(--beat) ease-in-out infinite}
+.fx-screen.s-charge .fx-disc{transform:scale(1.04)}
+.fx-screen.s-charge .fx-center{animation:discShake .1s linear infinite}
+.fx-screen.big.s-charge .fx-rays{opacity:.9}
+@keyframes glowBeat{0%,100%{transform:scale(3.6)}50%{transform:scale(4)}}
+@keyframes discShake{25%{transform:translate(2px,-1px)}50%{transform:translate(-2px,1px)}75%{transform:translate(1px,2px)}}
+/* 3. reveal */
+.fx-screen.s-reveal .fx-glow{opacity:.85}
+.fx-screen.s-reveal .fx-rays{opacity:.6}
+.fx-screen.s-hold .fx-rays{opacity:.22;transition-duration:2s}
+.fx-screen.s-reveal .fx-disc{transform:scale(1.18);opacity:.35;transition-duration:1.2s}
+.fx-screen.s-reveal .fx-card{opacity:1;animation:cardOut 1s cubic-bezier(.2,1.25,.35,1) both}
+.fx-screen.s-reveal .fx-card::before{opacity:1}
+.fx-screen.s-reveal .flipper{animation:cardFlip 1s cubic-bezier(.3,1.4,.45,1) .12s both}
+@keyframes cardOut{0%{opacity:0;transform:scale(.15)}25%{opacity:1}100%{transform:none}}
+@keyframes cardFlip{from{transform:rotateY(0)}to{transform:rotateY(180deg)}}
+.fx-screen.s-reveal .fx-title b span{animation:letterIn .5s cubic-bezier(.2,1.4,.4,1) calc(.45s + var(--k)*45ms) forwards}
+.fx-screen.s-reveal .fx-title small{animation:fade-in .5s ease 1s forwards}
+@keyframes letterIn{to{opacity:1;transform:none}}
+.fx-screen.s-reveal .fx-center::after{content:"";position:absolute;inset:30%;border-radius:50%;border:3px solid #fff;will-change:transform,opacity;
+  box-shadow:0 0 24px var(--vc);animation:shock .8s cubic-bezier(.1,.7,.3,1) forwards;pointer-events:none}
+@keyframes shock{from{opacity:1;transform:scale(.3)}to{opacity:0;transform:scale(2.4)}}
+/* hold: the card floats */
+.fx-screen.s-hold .fx-card .flipper{animation:none;transform:rotateY(180deg)}
+.fx-screen.s-hold .fx-card{animation:float 3.2s ease-in-out infinite}
+@keyframes float{50%{transform:translateY(-8px)}}
+.fx-screen.s-hold .fx-disc{transition:none}
+/* Shiny: a gold and black edition */
+/* 4. out: everything fades but the card, which flies to its place */
+.fx-screen.s-out{cursor:default}
+.fx-screen.s-out .fx-bg,.fx-screen.s-out .fx-glow,.fx-screen.s-out .fx-rays,.fx-screen.s-out .fx-disc,.fx-screen.s-out .fx-title,.fx-screen.s-out .fx-waves,.fx-screen.s-out .fx-canvas,.fx-screen.s-out .fx-card::before{opacity:0;transition:opacity .4s ease}
+.fx-screen.s-out .fx-card{animation:none;opacity:1}
+@media (max-width:600px){.fx-screen{--card:min(62vw,260px);--disc:min(96vw,460px)}.fx-center{top:42%}.fx-glow,.fx-rays{top:42%}}
+
+/* 3D mode: the WebGL turntable replaces the CSS record; the HTML card is placed where the 3D one stopped */
+.fx-gl-host{position:absolute;inset:0;pointer-events:none}
+.fx-gl{position:absolute;inset:0;width:100%;height:100%;display:block;opacity:0;transition:opacity .5s ease}
+.fx-screen.three.s-in .fx-gl{opacity:1}
+.fx-screen.three .fx-disc,.fx-screen.three .fx-sleeve,.fx-screen.three .fx-waves,.fx-screen.three .fx-glow,.fx-screen.three .fx-rays{display:none}
+.fx-screen.three .fx-center{left:0;top:0;width:auto;height:auto;inset:0;margin:0;aspect-ratio:auto;animation:none!important}
+.fx-screen.three .fx-center::after{display:none}
+.fx-screen.three .fx-card{position:absolute;width:var(--card)}
+.fx-screen.three.s-reveal .fx-card{animation:none;opacity:1}
+.fx-screen.three.s-reveal .flipper{animation:cardFlip .8s cubic-bezier(.3,1.4,.45,1) both}
+.fx-screen.three.s-hold .fx-card{animation:float 3.2s ease-in-out infinite}
+.fx-screen.three.s-out .fx-gl{opacity:0;transition-duration:.45s}
+
+/* GOD pack: the announcement in gold, then the row where the five revealed cards wait */
+.fx-god{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:14px;pointer-events:none;opacity:0;z-index:3}
+.fx-screen.s-ann .fx-god{opacity:1}
+.fx-screen.s-ann-out .fx-god{opacity:0;transform:scale(1.06);transition:opacity .7s ease,transform .9s ease}
+.fx-god b{font-family:var(--display);font-weight:900;font-size:clamp(2.4rem,9vw,6rem);letter-spacing:.14em;line-height:1;white-space:nowrap;
+  color:#f5c24d;text-shadow:0 0 24px rgba(245,194,77,.55),0 0 70px rgba(245,194,77,.3)}
+.fx-god b span{display:inline-block;opacity:0;transform:translateY(.35em) scale(.85)}
+.fx-screen.s-ann .fx-god b span{animation:godLetter .55s cubic-bezier(.2,1.2,.4,1) calc(.65s + var(--k) * 130ms) forwards}
+@keyframes godLetter{0%{opacity:0;transform:translateY(.35em) scale(.85)}60%{opacity:1;color:#fff8e0}100%{opacity:1;transform:none}}
+.fx-god small{font-family:var(--mono);font-size:clamp(.75rem,1.6vw,.95rem);letter-spacing:.32em;text-transform:uppercase;color:rgba(245,214,140,.75);opacity:0}
+.fx-screen.s-ann .fx-god small{animation:fade-in .8s ease 1.9s forwards}
+.fx-row{display:none}
+.fx-screen.god .fx-row{position:absolute;left:0;right:0;bottom:calc(46px + env(safe-area-inset-bottom,0px));display:flex;justify-content:center;gap:10px;z-index:3;pointer-events:none}
+.fx-row i{width:min(64px,15vw);aspect-ratio:63/88;border-radius:7px;border:1px dashed rgba(245,194,77,.28);opacity:0;transition:opacity .6s ease}
+.fx-screen.god.s-in .fx-row i{opacity:1}
+.fx-row i.on{border-color:transparent}
+.fx-row .cq{width:100%;will-change:transform}
+.fx-screen.god.s-out .fx-row i{border-color:transparent}

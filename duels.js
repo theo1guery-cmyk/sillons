@@ -53,12 +53,12 @@ function drawDeck() {
     const el = document.createElement("div"); el.className = "deck-slot";
     el.appendChild(miniCard(c, false));
     const e = duelEffects(c);
-    el.insertAdjacentHTML("beforeend", `<ul class="fx-list"><li>⏱ Extrait ${String(e.extract).replace(".", ",")} s</li><li>🛡 Bouclier −${e.shield} %</li><li>🎯 Difficulté ×${String(e.diff).replace(".", ",")}</li><li>💥 Dégâts ${e.dmg}</li></ul>`);
+    el.insertAdjacentHTML("beforeend", `<ul class="fx-list"><li><span>Extrait</span><b>${String(e.extract).replace(".", ",")} s</b></li><li><span>Bouclier</span><b>−${e.shield} %</b></li><li><span>Difficulté</span><b>×${String(e.diff).replace(".", ",")}</b></li><li><span>Dégâts</span><b>${e.dmg}</b></li></ul>`);
     el.querySelector(".mini").onclick = () => openModal(c);
     row.appendChild(el);
   }
   const slot = document.createElement("div"); slot.className = "deck-slot artist-slot";
-  if (artist) { slot.appendChild(miniCard(artist, false)); slot.insertAdjacentHTML("beforeend", `<ul class="fx-list"><li>✨ ${ARTIST_BONUS(artist.tier)}</li></ul>`); }
+  if (artist) { slot.appendChild(miniCard(artist, false)); slot.insertAdjacentHTML("beforeend", `<ul class="fx-list"><li class="wide">${ARTIST_BONUS(artist.tier)}</li></ul>`); }
   else slot.innerHTML = `<div class="empty-slot">Carte d'artiste<br><small>bonus optionnel</small></div>`;
   row.appendChild(slot);
   $("#deckEdit").onclick = () => {
@@ -234,7 +234,7 @@ function startPlay(id, kind, other) {
   dp.hidden = false;
   $("#dpBody").innerHTML = `<h3 id="dpTitle">${kind === "training" ? "Entraînement blind test" : "Clash contre " + esc(other)}</h3>
     <p class="sub">${kind === "training" ? "Des morceaux de ta collection. Réponds vite : plus tu es rapide, plus tu marques." : "Reconnais chaque morceau parmi 4 réponses. Plus tu es rapide, plus tu marques. Le chrono tourne dès que la manche démarre."}</p>
-    <div class="btns"><button class="btn primary big" id="dpStart">▶ Lancer la manche 1</button></div>`;
+    <div class="btns"><button class="btn primary big" id="dpStart">Lancer la manche 1</button></div>`;
   $("#dpStart").onclick = nextRound;
 }
 function stopAudio() { P.audio.pause(); clearInterval(P.timer); }
