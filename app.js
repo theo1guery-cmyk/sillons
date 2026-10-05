@@ -66,7 +66,9 @@ const DROP = [70, 21, 7, 1.7, 0.28, 0.02];
 const PITY = 70;                         // boosters without a Mythique or better before one is guaranteed
 const GOD_CHANCE = 1 / 3000;             // a booster turns into a GOD pack: 1 Légendaire + 4 cards that are Mythique or Légendaire (50/50)
 const STOCK_MAX = 10, REFILL_MS = 30 * 60 * 1000;
-const TEST_MODE = true;                 // unlimited free boosters while the game is being tested
+let TEST_MODE = true;                   // unlimited free boosters while the game is being tested (read from the server when signed in)
+// signed-in play lives in online.js; this flag switches the game between the guest (this browser) and account modes
+const Online = { active: false };
 
 const WORDS = ("amour love night fire heart soleil baby dance rain moon party road summer life dream girl boy city sky street gold blue black red " +
   "money time world king queen star ocean corazon vida noche fuego liebe nacht herz amore notte cuore mama papa " +
@@ -342,6 +344,7 @@ function refill() {
 }
 const nextRefillMs = () => S.stock >= STOCK_MAX ? 0 : S.stockAt + REFILL_MS - Date.now();
 function save() {
+  if (Online.active) return;             // with an account, the server holds the collection
   try { localStorage.setItem(LS, JSON.stringify(S)); }
   catch (e) { toast("Le navigateur n'a plus de place pour sauvegarder ta collection."); }
 }
@@ -385,12 +388,13 @@ function cardEl(c, holo) {
 function backEl() { const w = document.createElement("div"); w.className = "cq"; w.innerHTML = '<div class="back"><div class="in"><b>SILLONS</b></div></div>'; return w; }
 
 /* ---------- views ---------- */
-const views = { shop: $("#view-shop"), store: $("#view-store"), binder: $("#view-binder"), catalog: $("#view-catalog") };
+const views = { shop: $("#view-shop"), store: $("#view-store"), binder: $("#view-binder"), catalog: $("#view-catalog"), trades: $("#view-trades") };
 function show(v) {
   for (const k in views) { views[k].hidden = k !== v; $("#tab-" + k).setAttribute("aria-selected", k === v); }
   $("#tableWrap").hidden = v !== "shop" && v !== "store";   // the opening table follows the booster tabs
   if (v === "binder") renderBinder();
   if (v === "catalog") { if (!CAT.loaded) catLoad(true); else renderCatalog(); }
+  if (v === "trades") Online.renderTrades();
 }
 $("#tab-shop").onclick = () => show("shop");
 $("#tab-store").onclick = () => show("store");
@@ -486,9 +490,14 @@ const LOADING_LINES = ["On fouille Deezer…", "On feuillette les bacs…", "On 
 async function openPack(p, opts = {}) {
   if (busy) return;
   refill();
-  if (!TEST_MODE && S.stock <= 0) { renderStock(); toast("Plus de booster pour l'instant. Le prochain arrive dans " + Math.ceil(nextRefillMs() / 60000) + " min."); return; }
+  if (!Online.active && !TEST_MODE && S.stock <= 0) { renderStock(); toast("Plus de booster pour l'instant. Le prochain arrive dans " + Math.ceil(nextRefillMs() / 60000) + " min."); return; }
   busy = true; lastPack = p;
-  const paid = !TEST_MODE && p === BOOSTER;          // shop packs are free while testing
+  let serverPack = null;                 // with an account the server rolls the rarities (and the GOD pack)
+  if (Online.active) {
+    try { serverPack = await Online.startPack(p); }
+    catch (e) { busy = false; renderStock(); toast(Online.message(e)); return; }
+  }
+  const paid = !Online.active && !TEST_MODE && p === BOOSTER;   // shop packs are free while testing
   if (paid) {
     if (S.stock >= STOCK_MAX) S.stockAt = Date.now();   // the refill clock starts when the stock drops below full
     S.stock--; save();
@@ -498,10 +507,10 @@ async function openPack(p, opts = {}) {
   const table = $("#table"), deal = $("#deal");
   // local preview only: #god turns the next booster into a GOD pack,
   // #demo gives one with a Commune, a Peu commune, an Épique, a Mythique and a Légendaire
-  const devHash = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && p === BOOSTER ? location.hash : "";
+  const devHash = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && p === BOOSTER && !serverPack ? location.hash : "";
   if (devHash === "#god" || devHash === "#demo") history.replaceState(null, "", location.pathname);
   if (devHash === "#demo") opts.slots = [0, 1, 3, MYTH, LEG];
-  const god = opts.god ?? (devHash === "#god" || (p === BOOSTER && Math.random() < GOD_CHANCE));
+  const god = serverPack ? serverPack.god : opts.god ?? (devHash === "#god" || (p === BOOSTER && Math.random() < GOD_CHANCE));
   table.hidden = false; table.classList.toggle("god", god);
   $("#tableTitle").textContent = god ? "GOD PACK" : p === BOOSTER ? "Booster" : "Booster " + p.n;
   deal.innerHTML = "";
@@ -514,7 +523,7 @@ async function openPack(p, opts = {}) {
   const lineTimer = setInterval(() => { if (!god) line.textContent = pick(LOADING_LINES); }, 1600);
 
   try {
-    const pulls = await drawPack(p, god, opts.slots);
+    const pulls = serverPack ? await Online.drawPack(p, serverPack) : await drawPack(p, god, opts.slots);
     if (god) toast("GOD PACK ! Que des Mythiques et des Légendaires.");
     renderCounters();
     deal.innerHTML = "";
@@ -522,6 +531,7 @@ async function openPack(p, opts = {}) {
     pulls.forEach((pl, i) => grid.appendChild(slotEl(pl, i)));
   } catch (err) {
     if (paid) { S.stock = Math.min(STOCK_MAX, S.stock + 1); save(); }   // a failed opening gives the booster back
+    if (serverPack) await Online.abandon(serverPack);
     rip.classList.remove("loading");
     line.className = "err";
     line.textContent = err.code === "network" || err.code === "timeout"
@@ -646,9 +656,13 @@ function renderBinder() {
 /* ---------- reset (confirmation lives in the page) ---------- */
 $("#resetAsk").onclick = () => { $("#resetConfirm").hidden = false; $("#resetAsk").hidden = true; $("#resetNo").focus(); };
 $("#resetNo").onclick = () => { $("#resetConfirm").hidden = true; $("#resetAsk").hidden = false; $("#resetAsk").focus(); };
-$("#resetYes").onclick = () => {
-  S = { c: {}, opened: 0, stock: STOCK_MAX, stockAt: Date.now(), dry: 0 };
-  save();
+$("#resetYes").onclick = async () => {
+  if (Online.active) {
+    try { await Online.reset(); } catch (e) { toast(Online.message(e)); return; }
+  } else {
+    S = { c: {}, opened: 0, stock: STOCK_MAX, stockAt: Date.now(), dry: 0 };
+    save();
+  }
   $("#resetConfirm").hidden = true; $("#resetAsk").hidden = false;
   $("#table").hidden = true; $("#deal").innerHTML = "";
   renderCounters(); renderStock(); renderBinder();
@@ -764,7 +778,7 @@ function openModal(c) {
   $("#mTitle").textContent = c.t; $("#mSub").textContent = c.a + " · " + c.al;
   $("#mDl").innerHTML = `<dt>Rareté</dt><dd>${RAR[c.tier]}</dd><dt>Classement</dt><dd>${fmt(c.rank)} pts Deezer</dd>
     <dt>${T.s}</dt><dd>${st.flow} · ${c.bpm > 0 ? c.bpm + " BPM" : "tempo estimé"}</dd><dt>Endurance</dt><dd>${st.endu} · ${fmtDur(c.d)}</dd>
-    <dt>Hype</dt><dd>${st.hype}</dd><dt>Sortie</dt><dd>${c.y || "?"}</dd><dt>Possédées</dt><dd>${own.n}${own.holo ? ` (dont ${own.holo} holo)` : ""}</dd>`;
+    <dt>Hype</dt><dd>${st.hype}</dd><dt>Sortie</dt><dd>${c.y || "?"}</dd><dt>Possédées</dt><dd>${own.n}${own.holo ? ` (dont ${own.holo} holo)` : ""}${own.locked ? ` · ${own.locked} non échangeable${own.locked > 1 ? "s" : ""}` : ""}</dd>`;
   $("#mLink").href = "https://www.deezer.com/track/" + c.id;
   audio.pause();
   modal.hidden = false; $("#mPlay").focus();

@@ -7,7 +7,7 @@
 <meta name="description" content="Le TCG des vrais morceaux : chaque carte est un titre de Deezer, les plus gros tubes sont légendaires.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Instrument+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="styles.css?v=11">
+<link rel="stylesheet" href="styles.css?v=12">
 </head>
 <body>
 <div class="wrap">
@@ -18,7 +18,9 @@
       <button role="tab" id="tab-store" aria-selected="false">Boutique</button>
       <button role="tab" id="tab-binder" aria-selected="false">Collection</button>
       <button role="tab" id="tab-catalog" aria-selected="false">Catalogue</button>
+      <button role="tab" id="tab-trades" aria-selected="false" hidden>Échanges<span class="badge" id="tradeBadge" hidden></span></button>
     </nav>
+    <div class="account" id="account"></div>
     <div class="counters" id="counters"></div>
   </header>
 
@@ -48,6 +50,7 @@
   <section id="view-binder" hidden>
     <h2>Ta collection</h2>
     <p class="sub">Clique sur une carte pour la voir en grand et écouter l'extrait.</p>
+    <div class="notice" id="importBox" hidden></div>
     <div class="prog" id="prog"></div>
     <div class="filters" id="filters"></div>
     <div class="binder" id="binder"></div>
@@ -74,7 +77,27 @@
     <div class="more"><button class="btn" id="catMore" hidden>Voir plus de cartes</button></div>
   </section>
 
-  <footer class="note">Morceaux, pochettes et extraits : API publique Deezer, interrogée en direct. La rareté vient du classement Deezer du morceau au moment où tu le tires. Ta collection est enregistrée dans ce navigateur.</footer>
+  <section id="view-trades" hidden>
+    <h2>Échanges</h2>
+    <p class="sub">Propose tes cartes contre celles d'un autre joueur : de 1 à 5 cartes de chaque côté. L'échange se fait seulement quand l'autre accepte, et les deux cartes changent de main en même temps.</p>
+    <div class="notice" id="tradeWait" hidden></div>
+    <div class="trade-new">
+      <h3>Proposer un échange</h3>
+      <form class="search" id="playerForm" role="search">
+        <label class="sr" for="playerQ">Pseudo du joueur</label>
+        <input id="playerQ" type="search" placeholder="Pseudo du joueur" autocomplete="off">
+      </form>
+      <div class="players" id="players"></div>
+      <div id="editor" hidden></div>
+    </div>
+    <div class="offers">
+      <h3>Offres reçues</h3><div id="offersIn"></div>
+      <h3>Offres envoyées</h3><div id="offersOut"></div>
+      <h3>Historique</h3><div id="offersDone"></div>
+    </div>
+  </section>
+
+  <footer class="note">Morceaux, pochettes et extraits : API publique Deezer, interrogée en direct. La rareté vient du classement Deezer du morceau au moment où tu le tires. Sans compte, ta collection est enregistrée dans ce navigateur ; avec un compte, sur ton compte. <button class="linkish" id="privacyLink">Confidentialité</button></footer>
 </div>
 
 <div class="modal" id="modal" hidden role="dialog" aria-modal="true" aria-labelledby="mTitle">
@@ -91,7 +114,16 @@
     </div>
   </div>
 </div>
+<div class="modal" id="authModal" hidden role="dialog" aria-modal="true" aria-labelledby="authTitle">
+  <div class="panel">
+    <h3 id="authTitle">Connexion</h3>
+    <div id="authBody"></div>
+    <button class="btn close-x" id="authClose" aria-label="Fermer">Fermer</button>
+  </div>
+</div>
 <div class="toast" id="toast" hidden></div>
-<script src="app.js?v=11"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
+<script src="app.js?v=12"></script>
+<script src="online.js?v=12"></script>
 </body>
 </html>
