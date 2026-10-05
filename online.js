@@ -4,7 +4,15 @@
 
 const SUPABASE_URL = "https://gvqlxsofrkqnniuhiiyf.supabase.co";
 const SUPABASE_KEY = "sb_publishable_46l4-zXXY1WswsqKMUm_QQ_x68Zt52G";   // publishable key: meant to be public
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// the session goes to localStorage; if the browser refuses (storage full with a big guest collection, private
+// mode), it is kept in memory instead, so signing in still works for this visit
+const memStore = new Map();
+const authStorage = {
+  getItem: k => { if (memStore.has(k)) return memStore.get(k); try { return localStorage.getItem(k); } catch (e) { return null; } },
+  setItem: (k, v) => { memStore.set(k, v); try { localStorage.setItem(k, v); } catch (e) {} },
+  removeItem: k => { memStore.delete(k); try { localStorage.removeItem(k); } catch (e) {} },
+};
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { storage: authStorage } });
 const backHere = () => location.origin + location.pathname;
 
 const MESSAGES = {
@@ -273,7 +281,14 @@ function renderAuth(mode, note = "") {
     $("#toUp").onclick = () => renderAuth("up");
     $("#fIn").onsubmit = async e => {
       e.preventDefault(); say("Connexion…");
-      const { error } = await sb.auth.signInWithPassword({ email: $("#inEmail").value.trim(), password: $("#inPass").value });
+      const btn = e.target.querySelector("button[type=submit]"); btn.disabled = true;
+      // never stay on "Connexion…": an error or no answer after 15 s says so
+      const slow = new Promise(r => setTimeout(() => r({ error: { message: "timeout" } }), 15000));
+      let error;
+      try { ({ error } = await Promise.race([sb.auth.signInWithPassword({ email: $("#inEmail").value.trim(), password: $("#inPass").value }), slow])); }
+      catch (err) { error = err; }
+      btn.disabled = false;
+      if (error?.message === "timeout") return say("La connexion ne répond pas. Recharge la page puis réessaie.");
       if (error) return say(/confirm/i.test(error.message) ? "Ton adresse n'est pas encore vérifiée : clique sur le lien reçu par e-mail."
         : /invalid/i.test(error.message) ? "E-mail ou mot de passe incorrect." : message(error));
       AUTH.done(); toast("Connecté.");
