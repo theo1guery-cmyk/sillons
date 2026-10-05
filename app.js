@@ -400,6 +400,7 @@ $("#tab-shop").onclick = () => show("shop");
 $("#tab-store").onclick = () => show("store");
 $("#tab-binder").onclick = () => show("binder");
 $("#tab-catalog").onclick = () => show("catalog");
+$("#tab-trades").onclick = () => show("trades");
 
 const owned = () => Object.values(S.c);
 function renderCounters() {
