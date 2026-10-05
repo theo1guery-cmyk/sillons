@@ -692,7 +692,7 @@ $("#flipAll").onclick = async () => {
 $("#again").onclick = () => openPack(lastPack);
 
 /* ---------- binder ---------- */
-const F = { g: -1, r: -1, sort: "recent" };
+const F = { g: -1, r: -1, sort: "recent", q: "" };
 function renderBinder() {
   const all = owned();
   const pg = $("#prog");
@@ -710,24 +710,44 @@ function renderBinder() {
     `<label for="fSort">Trier par <select id="fSort"><option value="recent">plus récentes</option><option value="rarity">rareté</option><option value="pw">puissance</option><option value="year">année de sortie</option><option value="dup">doublons</option></select></label>`;
   $("#fSort").value = F.sort;
   fl.querySelectorAll(".chip").forEach(b => b.onclick = () => { F.r = +b.dataset.r; renderBinder(); });
+  const fq = $("#fQ");
+  fq.oninput = () => { clearTimeout(fq._t); fq._t = setTimeout(() => { F.q = fq.value; renderBinder(); }, 250); };
   $("#fSort").onchange = e => { F.sort = e.target.value; renderBinder(); };
 
-  let list = all.filter(c => (F.g === -1 || (F.g === -2 ? isArtist(c) : c.g === F.g && !isArtist(c))) && (F.r < 0 || c.tier === F.r));
+  const q = F.q.trim().toLowerCase();
+  let list = all.filter(c => (F.g === -1 || (F.g === -2 ? isArtist(c) : c.g === F.g && !isArtist(c))) && (F.r < 0 || c.tier === F.r)
+    && (!q || (c.t + " " + c.a + " " + (c.al || "")).toLowerCase().includes(q)));
+  const power = new Map();                // computed once per card, not at every comparison
+  const pw = c => { if (!power.has(c)) power.set(c, (isArtist(c) ? artistStats(c) : stats(c)).pw); return power.get(c); };
   const by = {
     recent: (a, b) => b.at - a.at,
-    rarity: (a, b) => b.rank - a.rank,
-    pw: (a, b) => stats(b).pw - stats(a).pw,
-    year: (a, b) => b.y - a.y,
+    rarity: (a, b) => b.tier - a.tier || b.rank - a.rank,
+    pw: (a, b) => pw(b) - pw(a),
+    year: (a, b) => (b.y || 0) - (a.y || 0),
     dup: (a, b) => b.n - a.n,
   }[F.sort];
   list.sort(by);
+  $("#binderCount").textContent = list.length === all.length ? `${fmt(all.length)} cartes` : `${fmt(list.length)} carte${list.length > 1 ? "s" : ""} sur ${fmt(all.length)}`;
   const bd = $("#binder"); bd.innerHTML = "";
+  if (BIND.io) BIND.io.disconnect();
   if (!list.length) {
     bd.innerHTML = `<div class="empty">${all.length ? "Aucune carte ne correspond à ces filtres." : "Ta collection est vide. Ouvre un booster pour tirer tes premiers morceaux."}</div>`;
     return;
   }
+  // cards arrive 48 at a time as you scroll, so a big collection opens instantly, even on a phone
+  BIND.list = list; BIND.shown = 0;
+  binderMore();
+  const sentinel = document.createElement("div"); sentinel.className = "sentinel"; sentinel.setAttribute("aria-hidden", "true");
+  bd.after(sentinel); BIND.sentinel?.remove(); BIND.sentinel = sentinel;
+  BIND.io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) binderMore(); }, { rootMargin: "900px 0px" });
+  BIND.io.observe(sentinel);
+}
+const BIND = { list: [], shown: 0, io: null, sentinel: null };
+function binderMore() {
+  const bd = $("#binder"), next = BIND.list.slice(BIND.shown, BIND.shown + 48);
+  if (!next.length) { BIND.io?.disconnect(); return; }
   const frag = document.createDocumentFragment();
-  for (const c of list) {
+  for (const c of next) {
     const b = document.createElement("button"); b.className = "cell";
     b.setAttribute("aria-label", c.t + " de " + c.a);
     b.appendChild(cardEl(c, c.holo > 0));
@@ -736,6 +756,7 @@ function renderBinder() {
     frag.appendChild(b);
   }
   bd.appendChild(frag);
+  BIND.shown += next.length;
 }
 
 /* ---------- reset (confirmation lives in the page) ---------- */

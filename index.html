@@ -7,7 +7,7 @@
 <meta name="description" content="Le TCG des vrais morceaux : chaque carte est un titre de Deezer, les plus gros tubes sont légendaires.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Instrument+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="styles.css?v=28">
+<link rel="stylesheet" href="styles.css?v=31">
 </head>
 <body>
 <div class="wrap">
@@ -56,7 +56,12 @@
     <div class="notice" id="importBox" hidden></div>
     <div class="discard" id="discardBox" hidden></div>
     <div class="prog" id="prog"></div>
+    <form class="search" role="search" onsubmit="return false">
+      <label class="sr" for="fQ">Chercher dans ta collection</label>
+      <input id="fQ" type="search" placeholder="Chercher un titre, un artiste ou un album" autocomplete="off">
+    </form>
     <div class="filters" id="filters"></div>
+    <p class="cat-status" id="binderCount" aria-live="polite"></p>
     <div class="binder" id="binder"></div>
     <div class="reset" id="reset">
       <button class="btn danger" id="resetAsk">Réinitialiser ma collection</button>
@@ -199,7 +204,7 @@
 </div>
 <div class="toast" id="toast" hidden></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
-<script src="app.js?v=30"></script>
+<script src="app.js?v=31"></script>
 <script src="online.js?v=29"></script>
 </body>
 </html>

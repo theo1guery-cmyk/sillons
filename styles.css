@@ -592,3 +592,4 @@ img{max-width:100%}
 .acard.shiny .ribbon{position:absolute;top:5.5cqw;right:-9cqw;width:40cqw;transform:rotate(38deg);text-align:center;z-index:4;
   background:#000;color:#f5d27a;border-block:.35cqw solid #e9c46a;font-family:var(--mono);font-size:3.1cqw;letter-spacing:.24em;text-transform:uppercase;padding:.6cqw 0;box-shadow:0 .6cqw 1.2cqw rgba(0,0,0,.6)}
 @media (prefers-reduced-motion:reduce){.card .foil,.card.shiny .foil,.acard .foil,.acard.shiny .sheen{animation:none}}
+.sentinel{height:1px}
