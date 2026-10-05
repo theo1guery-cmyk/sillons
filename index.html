@@ -7,7 +7,7 @@
 <meta name="description" content="Le TCG des vrais morceaux : chaque carte est un titre de Deezer, les plus gros tubes sont légendaires.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Instrument+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="styles.css?v=16">
+<link rel="stylesheet" href="styles.css?v=18">
 </head>
 <body>
 <div class="wrap">
@@ -18,6 +18,7 @@
       <button role="tab" id="tab-store" aria-selected="false">Boutique</button>
       <button role="tab" id="tab-binder" aria-selected="false">Collection</button>
       <button role="tab" id="tab-catalog" aria-selected="false">Catalogue</button>
+      <button role="tab" id="tab-albums" aria-selected="false" hidden>Albums<span class="badge" id="albumsBadge" hidden></span></button>
       <button role="tab" id="tab-market" aria-selected="false" hidden>Marché</button>
       <button role="tab" id="tab-defis" aria-selected="false" hidden>Défis<span class="badge" id="defisBadge" hidden></span></button>
       <button role="tab" id="tab-trades" aria-selected="false" hidden>Échanges<span class="badge" id="tradeBadge" hidden></span></button>
@@ -78,6 +79,30 @@
     <p class="cat-status" id="catStatus" aria-live="polite"></p>
     <div class="binder" id="catalog"></div>
     <div class="more"><button class="btn" id="catMore" hidden>Voir plus de cartes</button></div>
+  </section>
+
+  <section id="view-albums" hidden>
+    <h2>Albums et discographies</h2>
+    <p class="sub">Complète un album en possédant tous ses titres : 10 Streams par titre (de 50 à 500). Complète tous les albums studio d'un artiste pour sa discographie : 200 Streams par album, 500 au minimum. Les éditions spéciales, lives, remixes et compilations ne comptent pas dans les discographies.</p>
+    <div class="notice" id="albumsSync" hidden></div>
+    <div class="album-tabs" role="tablist">
+      <button class="chip" id="atAlbums" aria-pressed="true">Albums</button>
+      <button class="chip" id="atDiscos" aria-pressed="false">Discographies</button>
+    </div>
+    <div id="albumsPane">
+      <form class="search" id="albumForm" role="search">
+        <label class="sr" for="aq">Album ou artiste</label>
+        <input id="aq" type="search" placeholder="Chercher un album ou un artiste" autocomplete="off">
+        <select id="aFilter" aria-label="Afficher"><option value="progress">En cours</option><option value="ready">Prêts à récupérer</option><option value="claimed">Complétés</option><option value="all">Tous</option></select>
+      </form>
+      <p class="cat-status" id="aStatus" aria-live="polite"></p>
+      <div class="album-list" id="albumList"></div>
+      <div class="more"><button class="btn" id="aMore" hidden>Voir plus</button></div>
+    </div>
+    <div id="discosPane" hidden>
+      <p class="cat-status" id="dStatus" aria-live="polite"></p>
+      <div class="disco-list" id="discoList"></div>
+    </div>
   </section>
 
   <section id="view-market" hidden>
@@ -164,9 +189,17 @@
     <button class="btn close-x" id="authClose" aria-label="Fermer">Fermer</button>
   </div>
 </div>
+<div class="modal" id="albumModal" hidden role="dialog" aria-modal="true" aria-labelledby="alTitle">
+  <div class="panel wide">
+    <div class="al-head" id="alHead"></div>
+    <ol class="tracklist" id="alTracks"></ol>
+    <div class="btns" id="alBtns"></div>
+    <button class="btn close-x" id="alClose" aria-label="Fermer">Fermer</button>
+  </div>
+</div>
 <div class="toast" id="toast" hidden></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
-<script src="app.js?v=16"></script>
-<script src="online.js?v=16"></script>
+<script src="app.js?v=17"></script>
+<script src="online.js?v=18"></script>
 </body>
 </html>

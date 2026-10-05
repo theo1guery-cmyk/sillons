@@ -39,6 +39,10 @@ const MESSAGES = {
   listing_not_found: "Cette annonce n'existe plus.",
   listing_closed: "Cette carte n'est plus en vente.",
   own_listing: "C'est ta propre annonce.",
+  album_incomplete: "Il te manque encore des titres de cet album.",
+  album_not_found: "Cet album n'est pas disponible.",
+  discography_incomplete: "Il te manque encore des albums de cet artiste.",
+  artist_not_found: "Cet artiste n'est pas disponible.",
 };
 function message(e) {
   const raw = (e && (e.message || e.code)) || "";
@@ -104,6 +108,7 @@ function refreshViews() {
   renderCounters(); renderStock(); renderAccount(); renderImport(); renderDiscard();
   if (!views.defis.hidden) renderDefis();
   if (!views.market.hidden) renderMarket();
+  if (!views.albums.hidden) renderAlbums();
   if (!views.binder.hidden) renderBinder();
   if (!views.catalog.hidden && CAT.loaded) renderCatalog();
   if (!views.trades.hidden) renderTrades();
@@ -116,7 +121,7 @@ async function enterAccount(user) {
   try {
     await loadAll();
     Online.active = true;
-    $("#tab-trades").hidden = false; $("#tab-defis").hidden = false; $("#tab-market").hidden = false;
+    $("#tab-trades").hidden = false; $("#tab-defis").hidden = false; $("#tab-market").hidden = false; $("#tab-albums").hidden = false;
     $("#table").hidden = true; $("#deal").innerHTML = "";
     refreshViews();
     pollOffers(); updateDefisBadge();
@@ -130,8 +135,8 @@ function leaveAccount() {
   catch (e) { S = guestS; }
   TEST_MODE = true;
   $("#tab-trades").hidden = true; $("#tradeBadge").hidden = true;
-  $("#tab-defis").hidden = true; $("#defisBadge").hidden = true; $("#tab-market").hidden = true;
-  if (!views.trades.hidden || !views.defis.hidden || !views.market.hidden) show("shop");
+  $("#tab-defis").hidden = true; $("#defisBadge").hidden = true; $("#tab-market").hidden = true; $("#tab-albums").hidden = true; $("#albumsBadge").hidden = true;
+  if (!views.trades.hidden || !views.defis.hidden || !views.market.hidden || !views.albums.hidden) show("shop");
   $("#table").hidden = true; $("#deal").innerHTML = "";
   refreshViews();
 }
@@ -175,6 +180,7 @@ Object.assign(Online, {
   renderDiscard: () => renderDiscard(),
   modalExtras: c => { modalExtras(c); marketExtras(c); },
   renderMarket: () => renderMarket(),
+  renderAlbums: () => renderAlbums(),
   askSignIn: () => openAuth("in"),
 });
 
@@ -891,4 +897,165 @@ async function marketExtras(c) {
     wrap.innerHTML = `<dt>Cote</dt><dd>${st.sales ? `${streamsTxt(st.avg)} (moyenne de ${st.sales} vente${st.sales > 1 ? "s" : ""})` : "jamais vendue"}${st.lowest_listing ? ` · en vente dès ${streamsTxt(st.lowest_listing)}` : ""}</dd>`;
     dl.appendChild(wrap);
   } catch (e) {}
+}
+
+
+/* ---------- albums and discographies ---------- */
+const AL = { list: [], shown: 60, q: "", filter: "progress", tab: "albums", discos: [], fetchingArtists: false };
+let albumsBusy = false;
+
+async function renderAlbums() {
+  if (!me || albumsBusy) return;
+  albumsBusy = true;
+  $("#aStatus").textContent = "Chargement de tes albums…";
+  try {
+    AL.list = await rpc("my_albums");
+    const pending = await sb.from("cards").select("id,tracks!inner(album_id)", { count: "exact", head: true })
+      .eq("owner", me.id).is("tracks.album_id", null);
+    const sync = $("#albumsSync");
+    sync.hidden = !pending.count;
+    if (pending.count) sync.innerHTML = `<p>On retrouve encore l'album de <b>${fmt(pending.count)}</b> de tes cartes : certains albums n'apparaissent pas encore. Repasse dans quelques minutes.</p>`;
+  } catch (e) { $("#aStatus").textContent = message(e); albumsBusy = false; return; }
+  albumsBusy = false;
+  bindAlbumControls();
+  drawAlbums();
+  updateAlbumsBadge();
+  if (AL.tab === "discos") renderDiscos();
+}
+
+function bindAlbumControls() {
+  if (bindAlbumControls.done) return;
+  bindAlbumControls.done = true;
+  const tab = t => { AL.tab = t; $("#atAlbums").setAttribute("aria-pressed", t === "albums"); $("#atDiscos").setAttribute("aria-pressed", t === "discos");
+    $("#albumsPane").hidden = t !== "albums"; $("#discosPane").hidden = t !== "discos"; if (t === "discos") renderDiscos(); };
+  $("#atAlbums").onclick = () => tab("albums");
+  $("#atDiscos").onclick = () => tab("discos");
+  let t;
+  $("#aq").oninput = () => { clearTimeout(t); t = setTimeout(() => { AL.q = $("#aq").value.trim().toLowerCase(); AL.shown = 60; drawAlbums(); }, 250); };
+  $("#albumForm").onsubmit = e => { e.preventDefault(); AL.q = $("#aq").value.trim().toLowerCase(); drawAlbums(); };
+  $("#aFilter").onchange = () => { AL.filter = $("#aFilter").value; AL.shown = 60; drawAlbums(); };
+  $("#aMore").onclick = () => { AL.shown += 60; drawAlbums(); };
+}
+
+const albumReady = a => !a.claimed && a.complete && a.total > 0 && a.owned >= a.total;
+function drawAlbums() {
+  let list = AL.list.filter(a => !AL.q || (a.title + " " + a.artist).toLowerCase().includes(AL.q));
+  if (AL.filter === "progress") list = list.filter(a => !a.claimed);
+  if (AL.filter === "ready") list = list.filter(albumReady);
+  if (AL.filter === "claimed") list = list.filter(a => a.claimed);
+  list.sort((a, b) => (albumReady(b) - albumReady(a)) || (b.pct - a.pct) || (a.total - a.owned) - (b.total - b.owned));
+  const done = AL.list.filter(a => a.claimed).length, ready = AL.list.filter(albumReady).length;
+  $("#aStatus").textContent = `${fmt(AL.list.length)} album${AL.list.length > 1 ? "s" : ""} commencé${AL.list.length > 1 ? "s" : ""} · ${fmt(done)} complété${done > 1 ? "s" : ""}${ready ? ` · ${ready} prêt${ready > 1 ? "s" : ""} à récupérer` : ""}`;
+  const box = $("#albumList"); box.innerHTML = "";
+  if (!list.length) box.innerHTML = `<p class="empty-line">${AL.list.length ? "Aucun album ne correspond." : "Ouvre des boosters : chaque carte commence un album."}</p>`;
+  for (const a of list.slice(0, AL.shown)) box.appendChild(albumRow(a));
+  $("#aMore").hidden = list.length <= AL.shown;
+}
+
+function albumRow(a) {
+  const el = document.createElement("article");
+  el.className = "album" + (a.claimed ? " claimed" : albumReady(a) ? " ready" : "");
+  el.innerHTML = `<button class="al-cover" aria-label="Voir les titres de ${esc(a.title)}">${a.cover ? `<img src="${esc(a.cover.replace(/\/\d+x\d+-/, "/250x250-"))}" alt="" loading="lazy">` : ""}${a.claimed ? `<span class="gold" aria-hidden="true">★</span>` : ""}</button>
+    <div class="al-info"><b>${esc(a.title)}</b><small>${esc(a.artist)}${a.year ? " · " + a.year : ""}${a.type === "ep" ? " · EP" : ""}</small>
+      <div class="meter"><s style="width:${a.pct}%"></s></div>
+      <div class="d-foot"><small>${a.owned} / ${a.total} titres${a.complete ? "" : " (liste en chargement)"}</small>
+        ${a.claimed ? `<small class="ok">Complété</small>` : albumReady(a) ? `<button class="btn primary">Récupérer +${a.reward}</button>` : `<small>+${a.reward}</small>`}</div></div>`;
+  el.querySelector(".al-cover").onclick = () => openAlbum(a);
+  const b = el.querySelector(".d-foot .btn");
+  if (b) b.onclick = () => claimAlbum(a, b);
+  return el;
+}
+
+async function claimAlbum(a, btn) {
+  if (btn) btn.disabled = true;
+  try {
+    const r = await rpc("claim_album", { p_album: a.id });
+    await loadProfile(); renderCounters();
+    toast(`Album « ${a.title} » complété : +${r} Streams !`);
+    closeAlbum(); renderAlbums(); updateDefisBadge();
+  } catch (e) { toast(message(e)); if (btn) btn.disabled = false; }
+}
+
+/* album details: the tracklist, owned or missing */
+const albumModal = $("#albumModal");
+function closeAlbum() { albumModal.hidden = true; }
+$("#alClose").onclick = closeAlbum;
+albumModal.addEventListener("click", e => { if (e.target === albumModal) closeAlbum(); });
+addEventListener("keydown", e => { if (e.key === "Escape" && !albumModal.hidden) closeAlbum(); });
+async function openAlbum(a) {
+  albumModal.hidden = false;
+  $("#alHead").innerHTML = `${a.cover ? `<img src="${esc(a.cover)}" alt="">` : ""}<div><h3 id="alTitle">${esc(a.title)}</h3><p>${esc(a.artist)}${a.year ? " · " + a.year : ""}</p>
+    <p class="al-count">${a.owned} / ${a.total} titres · ${a.claimed ? "complété" : "+" + a.reward + " Streams une fois complet"}</p></div>`;
+  $("#alTracks").innerHTML = `<li class="empty-line">Chargement des titres…</li>`;
+  $("#alBtns").innerHTML = "";
+  if (!a.complete) { try { await rpc("ensure_album", { p_album: a.id }); } catch (e) {} }
+  const { data } = await sb.from("albums").select("tracks").eq("id", a.id).single();
+  const tracks = data?.tracks || [];
+  $("#alTracks").innerHTML = tracks.length ? "" : `<li class="empty-line">La liste des titres n'est pas encore disponible. Réessaie dans quelques minutes.</li>`;
+  for (const t of tracks) {
+    const own = S.c[t.id];
+    const li = document.createElement("li"); li.className = own ? "own" : "missing";
+    li.innerHTML = `<span class="mark" aria-hidden="true">${own ? "✓" : ""}</span><span class="t">${esc(t.title)}</span>
+      <span class="rar"><i style="background:${RCOL[tierOf(t.rank || 0)]}"></i>${RAR[tierOf(t.rank || 0)]}</span>
+      ${own ? `<button class="linkish">Voir</button>` : `<button class="linkish">Chercher au marché</button>`}`;
+    li.querySelector("button").onclick = () => {
+      if (own) { closeAlbum(); openModal(own); }
+      else { closeAlbum(); show("market"); $("#mq").value = t.title; MK.q = t.title; loadMarket(true); }
+    };
+    li.querySelector(".mark").setAttribute("aria-label", own ? "possédé" : "manquant");
+    $("#alTracks").appendChild(li);
+  }
+  if (albumReady(a)) {
+    const b = document.createElement("button"); b.className = "btn primary"; b.textContent = `Récupérer +${a.reward} Streams`;
+    b.onclick = () => claimAlbum(a, b); $("#alBtns").appendChild(b);
+  }
+}
+
+async function updateAlbumsBadge() {
+  const n = AL.list.filter(albumReady).length + AL.discos.filter(d => !d.claimed && d.total > 0 && d.done >= d.total).length;
+  $("#albumsBadge").hidden = !n; $("#albumsBadge").textContent = n || "";
+}
+
+/* discographies: artists you own 5+ tracks of, or completed an album of */
+async function renderDiscos() {
+  $("#dStatus").textContent = "Chargement des discographies…";
+  try { AL.discos = await rpc("my_discographies"); } catch (e) { $("#dStatus").textContent = message(e); return; }
+  drawDiscos();
+  // fetch a few more artists in the background, then refresh
+  if (AL.fetchingArtists) return;
+  AL.fetchingArtists = true;
+  try {
+    const missing = (await rpc("my_missing_artists")).slice(0, 8);
+    for (const id of missing) { try { await rpc("ensure_artist", { p_artist: id }); } catch (e) {} }
+    // studio albums never seen in any booster: fetch their title and cover
+    const unknown = AL.discos.flatMap(d => d.albums.filter(x => x.title === "…").map(x => x.id)).slice(0, 15);
+    for (const id of unknown) { try { await rpc("ensure_album", { p_album: id }); } catch (e) {} }
+    if (missing.length || unknown.length) { AL.discos = await rpc("my_discographies"); drawDiscos(); }
+  } catch (e) {}
+  AL.fetchingArtists = false;
+}
+function drawDiscos() {
+  const list = AL.discos.filter(d => d.total > 0);
+  const done = list.filter(d => d.claimed).length;
+  $("#dStatus").textContent = list.length
+    ? `${fmt(list.length)} artiste${list.length > 1 ? "s" : ""} suivi${list.length > 1 ? "s" : ""} · ${done} discographie${done > 1 ? "s" : ""} complète${done > 1 ? "s" : ""}`
+    : "Une discographie apparaît dès que tu as 5 titres d'un même artiste, ou un de ses albums complet.";
+  const box = $("#discoList"); box.innerHTML = "";
+  for (const d of list) {
+    const ready = !d.claimed && d.done >= d.total;
+    const el = document.createElement("article"); el.className = "disco" + (d.claimed ? " claimed" : ready ? " ready" : "");
+    el.innerHTML = `<div class="dh">${d.picture ? `<img src="${esc(d.picture.replace(/\/\d+x\d+-/, "/250x250-"))}" alt="" loading="lazy">` : `<span class="ph-artist" aria-hidden="true">${esc(initials(d.name))}</span>`}
+        <div><b>${esc(d.name)}</b><small>${fmt(d.fans)} fans Deezer</small>
+        <div class="meter"><s style="width:${d.done / d.total * 100}%"></s></div>
+        <div class="d-foot"><small>${d.done} / ${d.total} albums studio</small>
+          ${d.claimed ? `<small class="ok">Discographie complète</small>` : ready ? `<button class="btn primary">Récupérer +${d.reward}</button>` : `<small>+${d.reward}</small>`}</div></div></div>
+      <div class="covers">${d.albums.map(x => `<span class="${x.claimed ? "on" : ""}" title="${esc(x.title)}${x.claimed ? " · complété" : ""}">${x.cover ? `<img src="${esc(x.cover.replace(/\/\d+x\d+-/, "/120x120-"))}" alt="${esc(x.title)}" loading="lazy">` : `<em>${esc(x.title)}</em>`}</span>`).join("")}</div>`;
+    const b = el.querySelector(".btn");
+    if (b) b.onclick = async () => {
+      b.disabled = true;
+      try { const r = await rpc("claim_discography", { p_artist: d.id }); await loadProfile(); renderCounters(); toast(`Discographie de ${d.name} complète : +${r} Streams !`); renderDiscos(); updateDefisBadge(); }
+      catch (e) { toast(message(e)); b.disabled = false; }
+    };
+    box.appendChild(el);
+  }
 }

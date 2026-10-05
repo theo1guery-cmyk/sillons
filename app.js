@@ -388,7 +388,7 @@ function cardEl(c, holo) {
 function backEl() { const w = document.createElement("div"); w.className = "cq"; w.innerHTML = '<div class="back"><div class="in"><b>SILLONS</b></div></div>'; return w; }
 
 /* ---------- views ---------- */
-const views = { shop: $("#view-shop"), store: $("#view-store"), binder: $("#view-binder"), catalog: $("#view-catalog"), trades: $("#view-trades"), defis: $("#view-defis"), market: $("#view-market") };
+const views = { shop: $("#view-shop"), store: $("#view-store"), binder: $("#view-binder"), catalog: $("#view-catalog"), trades: $("#view-trades"), defis: $("#view-defis"), market: $("#view-market"), albums: $("#view-albums") };
 function show(v) {
   for (const k in views) { views[k].hidden = k !== v; $("#tab-" + k).setAttribute("aria-selected", k === v); }
   $("#tableWrap").hidden = v !== "shop" && v !== "store";   // the opening table follows the booster tabs
@@ -397,6 +397,7 @@ function show(v) {
   if (v === "trades") Online.renderTrades();
   if (v === "defis") Online.renderDefis();
   if (v === "market") Online.renderMarket();
+  if (v === "albums") Online.renderAlbums();
 }
 $("#tab-shop").onclick = () => show("shop");
 $("#tab-store").onclick = () => show("store");
@@ -405,6 +406,7 @@ $("#tab-catalog").onclick = () => show("catalog");
 $("#tab-trades").onclick = () => show("trades");
 $("#tab-defis").onclick = () => show("defis");
 $("#tab-market").onclick = () => show("market");
+$("#tab-albums").onclick = () => show("albums");
 
 const owned = () => Object.values(S.c);
 function renderCounters() {
