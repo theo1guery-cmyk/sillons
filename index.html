@@ -7,7 +7,7 @@
 <meta name="description" content="Le TCG des vrais morceaux : chaque carte est un titre de Deezer, les plus gros tubes sont légendaires.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Instrument+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="styles.css?v=15">
+<link rel="stylesheet" href="styles.css?v=16">
 </head>
 <body>
 <div class="wrap">
@@ -18,6 +18,7 @@
       <button role="tab" id="tab-store" aria-selected="false">Boutique</button>
       <button role="tab" id="tab-binder" aria-selected="false">Collection</button>
       <button role="tab" id="tab-catalog" aria-selected="false">Catalogue</button>
+      <button role="tab" id="tab-market" aria-selected="false" hidden>Marché</button>
       <button role="tab" id="tab-defis" aria-selected="false" hidden>Défis<span class="badge" id="defisBadge" hidden></span></button>
       <button role="tab" id="tab-trades" aria-selected="false" hidden>Échanges<span class="badge" id="tradeBadge" hidden></span></button>
     </nav>
@@ -35,7 +36,7 @@
   <section id="view-store" hidden>
     <h2>Boutique</h2>
     <p class="sub">Des boosters d'un seul genre : 5 cartes du style que tu choisis, avec les mêmes chances de rareté que le booster classique.</p>
-    <p class="store-note">Version test : tous les packs sont gratuits. Ils deviendront payants, en vinyles (la monnaie du jeu) ou en argent réel.</p>
+    <p class="store-note">Chaque pack coûte 100 Streams. Gagne des Streams avec les Défis, en défaussant tes doublons ou en vendant au Marché. Il faut un compte.</p>
     <div class="store" id="store"></div>
   </section>
 
@@ -77,6 +78,30 @@
     <p class="cat-status" id="catStatus" aria-live="polite"></p>
     <div class="binder" id="catalog"></div>
     <div class="more"><button class="btn" id="catMore" hidden>Voir plus de cartes</button></div>
+  </section>
+
+  <section id="view-market" hidden>
+    <h2>La Bourse aux disques</h2>
+    <p class="sub">Achète et vends des cartes contre des Streams. Le vendeur fixe son prix, l'achat est immédiat. Une taxe de 5 % est prélevée sur chaque vente, et une annonce reste 7 jours.</p>
+    <div class="market-bar">
+      <div class="wallet-mini">Ton solde : <b id="marketStreams">0</b> Streams</div>
+      <button class="btn primary" id="sellOpen">Vendre une carte</button>
+    </div>
+    <div id="sellPanel" hidden></div>
+    <form class="search" id="marketForm" role="search">
+      <label class="sr" for="mq">Titre ou artiste</label>
+      <input id="mq" type="search" placeholder="Chercher un titre ou un artiste" autocomplete="off">
+      <select id="mGenre" aria-label="Genre"></select>
+      <select id="mSort" aria-label="Trier"><option value="recent">Plus récentes</option><option value="cheap">Prix croissant</option><option value="dear">Prix décroissant</option><option value="rare">Les plus rares</option></select>
+    </form>
+    <div class="filters" id="mFilters"></div>
+    <p class="cat-status" id="mStatus" aria-live="polite"></p>
+    <div class="market-grid" id="marketGrid"></div>
+    <div class="more"><button class="btn" id="mMore" hidden>Voir plus</button></div>
+    <h3>Tes ventes en cours</h3>
+    <div class="market-grid" id="myListings"></div>
+    <h3>Historique</h3>
+    <div id="marketHistory"></div>
   </section>
 
   <section id="view-defis" hidden>
@@ -126,6 +151,7 @@
         <button class="btn primary" id="mPlay">Écouter l'extrait</button>
         <a class="btn" id="mLink" href="#" target="_blank" rel="noopener">Ouvrir sur Deezer</a>
         <button class="btn" id="mDiscard" hidden></button>
+        <button class="btn" id="mSell" hidden>Vendre au marché</button>
         <button class="btn" id="mClose">Fermer</button>
       </div>
     </div>
@@ -140,7 +166,7 @@
 </div>
 <div class="toast" id="toast" hidden></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
-<script src="app.js?v=15"></script>
-<script src="online.js?v=15"></script>
+<script src="app.js?v=16"></script>
+<script src="online.js?v=16"></script>
 </body>
 </html>

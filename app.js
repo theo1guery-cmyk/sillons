@@ -388,7 +388,7 @@ function cardEl(c, holo) {
 function backEl() { const w = document.createElement("div"); w.className = "cq"; w.innerHTML = '<div class="back"><div class="in"><b>SILLONS</b></div></div>'; return w; }
 
 /* ---------- views ---------- */
-const views = { shop: $("#view-shop"), store: $("#view-store"), binder: $("#view-binder"), catalog: $("#view-catalog"), trades: $("#view-trades"), defis: $("#view-defis") };
+const views = { shop: $("#view-shop"), store: $("#view-store"), binder: $("#view-binder"), catalog: $("#view-catalog"), trades: $("#view-trades"), defis: $("#view-defis"), market: $("#view-market") };
 function show(v) {
   for (const k in views) { views[k].hidden = k !== v; $("#tab-" + k).setAttribute("aria-selected", k === v); }
   $("#tableWrap").hidden = v !== "shop" && v !== "store";   // the opening table follows the booster tabs
@@ -396,6 +396,7 @@ function show(v) {
   if (v === "catalog") { if (!CAT.loaded) catLoad(true); else renderCatalog(); }
   if (v === "trades") Online.renderTrades();
   if (v === "defis") Online.renderDefis();
+  if (v === "market") Online.renderMarket();
 }
 $("#tab-shop").onclick = () => show("shop");
 $("#tab-store").onclick = () => show("store");
@@ -403,6 +404,7 @@ $("#tab-binder").onclick = () => show("binder");
 $("#tab-catalog").onclick = () => show("catalog");
 $("#tab-trades").onclick = () => show("trades");
 $("#tab-defis").onclick = () => show("defis");
+$("#tab-market").onclick = () => show("market");
 
 const owned = () => Object.values(S.c);
 function renderCounters() {
@@ -443,6 +445,7 @@ setInterval(() => { renderStock(); save(); }, 30000);
 
 /* ---------- boutique: one-genre boosters (free while testing, paid later) ---------- */
 const STORE_PACKS = TYPES.slice(0, AUTRE).map((t, g) => ({ g, n: t.n }));
+const STORE_PRICE = 100;                 // Streams, charged by the server
 for (const p of STORE_PACKS) {
   const offer = document.createElement("div"); offer.className = "offer";
   const b = document.createElement("button"); b.className = "pack"; b.style.setProperty("--h", TYPES[p.g].h);
@@ -451,9 +454,9 @@ for (const p of STORE_PACKS) {
   b.onclick = () => openPack(p);
   p.el = b;
   const price = document.createElement("div"); price.className = "price";
-  price.innerHTML = `<b>Gratuit</b><small>bientôt payant</small>`;
-  const buy = document.createElement("button"); buy.className = "btn primary"; buy.textContent = "Ouvrir";
-  buy.setAttribute("aria-label", "Ouvrir un booster " + p.n + " gratuitement");
+  price.innerHTML = `<b>${STORE_PRICE} Streams</b><small>5 cartes ${p.n}</small>`;
+  const buy = document.createElement("button"); buy.className = "btn primary"; buy.textContent = "Acheter";
+  buy.setAttribute("aria-label", "Acheter un booster " + p.n + " pour " + STORE_PRICE + " Streams");
   buy.onclick = () => openPack(p);
   offer.append(b, price, buy); $("#store").appendChild(offer);
 }
@@ -492,6 +495,8 @@ let busy = false, lastPack = BOOSTER;
 const LOADING_LINES = ["On fouille Deezer…", "On feuillette les bacs…", "On souffle sur les vinyles…", "On écoute les 30 premières secondes…"];
 async function openPack(p, opts = {}) {
   if (busy) return;
+  if (p.g >= 0 && !Online.active) { toast("Les packs de la Boutique s'achètent en Streams : connecte-toi ou crée un compte."); Online.askSignIn?.(); return; }
+  if (p.g >= 0 && (S.streams || 0) < STORE_PRICE) { toast(`Il te faut ${STORE_PRICE} Streams pour ce pack. Tu en as ${fmt(S.streams || 0)} : va voir les Défis.`); return; }
   refill();
   if (!Online.active && !TEST_MODE && S.stock <= 0) { renderStock(); toast("Plus de booster pour l'instant. Le prochain arrive dans " + Math.ceil(nextRefillMs() / 60000) + " min."); return; }
   busy = true; lastPack = p;

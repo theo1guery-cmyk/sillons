@@ -399,3 +399,30 @@ img{max-width:100%}
 .medals i.m2.on{background:var(--r5);border-color:var(--r5)}
 .title-pick{margin:-4px 0 6px;font-size:.88rem;color:var(--muted);display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .title-pick select{background:var(--felt-2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:5px 8px;font:inherit;font-size:.86rem}
+
+/* ---------- market ---------- */
+#view-market h3{font-family:var(--display);font-size:.95rem;margin:30px 0 12px}
+.market-bar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin:0 0 16px}
+.wallet-mini{font-size:.9rem;color:var(--muted)}
+.wallet-mini b{color:var(--brass);font-family:var(--display);font-size:1.1rem}
+#sellPanel{border:1px solid var(--brass);border-radius:18px;padding:4px 16px 18px;margin-bottom:20px;background:linear-gradient(#1d1729,#181322)}
+.sell-form{display:grid;grid-template-columns:minmax(0,180px) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:560px){.sell-form{grid-template-columns:minmax(0,1fr)}.sell-card{max-width:200px}}
+.sell-side{display:grid;gap:12px;max-width:420px}
+.sell-side .acct{margin:0}
+.market-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:18px}
+.market-grid .empty-line{grid-column:1/-1}
+.listing{display:grid;gap:8px;align-content:start}
+.l-foot{display:grid;gap:6px}
+.l-foot .price{font-family:var(--display);font-size:1rem;color:var(--brass);font-variant-numeric:tabular-nums}
+.l-foot small{color:var(--muted);font-size:.78rem}
+.l-foot .btn{width:100%}
+.history{list-style:none;margin:0;padding:0;display:grid;gap:6px;max-width:760px}
+.history li{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:12px;align-items:baseline;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:var(--felt-2);font-size:.88rem}
+.history .h-what{font-family:var(--mono);font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.history .h-what.sell{color:var(--r1)}.history .h-what.buy{color:var(--r2)}
+.history .h-card{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.history .h-card small{color:var(--muted)}
+.history .h-price{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.history .h-date{color:var(--muted);font-family:var(--mono);font-size:.72rem}
+@media (max-width:520px){.history li{grid-template-columns:minmax(0,1fr) auto}.history .h-what,.history .h-date{grid-column:1/-1}}

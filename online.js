@@ -29,6 +29,16 @@ const MESSAGES = {
   not_today: "Ce défi n'est plus disponible aujourd'hui.",
   keep_one: "Tu dois garder au moins un exemplaire de chaque carte.",
   title_not_earned: "Tu n'as pas encore gagné ce titre.",
+  not_enough_streams: "Pas assez de Streams.",
+  card_listed: "Cette carte est en vente au marché. Retire-la de la vente d'abord.",
+  card_in_offer: "Cette carte fait partie d'une offre d'échange en attente.",
+  card_not_owned: "Cette carte n'est plus dans ta collection.",
+  price_too_low: "Prix trop bas : au minimum ce que la banque en donne.",
+  price_too_high: "Prix trop élevé (10 millions de Streams maximum).",
+  too_many_listings: "Tu as déjà 50 cartes en vente.",
+  listing_not_found: "Cette annonce n'existe plus.",
+  listing_closed: "Cette carte n'est plus en vente.",
+  own_listing: "C'est ta propre annonce.",
 };
 function message(e) {
   const raw = (e && (e.message || e.code)) || "";
@@ -93,6 +103,7 @@ async function loadAll() {
 function refreshViews() {
   renderCounters(); renderStock(); renderAccount(); renderImport(); renderDiscard();
   if (!views.defis.hidden) renderDefis();
+  if (!views.market.hidden) renderMarket();
   if (!views.binder.hidden) renderBinder();
   if (!views.catalog.hidden && CAT.loaded) renderCatalog();
   if (!views.trades.hidden) renderTrades();
@@ -105,7 +116,7 @@ async function enterAccount(user) {
   try {
     await loadAll();
     Online.active = true;
-    $("#tab-trades").hidden = false; $("#tab-defis").hidden = false;
+    $("#tab-trades").hidden = false; $("#tab-defis").hidden = false; $("#tab-market").hidden = false;
     $("#table").hidden = true; $("#deal").innerHTML = "";
     refreshViews();
     pollOffers(); updateDefisBadge();
@@ -119,8 +130,8 @@ function leaveAccount() {
   catch (e) { S = guestS; }
   TEST_MODE = true;
   $("#tab-trades").hidden = true; $("#tradeBadge").hidden = true;
-  $("#tab-defis").hidden = true; $("#defisBadge").hidden = true;
-  if (!views.trades.hidden || !views.defis.hidden) show("shop");
+  $("#tab-defis").hidden = true; $("#defisBadge").hidden = true; $("#tab-market").hidden = true;
+  if (!views.trades.hidden || !views.defis.hidden || !views.market.hidden) show("shop");
   $("#table").hidden = true; $("#deal").innerHTML = "";
   refreshViews();
 }
@@ -162,7 +173,9 @@ Object.assign(Online, {
   renderTrades: () => renderTrades(),
   renderDefis: () => renderDefis(),
   renderDiscard: () => renderDiscard(),
-  modalExtras: c => modalExtras(c),
+  modalExtras: c => { modalExtras(c); marketExtras(c); },
+  renderMarket: () => renderMarket(),
+  askSignIn: () => openAuth("in"),
 });
 
 /* ---------- header account area ---------- */
@@ -667,4 +680,215 @@ async function renderDefis() {
     try { await rpc("set_title", { p_title: sel.value || null }); me.title = sel.value || null; renderAccount(); toast(sel.value ? `Titre « ${sel.value} » affiché.` : "Titre retiré."); }
     catch (e) { toast(message(e)); }
   };
+}
+
+
+/* ---------- market: La Bourse aux disques ---------- */
+const MK = { q: "", tier: -1, genre: -1, sort: "recent", page: 0, items: [], more: false, seq: 0, sellTrack: null };
+const LISTING_SELECT = "id,seller,card_id,track_id,tier,holo,title,artist,genre,price,created_at,expires_at," +
+  "seller_p:profiles!listings_seller_fkey(pseudo,title),tracks(album,cover,duration,bpm,year,explicit),cards(rank)";
+const nowIso = () => new Date().toISOString();
+function listingCard(l) {
+  const t = l.tracks || {};
+  return { id: l.track_id, t: l.title, a: l.artist, al: t.album || "", cov: t.cover || "", d: t.duration || 0, rank: l.cards?.rank || 0,
+    bpm: t.bpm || 0, y: t.year || 0, x: t.explicit ? 1 : 0, g: l.genre, tier: l.tier };
+}
+const streamsTxt = n => `${fmt(n)} Stream${n > 1 ? "s" : ""}`;
+
+function renderMarketFilters() {
+  const g = $("#mGenre");
+  if (!g.options.length) {
+    g.innerHTML = `<option value="-1">Tous les genres</option>` + TYPES.map((t, i) => `<option value="${i}">${t.n}</option>`).join("");
+    g.onchange = () => { MK.genre = +g.value; loadMarket(true); };
+    $("#mSort").onchange = () => { MK.sort = $("#mSort").value; loadMarket(true); };
+    let t;
+    $("#mq").oninput = () => { clearTimeout(t); t = setTimeout(() => { MK.q = $("#mq").value.trim(); loadMarket(true); }, 350); };
+    $("#marketForm").onsubmit = e => { e.preventDefault(); MK.q = $("#mq").value.trim(); loadMarket(true); };
+    $("#mMore").onclick = () => loadMarket(false);
+    $("#sellOpen").onclick = () => openSell(null);
+  }
+  $("#mFilters").innerHTML = [-1, ...RAR.keys()].map(r => `<button class="chip" data-r="${r}" aria-pressed="${MK.tier === r}">${r < 0 ? "Toutes raretés" : `<i style="background:${RCOL[r]}"></i>${RAR[r]}`}</button>`).join("");
+  $("#mFilters").querySelectorAll(".chip").forEach(b => b.onclick = () => { MK.tier = +b.dataset.r; renderMarketFilters(); loadMarket(true); });
+}
+
+async function renderMarket() {
+  if (!me) return;
+  $("#marketStreams").textContent = fmt(S.streams || 0);
+  renderMarketFilters();
+  loadMarket(true);
+  loadMine();
+}
+
+async function loadMarket(reset) {
+  const seq = ++MK.seq;
+  if (reset) { MK.page = 0; MK.items = []; }
+  $("#mStatus").textContent = "Chargement des annonces…";
+  let q = sb.from("listings").select(LISTING_SELECT, { count: "exact" }).eq("status", "active").gt("expires_at", nowIso());
+  if (MK.q) { const s = MK.q.replace(/[%,()*]/g, " ").trim(); if (s) q = q.or(`title.ilike.*${s}*,artist.ilike.*${s}*`); }
+  if (MK.tier >= 0) q = q.eq("tier", MK.tier);
+  if (MK.genre >= 0) q = q.eq("genre", MK.genre);
+  q = MK.sort === "cheap" ? q.order("price", { ascending: true }) : MK.sort === "dear" ? q.order("price", { ascending: false })
+    : MK.sort === "rare" ? q.order("tier", { ascending: false }).order("price", { ascending: true }) : q.order("created_at", { ascending: false });
+  const from = MK.page * 48;
+  const { data, error, count } = await q.range(from, from + 47);
+  if (seq !== MK.seq) return;
+  if (error) { $("#mStatus").textContent = message(error); return; }
+  MK.items.push(...data); MK.page++;
+  MK.more = MK.items.length < (count || 0);
+  $("#mStatus").textContent = count ? `${fmt(count)} carte${count > 1 ? "s" : ""} en vente` : (MK.q || MK.tier >= 0 || MK.genre >= 0 ? "Aucune carte en vente avec ces filtres." : "Personne n'a encore mis de carte en vente. Lance-toi avec « Vendre une carte ».");
+  $("#mMore").hidden = !MK.more;
+  const grid = $("#marketGrid"); grid.innerHTML = "";
+  for (const l of MK.items) grid.appendChild(listingEl(l));
+}
+
+function listingEl(l) {
+  const mine = l.seller === me.id, c = listingCard(l);
+  const el = document.createElement("div"); el.className = "listing";
+  const cardBtn = document.createElement("button"); cardBtn.className = "cell"; cardBtn.setAttribute("aria-label", `${c.t} de ${c.a}`);
+  cardBtn.appendChild(cardEl(c, l.holo)); cardBtn.onclick = () => openModal(c);
+  const days = Math.max(0, Math.ceil((Date.parse(l.expires_at) - Date.now()) / 86400000));
+  const foot = document.createElement("div"); foot.className = "l-foot";
+  foot.innerHTML = `<b class="price">${streamsTxt(l.price)}</b><small>${mine ? "ta vente" : "par " + esc(l.seller_p?.pseudo || "?")} · ${days} j</small>`;
+  const btn = document.createElement("button"); btn.className = "btn " + (mine ? "" : "primary");
+  btn.textContent = mine ? "Retirer" : "Acheter";
+  btn.onclick = async () => {
+    if (mine) {
+      btn.disabled = true;
+      try { await rpc("cancel_listing", { p_listing: l.id }); toast("Annonce retirée."); renderMarket(); } catch (e) { toast(message(e)); btn.disabled = false; }
+      return;
+    }
+    if ((S.streams || 0) < l.price) return toast(`Pas assez de Streams : il t'en faut ${fmt(l.price)}, tu en as ${fmt(S.streams || 0)}.`);
+    // confirmation inside the card's footer
+    const yes = document.createElement("button"); yes.className = "btn primary"; yes.textContent = `Confirmer · ${fmt(l.price)}`;
+    const no = document.createElement("button"); no.className = "btn"; no.textContent = "Annuler";
+    btn.replaceWith(yes); yes.after(no); yes.focus();
+    no.onclick = () => { yes.remove(); no.replaceWith(btn); };
+    yes.onclick = async () => {
+      yes.disabled = no.disabled = true;
+      try {
+        const r = await rpc("buy_listing", { p_listing: l.id });
+        if (r.status === "card_gone") toast("Le vendeur n'a plus cette carte : l'annonce a été retirée.");
+        else toast(`« ${c.t} » est à toi pour ${streamsTxt(r.price)} !`);
+        await loadAll(); refreshViews(); updateDefisBadge();
+      } catch (e) { toast(message(e)); yes.disabled = no.disabled = false; }
+    };
+  };
+  foot.appendChild(btn);
+  el.append(cardBtn, foot);
+  return el;
+}
+
+async function loadMine() {
+  const [{ data: active }, { data: hist }] = await Promise.all([
+    sb.from("listings").select(LISTING_SELECT).eq("seller", me.id).eq("status", "active").gt("expires_at", nowIso()).order("created_at", { ascending: false }),
+    sb.from("listings").select("id,title,artist,price,status,seller,buyer,closed_at,expires_at").or(`seller.eq.${me.id},buyer.eq.${me.id}`)
+      .neq("status", "active").order("closed_at", { ascending: false }).limit(20),
+  ]);
+  const mine = $("#myListings"); mine.innerHTML = "";
+  if (!active?.length) mine.innerHTML = `<p class="empty-line">Tu n'as aucune carte en vente.</p>`;
+  for (const l of active || []) mine.appendChild(listingEl(l));
+  const h = $("#marketHistory"); h.innerHTML = "";
+  if (!hist?.length) { h.innerHTML = `<p class="empty-line">Pas encore de vente ni d'achat.</p>`; return; }
+  const ul = document.createElement("ul"); ul.className = "history";
+  for (const l of hist) {
+    const sold = l.status === "sold", iBought = l.buyer === me.id;
+    const what = sold ? (iBought ? "Acheté" : "Vendu") : l.status === "expired" ? "Annonce expirée" : "Annonce retirée";
+    const net = sold && !iBought ? l.price - Math.floor(l.price * 5 / 100) : null;
+    const li = document.createElement("li");
+    li.innerHTML = `<span class="h-what ${sold ? (iBought ? "buy" : "sell") : ""}">${what}</span><span class="h-card">${esc(l.title)} <small>${esc(l.artist)}</small></span>
+      <span class="h-price">${sold ? (iBought ? "−" : "+") + fmt(iBought ? l.price : net) : fmt(l.price)}</span>
+      <small class="h-date">${new Date(l.closed_at || l.expires_at).toLocaleDateString("fr-FR")}</small>`;
+    ul.appendChild(li);
+  }
+  h.appendChild(ul);
+}
+
+/* selling: choose a card (or come from its details), see its cote, set a price */
+async function openSell(trackId) {
+  if (!me) return;
+  const panel = $("#sellPanel");
+  panel.hidden = false;
+  MK.sellTrack = trackId;
+  const { data: listed } = await sb.from("listings").select("card_id").eq("seller", me.id).eq("status", "active").gt("expires_at", nowIso());
+  const listedIds = new Set((listed || []).map(l => l.card_id));
+  const sellable = c => (c.copies || []).filter(cp => cp.tradeable && !listedIds.has(cp.id));
+  if (trackId && S.c[trackId] && sellable(S.c[trackId]).length) return renderSellForm(S.c[trackId], sellable(S.c[trackId]));
+  // card picker
+  panel.innerHTML = `<div class="editor-head"><h4>Quelle carte veux-tu vendre ?</h4><button class="btn" id="sellClose">Fermer</button></div>
+    <input class="mini-search" id="sellQ" type="search" placeholder="Chercher dans ta collection" aria-label="Chercher dans ta collection"><div id="sellPick"></div>`;
+  $("#sellClose").onclick = closeSell;
+  const draw = () => {
+    const q = $("#sellQ").value.toLowerCase();
+    const list = Object.values(S.c).filter(c => sellable(c).length && (!q || (c.t + " " + c.a).toLowerCase().includes(q)))
+      .sort((a, b) => b.tier - a.tier || b.rank - a.rank).slice(0, 120);
+    const grid = document.createElement("div"); grid.className = "pick-grid";
+    if (!list.length) grid.innerHTML = `<p class="empty-line">${q ? "Aucune carte ne correspond." : "Tu n'as pas de carte à vendre."}</p>`;
+    for (const c of list) {
+      const b = document.createElement("button"); b.className = "pick"; b.setAttribute("aria-label", `Vendre ${c.t} de ${c.a}`);
+      b.appendChild(miniCard(c, c.holo > 0));
+      b.onclick = () => renderSellForm(c, sellable(c));
+      grid.appendChild(b);
+    }
+    $("#sellPick").innerHTML = ""; $("#sellPick").appendChild(grid);
+  };
+  let t; $("#sellQ").oninput = () => { clearTimeout(t); t = setTimeout(draw, 200); };
+  draw();
+  panel.scrollIntoView({ behavior: reduceMotion() ? "auto" : "smooth", block: "start" });
+}
+function closeSell() { $("#sellPanel").hidden = true; $("#sellPanel").innerHTML = ""; }
+
+async function renderSellForm(c, copies) {
+  const panel = $("#sellPanel");
+  // sell the plainest copy first (keep holos and higher rarities unless it's the only one)
+  const copy = [...copies].sort((a, b) => (a.holo - b.holo) || (a.tier - b.tier))[0];
+  const floor = DISCARD[copy.tier];
+  panel.innerHTML = `<div class="editor-head"><h4>Vendre « ${esc(c.t)} »</h4><button class="btn" id="sellClose">Fermer</button></div>
+    <div class="sell-form"><div class="sell-card" id="sellCard"></div>
+      <div class="sell-side"><dl class="acct" id="sellCote"><dt>Cote</dt><dd>Chargement…</dd></dl>
+        <label class="field" for="sellPrice"><span>Ton prix en Streams (minimum ${fmt(floor)})</span><input id="sellPrice" type="number" min="${floor}" max="10000000" step="1" inputmode="numeric"></label>
+        <p class="form-fine" id="sellNet"></p>
+        <div class="btns"><button class="btn primary" id="sellGo">Mettre en vente</button></div>
+        <p class="form-fine">${copy.holo ? "Tu vends ta copie Holo. " : ""}${(S.c[c.id]?.copies?.length || 1) === 1 ? "C'est ton seul exemplaire de cette carte." : `Tu en gardes ${S.c[c.id].copies.length - 1}.`}</p>
+      </div></div>`;
+  $("#sellCard").appendChild(miniCard({ ...c, tier: copy.tier }, copy.holo));
+  $("#sellClose").onclick = closeSell;
+  const price = $("#sellPrice"), net = $("#sellNet");
+  const showNet = () => { const p = Math.floor(+price.value || 0); net.textContent = p >= floor ? `Tu recevras ${streamsTxt(p - Math.floor(p * 5 / 100))} après la taxe de 5 %.` : `Le prix doit être d'au moins ${fmt(floor)}.`; };
+  price.oninput = showNet;
+  try {
+    const st = await rpc("price_stats", { p_track: c.id });
+    $("#sellCote").innerHTML = st.sales
+      ? `<dt>Dernière vente</dt><dd>${streamsTxt(st.last)}</dd><dt>Moyenne</dt><dd>${streamsTxt(st.avg)} (${st.sales} vente${st.sales > 1 ? "s" : ""})</dd>${st.lowest_listing ? `<dt>En vente dès</dt><dd>${streamsTxt(st.lowest_listing)}</dd>` : ""}`
+      : `<dt>Cote</dt><dd>Jamais vendue${st.lowest_listing ? ` · en vente dès ${streamsTxt(st.lowest_listing)}` : ""}</dd>`;
+    price.value = st.avg || st.lowest_listing || Math.max(floor, [5, 15, 50, 200, 800, 3000][copy.tier]);
+  } catch (e) { price.value = Math.max(floor, [5, 15, 50, 200, 800, 3000][copy.tier]); }
+  showNet(); price.focus();
+  $("#sellGo").onclick = async () => {
+    const p = Math.floor(+price.value || 0);
+    if (p < floor) return toast(`Le prix doit être d'au moins ${fmt(floor)} Streams.`);
+    $("#sellGo").disabled = true;
+    try {
+      await rpc("create_listing", { p_card: copy.id, p_price: p });
+      toast(`« ${c.t} » est en vente pour ${streamsTxt(p)}.`);
+      closeSell(); renderMarket();
+    } catch (e) { toast(message(e)); $("#sellGo").disabled = false; }
+  };
+  panel.scrollIntoView({ behavior: reduceMotion() ? "auto" : "smooth", block: "start" });
+}
+
+/* card details: the cote, and a shortcut to sell */
+async function marketExtras(c) {
+  const btn = $("#mSell"), own = S.c[c.id];
+  btn.hidden = !(Online.active && own && own.copies?.some(cp => cp.tradeable));
+  btn.onclick = () => { closeModal(); show("market"); openSell(c.id); };
+  if (!Online.active) return;
+  try {
+    const st = await rpc("price_stats", { p_track: c.id });
+    if ($("#mTitle").textContent !== c.t) return;     // another card was opened meanwhile
+    const dl = $("#mDl");
+    dl.querySelector(".cote")?.remove();
+    const wrap = document.createElement("div"); wrap.className = "cote"; wrap.style.display = "contents";
+    wrap.innerHTML = `<dt>Cote</dt><dd>${st.sales ? `${streamsTxt(st.avg)} (moyenne de ${st.sales} vente${st.sales > 1 ? "s" : ""})` : "jamais vendue"}${st.lowest_listing ? ` · en vente dès ${streamsTxt(st.lowest_listing)}` : ""}</dd>`;
+    dl.appendChild(wrap);
+  } catch (e) {}
 }
