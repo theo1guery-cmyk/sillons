@@ -107,7 +107,7 @@ async function fetchCards(owner, onlyTradeable) {
   const rows = [];
   for (let from = 0; ; from += 1000) {
     let q = sb.from("cards").select("id,kind,track_id,artist_id,collector,tier,rank,holo,tradeable,pulled_at,tracks(title,artist,album,cover,duration,bpm,year,explicit,genre),artists(name,picture,fans,nb_album)")
-      .eq("owner", owner).order("pulled_at").range(from, from + 999);
+      .eq("owner", owner).order("pulled_at").order("id").range(from, from + 999);   // id breaks ties: an import pulls thousands of cards at the same instant, and without it pages skipped or repeated cards
     if (onlyTradeable) q = q.eq("tradeable", true);
     const { data, error } = await q;
     if (error) throw error;
@@ -812,6 +812,7 @@ async function loadMarket(reset) {
   if (MK.genre >= 0) q = q.eq("genre", MK.genre);
   q = MK.sort === "cheap" ? q.order("price", { ascending: true }) : MK.sort === "dear" ? q.order("price", { ascending: false })
     : MK.sort === "rare" ? q.order("tier", { ascending: false }).order("price", { ascending: true }) : q.order("created_at", { ascending: false });
+  q = q.order("id");                      // same price or rarity: a stable order, so scrolling never skips or repeats a listing
   const from = MK.page * 48;
   const { data, error, count } = await q.range(from, from + 47);
   if (seq !== MK.seq) return;
