@@ -1301,10 +1301,44 @@ async function checkNotifications() {
     else if (x.type === "duel_challenge") toast(`⚔️ ${x.title} te lance un clash blind test ! Va dans l'onglet Clashs.`);
     else if (x.type === "duel_result") toast(`⚔️ ${x.title} a joué votre clash : le résultat est dans l'onglet Clashs.`);
     else if (x.type === "duel_declined") toast(`${x.title} a refusé ton clash.`);
+    else if (x.type === "prank") showPrank(x);
   }
   if ((data || []).some(x => x.type.startsWith("duel"))) Online.updateDuelsBadge?.();
 }
 
+// a joke from a friend: a very serious "account blocked" screen that takes the whole page for one minute, then
+// says it was a joke (shown once: the notification is marked read at the end)
+function showPrank(x) {
+  const el = document.createElement("div");
+  el.setAttribute("role", "alertdialog"); el.setAttribute("aria-modal", "true"); el.tabIndex = -1;
+  el.style.cssText = "position:fixed;inset:0;z-index:9999;display:grid;place-items:center;padding:24px;background:rgba(8,4,6,.94);backdrop-filter:blur(8px);color:#f3e9ea;font-family:var(--body);cursor:not-allowed";
+  el.innerHTML = `<div style="max-width:480px;text-align:center">
+      <div style="width:76px;height:76px;margin:0 auto 22px;border-radius:50%;display:grid;place-items:center;background:#3a0f16;box-shadow:0 0 0 2px #c8323f,0 0 40px rgba(200,50,63,.45)">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#ff6b78" stroke-width="2" stroke-linecap="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+      <h2 style="margin:0 0 12px;font-family:var(--display);font-size:1.6rem;color:#ff6b78">Compte bloqué</h2>
+      <p style="margin:0 0 8px;line-height:1.55">Une activité anormale a été détectée sur ton compte (ouverture massive de boosters). Par sécurité, ton compte et ta collection sont <b>gelés</b> le temps d'une vérification.</p>
+      <p style="margin:0 0 22px;color:#b9a7aa;font-size:.88rem">Ne ferme pas cette page. Référence du dossier : ZH-${String(x.id).padStart(6, "0")}</p>
+      <div style="height:6px;border-radius:3px;background:#2a1418;overflow:hidden"><s style="display:block;height:100%;width:0;background:#c8323f;transition:width 60s linear"></s></div>
+      <p class="pk-t" style="margin:10px 0 0;font-family:var(--mono);font-size:.8rem;color:#b9a7aa">Vérification en cours… 60 s</p></div>`;
+  const stop = e => { e.preventDefault(); e.stopPropagation(); };
+  const keys = e => { if (document.body.contains(el)) stop(e); };
+  addEventListener("keydown", keys, true);
+  el.addEventListener("click", stop); el.addEventListener("contextmenu", stop);
+  document.body.appendChild(el); el.focus();
+  requestAnimationFrame(() => { el.querySelector("s").style.width = "100%"; });
+  let left = 60;
+  const t = setInterval(() => {
+    left--; el.querySelector(".pk-t").textContent = `Vérification en cours… ${left} s`;
+    if (left > 0) return;
+    clearInterval(t); removeEventListener("keydown", keys, true); el.style.cursor = "default";
+    el.firstElementChild.innerHTML = `<div style="font-size:3rem;margin-bottom:10px">😄</div>
+      <h2 style="margin:0 0 12px;font-family:var(--display);font-size:1.6rem;color:#ffe2a0">C'était une blague !</h2>
+      <p style="margin:0 0 22px;line-height:1.55">Ton compte va très bien, ta collection aussi. Bisous de la part de ${esc(x.title)}.</p>
+      <button class="btn primary">Reprendre la partie</button>`;
+    el.querySelector("button").onclick = () => el.remove();
+    rpc("notification_seen", { p_id: x.id }).catch(() => {});
+  }, 1000);
+}
 
 /* ---------- welcome page ---------- */
 const GUEST = "zh-guest";
