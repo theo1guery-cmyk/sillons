@@ -664,13 +664,15 @@ function modalExtras(c) {
 
 /* ---------- Défis: login streak, daily challenges, achievements ---------- */
 const MEDALS = ["Bronze", "Argent", "Or"];
+// the badge only asks for the daily state (light); achievements are heavy with big collections, so they are
+// computed when the Défis tab opens and their count is remembered here
+let achReady = 0;
 async function updateDefisBadge() {
   if (!me) return;
   try {
-    const [daily, ach] = await Promise.all([rpc("daily_state"), rpc("achievements_state")]);
+    const daily = await rpc("daily_state");
     const n = (daily.login.claimed ? 0 : 1)
-      + daily.challenges.filter(c => !c.claimed && c.progress >= c.goal).length
-      + ach.filter(a => a.goals.some((g, i) => a.value >= g && !a.claimed.includes(i + 1))).length;
+      + daily.challenges.filter(c => !c.claimed && c.progress >= c.goal).length + achReady;
     $("#defisBadge").hidden = !n; $("#defisBadge").textContent = n || "";
   } catch (e) {}
 }
@@ -686,7 +688,10 @@ async function renderDefis() {
   if (!me) return;
   $("#walletStreams").textContent = fmt(S.streams || 0);
   let daily, ach;
-  try { [daily, ach] = await Promise.all([rpc("daily_state"), rpc("achievements_state")]); }
+  try {
+    [daily, ach] = await Promise.all([rpc("daily_state"), rpc("achievements_state")]);
+    achReady = ach.filter(a => a.goals.some((g, i) => a.value >= g && !a.claimed.includes(i + 1))).length;
+  }
   catch (e) { return toast(message(e)); }
 
   // login streak
@@ -1302,7 +1307,7 @@ async function checkNotifications() {
 const GUEST = "zh-guest";
 const wantsGame = () => {
   try { if (localStorage.getItem(GUEST) === "1") return true; } catch (e) {}
-  return /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && /^#(god|demo|galerie)$/.test(location.hash);   // local previews
+  return /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && /^#(god|demo|shiny|galerie|platine|diamant|platine-shiny|diamant-shiny)$/.test(location.hash);   // local previews
 };
 function showGame() {
   document.body.classList.remove("booting", "landing-on");

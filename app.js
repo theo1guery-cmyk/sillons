@@ -574,7 +574,7 @@ for (const p of STORE_PACKS) {
 }
 
 /* ---------- drawing a booster (no UI) ---------- */
-async function drawPack(p, god = false, forced = null) {
+async function drawPack(p, god = false, forced = null, artistTier = null) {   // artistTier: local previews only
   const used = new Set(), slots = [];
   if (forced) slots.push(...forced);
   else if (god) {
@@ -589,12 +589,18 @@ async function drawPack(p, god = false, forced = null) {
     const t = await findTrack(p.g, tier, used);
     if (t) { used.add(t.id); raws.push(t); }
   }
-  if (raws.length < 5) throw { code: "short" };
+  if (raws.length < 5 - (artistTier != null)) throw { code: "short" };
   const cards = await Promise.all(raws.map(t => enrich(t, p.g)));
+  if (artistTier != null) {               // local preview: the last card is a certified artist
+    const f = await findArtist(artistTier, new Set());
+    if (!f) throw { code: "short" };
+    cards.push({ kind: "artist", id: "a" + f.id, aid: f.id, t: f.name, a: "Artiste", al: "", cov: (f.picture_big || f.picture_medium || "").replace("http:", "https:"),
+      rank: f.nb_fan, albums: f.nb_album || 0, tier: certOf(f.nb_fan), collector: false, g: null });
+  }
   const pulls = cards.map((c, i) => {
     const holo = c.tier >= MYTH && (devShiny || Math.random() < SHINY_CHANCE), prev = S.c[ck(c)];   // Shiny: Mythique / Légendaire only
     S.c[ck(c)] = { ...c, n: (prev?.n || 0) + 1, holo: (prev?.holo || 0) + (holo ? 1 : 0), at: prev?.at || Date.now() };
-    return { c, holo, isNew: !prev, wanted: slots[i], src: raws[i]._src };
+    return { c, holo, isNew: !prev, wanted: slots[i] ?? c.tier, src: raws[i]?._src };
   }).sort((a, b) => a.c.tier - b.c.tier || a.c.rank - b.c.rank);   // weakest first, best card last
   S.dry = pulls.some(pl => pl.c.tier >= MYTH) ? 0 : S.dry + 1;
   if (god) S.gods = (S.gods || 0) + 1;
@@ -627,9 +633,12 @@ async function openPack(p, opts = {}) {
   // local preview only: #god turns the next booster into a GOD pack,
   // #demo gives one with a Commune, a Peu commune, an Épique, a Mythique and a Légendaire
   const devHash = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && p === BOOSTER && !serverPack ? location.hash : "";
-  if (devHash === "#god" || devHash === "#demo" || devHash === "#shiny") history.replaceState(null, "", location.pathname);
+  // #platine, #diamant, #platine-shiny, #diamant-shiny: four tracks then a certified artist (Shiny if asked)
+  const devArtist = { "#platine": 4, "#diamant": 5, "#platine-shiny": 4, "#diamant-shiny": 5 }[devHash];
+  if (devHash === "#god" || devHash === "#demo" || devHash === "#shiny" || devArtist != null) history.replaceState(null, "", location.pathname);
   if (devHash === "#demo" || devHash === "#shiny") opts.slots = [0, 1, 3, MYTH, LEG];
-  devShiny = devHash === "#shiny";
+  if (devArtist != null) { opts.slots = [0, 1, 2, 3]; opts.artist = devArtist; }
+  devShiny = devHash === "#shiny" || /-shiny$/.test(devHash);
   const god = serverPack ? serverPack.god : opts.god ?? (devHash === "#god" || (p === BOOSTER && Math.random() < GOD_CHANCE));
 
   const table = $("#table"), deal = $("#deal");
@@ -644,7 +653,7 @@ async function openPack(p, opts = {}) {
   rip.append(pk, line); deal.appendChild(rip);
   const lineTimer = setInterval(() => { if (!god) line.textContent = pick(LOADING_LINES); }, 1600);
   try {
-    const pulls = serverPack ? await Online.drawPack(p, serverPack) : await drawPack(p, god, opts.slots);
+    const pulls = serverPack ? await Online.drawPack(p, serverPack) : await drawPack(p, god, opts.slots, opts.artist);
     if (god && reduceMotion()) toast("GOD PACK ! Que des Mythiques et des Légendaires.");   // the GOD pack has its own announcement
     renderCounters();
     if (pulls.some(Stage.isHit)) Stage.prepare();
