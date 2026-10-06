@@ -98,3 +98,5 @@ body.radio-on #tab-radio .ico{animation:radioPulse 1.6s ease-in-out infinite}
   background:rgba(10,8,14,.75);border:1px solid rgba(255,255,255,.3);color:#fff;font:700 18px/1 var(--body)}
 #view-binder.v3-editing #binder .cell.in-vitrine::after{content:"✓";background:#f4ead6;color:#140f1c;border-color:#f4ead6}
 #view-binder.v3-editing #binder .cell.in-vitrine .cq{outline:3px solid #f4ead6;outline-offset:3px;border-radius:14px}
+/* catalogue: you own this track in a better rarity than today's */
+.v3 #view-catalog .cell .lock.mine{bottom:10px;padding:3px 10px;background:rgba(10,8,14,.78);border-color:rgba(255,226,160,.45);color:#ffe2a0;backdrop-filter:blur(6px)}

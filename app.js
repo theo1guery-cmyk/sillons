@@ -141,7 +141,7 @@ let probing = 0;
 function stash(list) {                   // keep good leftovers instead of throwing fetched tracks away
   for (const t of list) {
     const r = reserve[tierOf(t.rank || 0)];
-    if (isPlayable(t) && !S.c[t.id] && r.length < RESERVE_MAX && !r.some(x => x.id === t.id)) r.push(t);
+    if (isPlayable(t) && !ownsTrack(t.id) && r.length < RESERVE_MAX && !r.some(x => x.id === t.id)) r.push(t);
   }
 }
 async function probeRandomTrack() {
@@ -155,7 +155,7 @@ function takeReserve(tier, used) {
   const r = reserve[tier];
   for (let i = r.length - 1; i >= 0; i--) {
     const t = r[i];
-    if (S.c[t.id] || used.has(t.id)) { r.splice(i, 1); continue; }
+    if (ownsTrack(t.id) || used.has(t.id)) { r.splice(i, 1); continue; }
     if (tier === 0 && t._src !== "id") continue;   // Communes come from true random draws when there are some
     r.splice(i, 1); return t;
   }
@@ -228,7 +228,7 @@ async function findTrack(typeIdx, tier, used) {
   for (let attempt = 0; attempt < attempts; attempt++) {
     const pool = (await poolFor(tier).catch(() => [])).filter(t => isPlayable(t) && !used.has(t.id));
     if (pool[0]?._src === "playlist") noteArtists(pool, "all");
-    const fresh = pool.filter(t => !S.c[t.id]);
+    const fresh = pool.filter(t => !ownsTrack(t.id));
     const hits = fresh.filter(t => inTier(t.rank, tier));
     if (hits.length) { const t = pick(hits); stash(fresh.filter(x => x !== t && tierOf(x.rank) >= 1)); return t; }
     stash(fresh.filter(x => tierOf(x.rank) >= 1));
@@ -261,7 +261,7 @@ async function certArtistPool(tier) {
 async function findArtist(tier, used) {
   let best = null;
   for (let attempt = 0; attempt < 12; attempt++) {
-    const pool = (await certArtistPool(tier).catch(() => [])).filter(a => a.id && a.nb_fan != null && !used.has(a.id) && !S.c["a" + a.id]);
+    const pool = (await certArtistPool(tier).catch(() => [])).filter(a => a.id && a.nb_fan != null && !used.has(a.id) && !ownsTrack("a" + a.id));
     const hits = pool.filter(a => inCert(a.nb_fan, tier));
     if (hits.length) return pick(hits);
     for (const a of pool) {
@@ -318,7 +318,7 @@ async function findGenreTrack(typeIdx, tier, used) {
   let near = [];
   const attempts = tier >= MYTH ? 10 : 18;
   for (let attempt = 0; attempt < attempts; attempt++) {
-    const fresh = (await genreSource(typeIdx, tier).catch(() => [])).filter(t => isPlayable(t) && !used.has(t.id) && !S.c[t.id]);
+    const fresh = (await genreSource(typeIdx, tier).catch(() => [])).filter(t => isPlayable(t) && !used.has(t.id) && !ownsTrack(t.id));
     const ok = await firstOfType(fresh.filter(t => inTier(t.rank, tier)), typeIdx);
     if (ok) return ok;
     near.push(...fresh);
@@ -377,6 +377,16 @@ let S = { c: {}, opened: 0 };
 try { const p = JSON.parse(localStorage.getItem(LS)); if (p && p.c) S = p; } catch (e) {}
 // rarities v2: re-tier every saved card from the Deezer rank it had when it was pulled
 for (const c of Object.values(S.c)) c.tier = tierOf(c.rank || 0);
+// a card is a track (or artist) in one rarity: pulled as Légendaire, it stays Légendaire even if the track falls,
+// and the same track pulled later as Mythique is another card. Keys are "<id>#<tier>" (older saves used "<id>").
+{
+  const c2 = {};
+  for (const c of Object.values(S.c)) {
+    const k = c.id + "#" + c.tier, p = c2[k];
+    c2[k] = p ? { ...p, n: (p.n || 1) + (c.n || 1), holo: (p.holo || 0) + (c.holo || 0), at: Math.min(p.at || Infinity, c.at || Infinity) } : c;
+  }
+  S.c = c2;
+}
 if (S.stock == null) { S.stock = STOCK_MAX; S.stockAt = Date.now(); }
 if (S.dry == null) S.dry = 0;            // boosters opened since the last Mythique or better
 
@@ -487,6 +497,19 @@ $("#tab-albums").onclick = () => show("albums");
 $("#tab-duels").onclick = () => show("duels");
 
 const owned = () => Object.values(S.c);
+const ck = c => c.id + "#" + c.tier;                     // key of a card: a track in one rarity
+// every version you own of a track, whatever its rarity (rebuilt at most every 50 ms: collections can be big)
+let TRK = null, TRKsrc = null, TRKat = 0;
+function versionsOf(id) {
+  const now = performance.now();
+  if (!TRK || TRKsrc !== S.c || now - TRKat > 50) {
+    TRK = new Map(); TRKsrc = S.c; TRKat = now;
+    for (const c of Object.values(S.c)) { const k = String(c.id), a = TRK.get(k); a ? a.push(c) : TRK.set(k, [c]); }
+  }
+  return TRK.get(String(id)) || [];
+}
+const ownsTrack = id => versionsOf(id).length > 0;
+const bestOwned = id => versionsOf(id).reduce((b, c) => !b || c.tier > b.tier ? c : b, null);
 function renderCounters() {
   const all = owned();
   const pill = (cls, value, label) => `<span class="pill ${cls}"><b>${value}</b><small>${label}</small></span>`;
@@ -569,8 +592,8 @@ async function drawPack(p, god = false, forced = null) {
   if (raws.length < 5) throw { code: "short" };
   const cards = await Promise.all(raws.map(t => enrich(t, p.g)));
   const pulls = cards.map((c, i) => {
-    const holo = c.tier >= MYTH && (devShiny || Math.random() < SHINY_CHANCE), prev = S.c[c.id];   // Shiny: Mythique / Légendaire only
-    S.c[c.id] = { ...c, n: (prev?.n || 0) + 1, holo: (prev?.holo || 0) + (holo ? 1 : 0), at: prev?.at || Date.now() };
+    const holo = c.tier >= MYTH && (devShiny || Math.random() < SHINY_CHANCE), prev = S.c[ck(c)];   // Shiny: Mythique / Légendaire only
+    S.c[ck(c)] = { ...c, n: (prev?.n || 0) + 1, holo: (prev?.holo || 0) + (holo ? 1 : 0), at: prev?.at || Date.now() };
     return { c, holo, isNew: !prev, wanted: slots[i], src: raws[i]._src };
   }).sort((a, b) => a.c.tier - b.c.tier || a.c.rank - b.c.rank);   // weakest first, best card last
   S.dry = pulls.some(pl => pl.c.tier >= MYTH) ? 0 : S.dry + 1;
@@ -1122,7 +1145,12 @@ function quickCard(t) {                   // what a search result alone tells us
     d: t.duration || 0, rank: t.rank || 0, bpm: 0, y: 0, x: t.explicit_lyrics ? 1 : 0, g: null, tier: tierOf(t.rank || 0),
   };
 }
-const catCard = t => S.c[t.id] || fullCards[t.id] || quickCard(t);
+const catCard = t => {
+  const now = fullCards[t.id] || quickCard(t), own = bestOwned(t.id);
+  if (!own || fullCards[t.id]) return now;
+  const rank = t.rank || own.rank;                         // what we know of the track from your copy, today's rarity
+  return { ...own, rank, tier: tierOf(rank), n: undefined, holo: undefined, copies: undefined, locked: undefined };
+};
 
 async function catLoad(reset) {
   const seq = ++CAT.seq;
@@ -1164,8 +1192,8 @@ function renderCatalog() {
   $("#catOwn").onchange = e => { CAT.own = e.target.value; CAT.wanted = 24; renderCatalog(); };
 
   const list = CAT.items.filter(t => (CAT.r < 0 || tierOf(catCard(t).rank) === CAT.r) &&
-    (CAT.own === "all" || (CAT.own === "own") === !!S.c[t.id]));
-  const ownedHere = CAT.items.filter(t => S.c[t.id]).length;
+    (CAT.own === "all" || (CAT.own === "own") === ownsTrack(t.id)));
+  const ownedHere = CAT.items.filter(t => ownsTrack(t.id)).length;
   $("#catStatus").textContent = !CAT.items.length
     ? (CAT.q ? `Aucun morceau trouvé pour « ${CAT.q} ».` : "Aucune carte à afficher.")
     : `${CAT.q ? fmt(CAT.total) + " résultats pour « " + CAT.q + " »" : "Les 100 tubes du moment sur Deezer"} · ${fmt(CAT.items.length)} affichées, dont ${ownedHere} dans ta collection`;
@@ -1200,13 +1228,16 @@ function catalogMore(n) {
   CAT.drawn += next.length;
 }
 function catCell(t) {
-  const c = catCard(t), own = S.c[t.id];
+  const c = catCard(t), own = S.c[ck(c)], best = bestOwned(t.id);
   const b = document.createElement("button");
   b.className = "cell" + (own ? "" : " locked"); b.dataset.id = t.id; b.track = t;
   b.setAttribute("aria-label", c.t + " de " + c.a + (own ? ", dans ta collection" : ", pas encore trouvée"));
   b.appendChild(cardEl(c, own?.holo > 0));
   if (own) { if (own.n > 1) { const n = document.createElement("span"); n.className = "cnt"; n.textContent = "×" + own.n; b.appendChild(n); } }
-  else { const l = document.createElement("span"); l.className = "lock"; l.textContent = "À trouver"; b.appendChild(l); }
+  else if (!best) { const l = document.createElement("span"); l.className = "lock"; l.textContent = "À trouver"; b.appendChild(l); }
+  if (best && best.tier > c.tier) {                        // you pulled it when it was rarer
+    const l = document.createElement("span"); l.className = "lock mine"; l.textContent = "À toi en " + RAR[best.tier]; b.appendChild(l);
+  }
   b.onclick = async () => openModal(catCard(t).g == null ? await completeCell(b) : catCard(t));
   return b;
 }
@@ -1235,20 +1266,22 @@ audio.onplay = () => { $("#mPlay").textContent = "Pause"; $("#mPlay").setAttribu
 // shiny: how the clicked copy looks (a market listing, a pulled card…); by default, the best copy owned
 function openModal(c, shiny) {
   lastFocus = document.activeElement; current = c;
-  const own = S.c[c.id] || { n: 0, holo: 0 }, st = stats(c), T = TYPES[c.g] || TYPES[AUTRE];
+  const own = S.c[ck(c)] || { n: 0, holo: 0 }, st = stats(c), T = TYPES[c.g] || TYPES[AUTRE];
+  const others = versionsOf(c.id).filter(v => v.tier !== c.tier).sort((a, b) => b.tier - a.tier);
+  const otherLine = others.length ? `<dt>Autres versions</dt><dd>${others.map(v => `${isArtist(c) ? CERT[v.tier] : RAR[v.tier]}${v.n > 1 ? " ×" + v.n : ""}`).join(" · ")}</dd>` : "";
   const box = $("#mCard"); box.innerHTML = "";
   const isShiny = (shiny ?? own.holo > 0) && c.tier >= MYTH && !c.collector;
   const w = cardEl(c, isShiny); box.appendChild(w);
   if (isArtist(c)) {
     $("#mTitle").textContent = c.t; $("#mSub").textContent = "Carte d'artiste · " + CERT[c.tier];
     $("#mDl").innerHTML = `<dt>Certification</dt><dd>${CERT[c.tier]}${c.collector || own.collector ? " · Collector" : ""}${isShiny ? " · Shiny" : ""}</dd><dt>Fans Deezer</dt><dd>${fmt(c.rank)}</dd>
-      <dt>Albums</dt><dd>${c.albums || "?"}</dd><dt>Possédées</dt><dd>${own.n}${own.collector ? ` (dont la Collector)` : ""}</dd>`;
+      <dt>Albums</dt><dd>${c.albums || "?"}</dd><dt>Possédées</dt><dd>${own.n}${own.collector ? ` (dont la Collector)` : ""}</dd>${otherLine}`;
     $("#mLink").href = "https://www.deezer.com/artist/" + c.aid;
   } else {
   $("#mTitle").textContent = c.t; $("#mSub").textContent = c.a + " · " + c.al;
   $("#mDl").innerHTML = `<dt>Rareté</dt><dd>${RAR[c.tier]}${isShiny ? " · Shiny" : ""}</dd><dt>Classement</dt><dd>${fmt(c.rank)} pts Deezer</dd>
     <dt>${T.s}</dt><dd>${st.flow} · ${c.bpm > 0 ? c.bpm + " BPM" : "tempo estimé"}</dd><dt>Endurance</dt><dd>${st.endu} · ${fmtDur(c.d)}</dd>
-    <dt>Hype</dt><dd>${st.hype}</dd><dt>Sortie</dt><dd>${c.y || "?"}</dd><dt>Possédées</dt><dd>${own.n}${own.holo && c.tier >= MYTH ? ` (dont ${own.holo} Shiny)` : ""}${own.locked ? ` · ${own.locked} non échangeable${own.locked > 1 ? "s" : ""}` : ""}</dd>`;
+    <dt>Hype</dt><dd>${st.hype}</dd><dt>Sortie</dt><dd>${c.y || "?"}</dd><dt>Possédées</dt><dd>${own.n}${own.holo && c.tier >= MYTH ? ` (dont ${own.holo} Shiny)` : ""}${own.locked ? ` · ${own.locked} non échangeable${own.locked > 1 ? "s" : ""}` : ""}</dd>${otherLine}`;
   $("#mLink").href = "https://www.deezer.com/track/" + c.id;
   }
   Online.modalExtras?.(c);

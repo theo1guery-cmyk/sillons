@@ -94,13 +94,12 @@ function cardFromRow(r, t) {
   };
 }
 // the collection groups copies by track; each copy keeps its own id for trades
-const cardKey = r => r.kind === "artist" ? "a" + r.artist_id : r.track_id;
+const cardKey = r => (r.kind === "artist" ? "a" + r.artist_id : r.track_id) + "#" + r.tier;   // a track in one rarity
 function addCopy(map, r, t) {
   const k = cardKey(r);
   const c = map[k] || (map[k] = { ...cardFromRow(r, t), n: 0, holo: 0, locked: 0, copies: [], at: Date.parse(r.pulled_at) });
   c.n++; if (r.holo) c.holo++; if (!r.tradeable && !r.collector) c.locked++;
   if (r.collector) c.collector = true;
-  if (r.tier > c.tier) { c.tier = r.tier; c.rank = r.rank; }
   c.copies.push({ id: r.id, tier: r.tier, holo: r.holo, tradeable: r.tradeable, collector: !!r.collector });
   return c;
 }
@@ -645,7 +644,7 @@ function renderDiscard() {
 }
 // in the card details: discard one spare copy (never the last one, never the holo when a plain copy exists)
 function modalExtras(c) {
-  const btn = $("#mDiscard"), own = S.c[c.id];
+  const btn = $("#mDiscard"), own = S.c[ck(c)];
   const spares = own?.copies?.filter(cp => !cp.collector) || [];
   btn.hidden = !(Online.active && own?.copies && own.copies.length > 1 && spares.length && (spares.length > 1 || own.copies.length > spares.length));
   if (btn.hidden) return;
@@ -657,7 +656,7 @@ function modalExtras(c) {
       const r = await rpc("discard_cards", { p_cards: [spare.id] });
       await loadAll(); refreshViews(); if (!views.binder.hidden) renderBinder(); updateDefisBadge();
       toast(`Doublon défaussé : +${r.gained} Stream${r.gained > 1 ? "s" : ""}.`);
-      if (S.c[c.id]) openModal(S.c[c.id]);
+      if (S.c[ck(c)]) openModal(S.c[ck(c)]);
     } catch (e) { toast(message(e)); }
     btn.disabled = false;
   };
@@ -881,7 +880,7 @@ async function loadMine() {
 }
 
 /* selling: choose a card (or come from its details), see its cote, set a price */
-async function openSell(trackId) {
+async function openSell(trackId) {           // trackId: the key of a card ("<id>#<tier>"), or null to pick one
   if (!me) return;
   const panel = $("#sellPanel");
   panel.hidden = false;
@@ -925,7 +924,7 @@ async function renderSellForm(c, copies) {
         <label class="field" for="sellPrice"><span>Ton prix en Streams (minimum ${fmt(floor)})</span><input id="sellPrice" type="number" min="${floor}" max="10000000" step="1" inputmode="numeric"></label>
         <p class="form-fine" id="sellNet"></p>
         <div class="btns"><button class="btn primary" id="sellGo">Mettre en vente</button></div>
-        <p class="form-fine">${copy.holo && copy.tier >= MYTH ? "Tu vends ta copie Shiny. " : ""}${(S.c[c.id]?.copies?.length || 1) === 1 ? "C'est ton seul exemplaire de cette carte." : `Tu en gardes ${S.c[c.id].copies.length - 1}.`}</p>
+        <p class="form-fine">${copy.holo && copy.tier >= MYTH ? "Tu vends ta copie Shiny. " : ""}${(S.c[ck(c)]?.copies?.length || 1) === 1 ? "C'est ton seul exemplaire de cette carte." : `Tu en gardes ${S.c[ck(c)].copies.length - 1}.`}</p>
       </div></div>`;
   $("#sellCard").appendChild(miniCard({ ...c, tier: copy.tier }, copy.holo));
   $("#sellClose").onclick = closeSell;
@@ -955,9 +954,9 @@ async function renderSellForm(c, copies) {
 
 /* card details: the cote, and a shortcut to sell */
 async function marketExtras(c) {
-  const btn = $("#mSell"), own = S.c[c.id];
+  const btn = $("#mSell"), own = S.c[ck(c)];
   btn.hidden = !(Online.active && own && own.copies?.some(cp => cp.tradeable));
-  btn.onclick = () => { closeModal(); show("market"); openSell(c.id); };
+  btn.onclick = () => { closeModal(); show("market"); openSell(ck(c)); };
   if (!Online.active) return;
   try {
     const st = await rpc("price_stats", isArtist(c) ? { p_artist: c.aid } : { p_track: c.id });
@@ -1064,7 +1063,7 @@ async function openAlbum(a) {
   const tracks = data?.tracks || [];
   $("#alTracks").innerHTML = tracks.length ? "" : `<li class="empty-line">La liste des titres n'est pas encore disponible. Réessaie dans quelques minutes.</li>`;
   for (const t of tracks) {
-    const own = S.c[t.id];
+    const own = bestOwned(t.id);
     const li = document.createElement("li"); li.className = own ? "own" : "missing";
     li.innerHTML = `<span class="mark" aria-hidden="true">${own ? "✓" : ""}</span><span class="t">${esc(t.title)}</span>
       <span class="rar"><i style="background:${RCOL[tierOf(t.rank || 0)]}"></i>${RAR[tierOf(t.rank || 0)]}</span>
@@ -1167,7 +1166,7 @@ function tagsOf(c) { const set = CARD_TAGS.get(wishKey(c)); return set ? TAGS.fi
 /* the ♡ button in a card's details (for cards you don't own) */
 function wishExtras(c) {
   const btn = $("#mWish");
-  const owned = !!S.c[c.id];
+  const owned = ownsTrack(c.id);
   btn.hidden = !Online.active || owned || c.collector;
   if (btn.hidden) return;
   const on = WISH.has(wishKey(c));
@@ -1192,7 +1191,7 @@ function wishExtras(c) {
 /* tags in a card's details (for cards you own) */
 function tagExtras(c) {
   const box = $("#mTags");
-  box.hidden = !Online.active || !S.c[c.id];
+  box.hidden = !Online.active || !ownsTrack(c.id);
   if (box.hidden) return;
   const mine = new Set(tagsOf(c).map(t => t.id));
   box.innerHTML = `<b>Étiquettes</b><div class="chips">${TAGS.map(t => `<button class="chip tagchip" data-id="${t.id}" aria-pressed="${mine.has(t.id)}" style="--tc:${t.color}"><i></i>${esc(t.name)}</button>`).join("")}
@@ -1229,7 +1228,7 @@ function renderTagBar() {
   const bar = $("#tagBar");
   bar.hidden = !Online.active || !TAGS.length;
   if (bar.hidden) return;
-  const count = id => [...CARD_TAGS.entries()].filter(([k, set]) => set.has(id) && S.c[k.startsWith("artist:") ? "a" + k.slice(7) : +k.slice(6)]).length;
+  const count = id => [...CARD_TAGS.entries()].filter(([k, set]) => set.has(id) && ownsTrack(k.startsWith("artist:") ? "a" + k.slice(7) : +k.slice(6))).length;
   bar.innerHTML = `<span class="tb-label">Étiquettes</span>` +
     `<button class="chip" data-id="" aria-pressed="${!F.tag}">Toutes</button>` +
     TAGS.map(t => `<button class="chip tagchip" data-id="${t.id}" aria-pressed="${F.tag === t.id}" style="--tc:${t.color}"><i></i>${esc(t.name)} <small>${count(t.id)}</small></button>`).join("") +

@@ -154,7 +154,7 @@
   function showcase() {
     const ids = picked();
     if (!ids) return best5();
-    return ids.map(id => S.c[id]).filter(Boolean);
+    return ids.map(id => S.c[id] || bestOwned(String(id).split("#")[0])).filter(Boolean);   // older picks were track ids
   }
   const vbar = document.createElement("div"); vbar.className = "v3-vbar";
   vitrine.after(vbar);
@@ -169,15 +169,15 @@
       $("#vDefault").onclick = () => { setPicked(null); drawVitrine(); markCells(); renderVbar(); };
     } else $("#vEdit").onclick = () => {
       V.edit = true; binder.classList.add("v3-editing");
-      if (!picked()) setPicked(best5().map(c => c.id));                    // start from what is shown
+      if (!picked()) setPicked(best5().map(ck));                    // start from what is shown
       drawVitrine(); markCells(); renderVbar();
     };
   }
   function toggle(c) {
     let ids = picked() || [];
-    if (ids.includes(c.id)) ids = ids.filter(id => id !== c.id);
+    if (ids.includes(ck(c))) ids = ids.filter(id => id !== ck(c));
     else if (ids.length >= 5) return toast("Ta vitrine est pleine : retire d'abord une carte (5 maximum).");
-    else ids.push(c.id);
+    else ids.push(ck(c));
     setPicked(ids); drawVitrine(); markCells(); renderVbar();
   }
   function drawVitrine() {
@@ -197,7 +197,7 @@
   // in edit mode a click on a card of the grid puts it in (or takes it out of) the showcase
   function markCells() {
     const ids = new Set(picked() || []);
-    [...$("#binder").children].forEach((cell, i) => { const c = BIND.list[i]; if (c) cell.classList.toggle("in-vitrine", ids.has(c.id)); });
+    [...$("#binder").children].forEach((cell, i) => { const c = BIND.list[i]; if (c) cell.classList.toggle("in-vitrine", ids.has(ck(c))); });
   }
   $("#binder").addEventListener("click", e => {
     if (!V.edit) return;
