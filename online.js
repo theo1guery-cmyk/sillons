@@ -281,13 +281,15 @@ function renderAuth(mode, note = "") {
     $("#fIn").onsubmit = async e => {
       e.preventDefault(); say("Connexion…");
       const btn = e.target.querySelector("button[type=submit]"); btn.disabled = true;
-      // never stay on "Connexion…": an error or no answer after 15 s says so
-      const slow = new Promise(r => setTimeout(() => r({ error: { message: "timeout" } }), 15000));
+      // when the server is slow, say so and keep waiting; give up only after 90 s
+      const patience = setTimeout(() => say("Le serveur est lent en ce moment, la connexion peut prendre jusqu'à une minute. Ne recharge pas la page…"), 8000);
+      const slow = new Promise(r => setTimeout(() => r({ error: { message: "timeout" } }), 90000));
       let error;
       try { ({ error } = await Promise.race([sb.auth.signInWithPassword({ email: $("#inEmail").value.trim(), password: $("#inPass").value }), slow])); }
       catch (err) { error = err; }
+      clearTimeout(patience);
       btn.disabled = false;
-      if (error?.message === "timeout") return say("La connexion ne répond pas. Recharge la page puis réessaie.");
+      if (error?.message === "timeout") return say("Le serveur ne répond pas pour l'instant. Réessaie dans quelques minutes.");
       if (error) return say(/confirm/i.test(error.message) ? "Ton adresse n'est pas encore vérifiée : clique sur le lien reçu par e-mail."
         : /invalid/i.test(error.message) ? "E-mail ou mot de passe incorrect." : message(error));
       AUTH.done(); toast("Connecté.");
