@@ -72,6 +72,7 @@
 
   /* after an opening: the page takes the colour of the best card, the wall gets the new covers */
   window.V2 = {
+    ambient,
     pulls(pulls) {
       const best = pulls.filter(p => p.c.cov).sort((a, b) => b.c.tier - a.c.tier)[0];
       if (best) ambient(best.c.cov);

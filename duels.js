@@ -253,7 +253,7 @@ async function nextRound() {
   body.querySelectorAll(".dp-choice").forEach(b => b.onclick = () => answer(+b.dataset.i));
   // the extract stops when its time is up; the server's clock started when this round was served
   const started = performance.now() - (r.elapsed_ms || 0);
-  if (r.preview) { P.audio.src = r.preview; P.audio.currentTime = 0; P.audio.play().catch(() => toast("Clique sur la page pour autoriser le son.")); }
+  if (r.preview) { window.dispatchEvent(new Event("zh:sound")); P.audio.src = r.preview; P.audio.currentTime = 0; P.audio.play().catch(() => toast("Clique sur la page pour autoriser le son.")); }
   else toast("Pas d'extrait pour ce morceau : réponds à l'aveugle !");
   P.timer = setInterval(() => {
     const left = Math.max(0, r.extract_ms - (performance.now() - started));
