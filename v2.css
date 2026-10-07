@@ -74,6 +74,11 @@
 .pack.gl .pack-gl{opacity:1;pointer-events:auto;filter:drop-shadow(0 26px 30px rgba(0,0,0,.55))}
 .v2 .pack-stage .pack.gl{transform:translateY(var(--ty,0))}
 .pack.gl.god .pack-gl{filter:sepia(.6) saturate(1.8) brightness(1.15) drop-shadow(0 0 30px rgba(245,194,77,.8))}
+.skin-pick{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap}
+.skin-pick[hidden]{display:none}
+.skin-pick small{font:500 .7rem var(--mono);letter-spacing:.14em;text-transform:uppercase;color:#a99cc6;margin-right:4px}
+.skin-pick button{padding:6px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.06);color:#e9e2f5;font:600 .78rem var(--body);cursor:pointer}
+.skin-pick button.on{background:#f4ead6;color:#140f1c;border-color:#f4ead6}
 .back.gl{padding:0;background:none;box-shadow:none;overflow:visible}
 .back.gl .in{display:none}
 .back-gl{inset:0;width:100%;height:100%}

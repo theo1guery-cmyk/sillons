@@ -148,19 +148,17 @@ function dancePeaks(t) {
 }
 
 /* ---------- materials, loaded on demand ---------- */
-const BACK = { "back-vinyl": { edge: 0xc9a04a }, "back-eq": { edge: 0xe7b14a, peaks: true }, "back-mono": { edge: 0x6b4423 }, "back-holo": { edge: 0xc8c8dc, env: 1.6, relief: 1, prism: true },   // the holo needs its full diffraction relief
-  "back-spectre": { edge: 0x1a1426, glow: 1.6, coat: .8 } };          // Spectre: neon with its own light, which pulses
+const BACK = { "back-vinyl": { edge: 0xc9a04a }, "back-eq": { edge: 0xe7b14a, peaks: true }, "back-mono": { edge: 0x6b4423 }, "back-holo": { edge: 0xc8c8dc, env: 1.6, relief: 1, prism: true } };   // the holo needs its full diffraction relief
 const mats = new Map();
 function material(name) {
   if (mats.has(name)) return mats.get(name);
   const base = "brand/demo/" + name;
-  const p = Promise.all([texture(base + "-a.webp", true), texture(base + "-m.webp", false), texture(base + "-n.webp", false),
-    BACK[name]?.glow ? texture(base + "-e.webp", true) : null]).then(([a, m, n, e]) => {
+  const p = Promise.all([texture(base + "-a.webp", true), texture(base + "-m.webp", false), texture(base + "-n.webp", false)]).then(([a, m, n]) => {
     if (!a || !m || !n) return null;
     if (BACK[name]) return {
-      face: new THREE.MeshPhysicalMaterial({ map: a, roughnessMap: m, metalnessMap: m, iridescenceMap: m, normalMap: n, roughness: 1, metalness: 1, iridescence: 1, iridescenceIOR: 1.55, iridescenceThicknessRange: [200, 640], clearcoat: BACK[name].coat || .3, clearcoatRoughness: .15, envMapIntensity: BACK[name].env || 1, ...(e ? { emissive: 0xffffff, emissiveMap: e, emissiveIntensity: BACK[name].glow } : {}), ...(BACK[name].prism ? { envMap: prismEnv, roughness: .4, iridescenceThicknessRange: [120, 900] } : {}) }),
+      face: new THREE.MeshPhysicalMaterial({ map: a, roughnessMap: m, metalnessMap: m, iridescenceMap: m, normalMap: n, roughness: 1, metalness: 1, iridescence: 1, iridescenceIOR: 1.55, iridescenceThicknessRange: [200, 640], clearcoat: .3, clearcoatRoughness: .15, envMapIntensity: BACK[name].env || 1, ...(BACK[name].prism ? { envMap: prismEnv, roughness: .4, iridescenceThicknessRange: [120, 900] } : {}) }),
       edge: new THREE.MeshPhysicalMaterial({ color: BACK[name].edge, roughness: .35, metalness: .8, clearcoat: .5 }),
-      glow: BACK[name].glow || 0, peaks: !!BACK[name].peaks, relief: BACK[name].relief || 0, sway: !!BACK[name].sway,
+      peaks: !!BACK[name].peaks, relief: BACK[name].relief || 0, sway: !!BACK[name].sway,
     };
     return new THREE.MeshPhysicalMaterial({
       map: a, roughnessMap: m, metalnessMap: m, iridescenceMap: m, normalMap: n, roughness: 1, metalness: 1, iridescence: 1, iridescenceIOR: 1.6, iridescenceThicknessRange: [180, 620],
@@ -216,7 +214,6 @@ function draw(it, time) {
   } else {
     cardFace.material = m.face; cardEdge.material = m.edge; peaks.visible = m.peaks;
     m.face.normalScale.setScalar(Math.max(m.relief, clamp(w / 900, .12, 1)));   // fine grooves would shimmer on a small card
-    if (m.glow) m.face.emissiveIntensity = m.glow * (.86 + .14 * Math.sin(time * 2.2));
     if (m.peaks) dancePeaks(time);
     const sw = m.sway ? 1 : 0, ph = it.phase ??= Math.random() * 6;   // the holo sways gently so its rainbow keeps sliding
     card.rotation.set(-it.ty * .22 + sw * Math.cos(time * .7 + ph) * .12, it.tx * .32 + sw * Math.sin(time * .9 + ph) * .2, 0);
@@ -324,7 +321,7 @@ function loop(t) {
     if (it.waitReset && (!it.canTear || it.canTear())) untear(it);
     const moving = Math.abs(it.tx - ox) + Math.abs(it.ty - oy) > .0005;
     const name = typeof it.name === "function" ? it.name() : it.name;
-    const swaying = material(name).ready?.sway || material(name).ready?.glow;   // a pulsing neon is redrawn every frame
+    const swaying = material(name).ready?.sway;
     if (it.dirty || moving || it.hover || it.live || it.sway || swaying || name !== it.cur) { if (draw(it, time)) it.dirty = false; }
   }
   requestAnimationFrame(loop);
@@ -351,7 +348,6 @@ window.Studio = {
   pack: (canvas, name, opts) => attach(canvas, "pack", name, opts),
   card: (canvas, name, opts) => attach(canvas, "card", name, opts),
   preload: name => material(name),
-  lost: () => renderer.getContext().isContextLost(),
   still,
 };
 dispatchEvent(new Event("zh:studio"));
