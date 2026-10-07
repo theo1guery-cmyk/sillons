@@ -854,7 +854,7 @@ const Stage = (() => {
   }
   // the 3D scene is a separate file, fetched only when a booster holds a hit; null if WebGL or the CDN fails
   let hit3d = null, hit3dP = null;
-  const load3d = () => hit3dP ??= import("./hit3d.js?v=15").then(m => m.create($s(".fx-gl-host"))).then(async x => { await x.warmup(); return hit3d = x; })
+  const load3d = () => hit3dP ??= import("./hit3d.js?v=20").then(m => m.create($s(".fx-gl-host"))).then(async x => { await x.warmup(); return hit3d = x; })
     .catch(e => { console.warn("3D indisponible, animation simple", e); return null; });
   /* GOD pack: "GOD PACK" is written in gold in the dark, the lamp lights a solid gold record, the needle lands, light
      leaks out of the grooves and the record bursts into five cards turning in a ring around the deck. Each tap brings
