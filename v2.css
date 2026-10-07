@@ -82,9 +82,7 @@
 .back.gl{padding:0;background:none;box-shadow:none;overflow:visible}
 .back.gl .in{display:none}
 .back-gl{inset:0;width:100%;height:100%}
-.back.gl .back-gl{opacity:1;pointer-events:auto;filter:drop-shadow(0 8px 14px rgba(0,0,0,.5))}   /* the card leans toward the pointer */
-.v2 .slot .flip:not(.on) .back.gl{transition:transform .3s ease}
-.v2 .slot .flip:not(.on):hover .back.gl{transform:translateY(-6px) scale(1.03)}
+.back.gl .back-gl{opacity:1;filter:drop-shadow(0 8px 14px rgba(0,0,0,.5))}
 .tear-hint{display:none;margin:-10px 0 0;font:500 .72rem var(--mono);letter-spacing:.14em;text-transform:uppercase;color:#cdbfdc;text-align:center}
 .pack.gl+.tear-hint{display:block}
 .rip .tear-hint{display:none!important}
