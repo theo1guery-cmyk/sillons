@@ -150,7 +150,7 @@ async function enterAccount(user) {
     await loadAll();
     Online.active = true;
     $("#tab-trades").hidden = false; $("#tab-defis").hidden = false; $("#tab-market").hidden = false; $("#tab-albums").hidden = false; $("#tab-duels").hidden = false; $("#navCommunity").hidden = false;
-    $("#table").hidden = true; $("#deal").innerHTML = "";
+    unseatTable();                       // closes the opening table and puts the booster back on its shelf
     refreshViews();
     pollOffers(); updateDefisBadge();
   } catch (e) {
@@ -168,7 +168,7 @@ function leaveAccount() {
   $("#tab-defis").hidden = true; $("#defisBadge").hidden = true; $("#tab-market").hidden = true; $("#tab-albums").hidden = true; $("#albumsBadge").hidden = true;
   $("#tab-duels").hidden = true; $("#duelsBadge").hidden = true; $("#navCommunity").hidden = true;
   if (!views.trades.hidden || !views.defis.hidden || !views.market.hidden || !views.albums.hidden || !views.duels.hidden) show("shop");
-  $("#table").hidden = true; $("#deal").innerHTML = "";
+  unseatTable();
   refreshViews();
 }
 
