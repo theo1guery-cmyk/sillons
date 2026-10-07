@@ -543,9 +543,7 @@ openBig.onclick = () => openPack(BOOSTER);
 const tearHint = document.createElement("p"); tearHint.className = "tear-hint"; tearHint.textContent = "Déchire le haut du sachet pour l'ouvrir";
 packStage.append(packBtn, tearHint, openBig);
 shelf.append(packStage, stockEl);
-// design pack demo (local): boosters and card backs printed in 3D by studio.js. The classic booster takes the
-// Mur, Vinyle and Spirale designs in turn (one per opening, or picked below); genre boosters are duotones;
-// cards get the Vinyle back in a classic booster and the Égaliseur back in a genre booster
+// boosters and card backs printed in 3D by studio.js
 const studioQueue = [];
 const withStudio = fn => window.Studio ? fn(window.Studio) : studioQueue.push(fn);
 addEventListener("zh:studio", () => studioQueue.splice(0).forEach(fn => fn(window.Studio)));
@@ -554,38 +552,13 @@ function skin(el, name, opts) {           // name: a design, or a function givin
   el.classList.remove("gl");                 // a copied pack shows its plain design until it is drawn
   withStudio(S => S.pack(cv, name, { ...opts, host: el }));
 }
-const backName = () => "back-" + (document.documentElement.dataset.back || "vinyl");
-const CLASSIC_SKINS = [["wall", "Le Mur"], ["window", "Vinyle"], ["spiral", "Spirale"]];
-let classicSkin = (() => { try { return +localStorage.getItem("zh-demo-pack") % 3 || 0; } catch { return 0; } })();
-const skinPick = document.createElement("div"); skinPick.className = "skin-pick";
-function setClassicSkin(i) {
-  classicSkin = (i + 3) % 3;
-  try { localStorage.setItem("zh-demo-pack", classicSkin); } catch {}
-  skinPick.querySelectorAll("button").forEach((b, k) => b.classList.toggle("on", k === classicSkin));
-}
-skinPick.innerHTML = `<small>Design du booster</small>` + CLASSIC_SKINS.map(([, n]) => `<button type="button">${n}</button>`).join("");
-skinPick.querySelectorAll("button").forEach((b, k) => b.onclick = () => setClassicSkin(k));
-packStage.appendChild(skinPick);
-// the classic booster's card backs take turns too: Égaliseur, Monogramme, Prisme, Vinyle
-const CLASSIC_BACKS = [["eq", "Égaliseur"], ["mono", "Monogramme"], ["holo", "Prisme"], ["vinyl", "Vinyle"]];
-let classicBack = (() => { try { return +localStorage.getItem("zh-demo-back") % 4 || 0; } catch { return 0; } })();
-const backPick = document.createElement("div"); backPick.className = "skin-pick";
-backPick.innerHTML = `<small>Dos des cartes</small>` + CLASSIC_BACKS.map(([, n]) => `<button type="button">${n}</button>`).join("");
-function setClassicBack(i) {
-  classicBack = (i + 4) % 4;
-  try { localStorage.setItem("zh-demo-back", classicBack); } catch {}
-  backPick.querySelectorAll("button").forEach((b, k) => b.classList.toggle("on", k === classicBack));
-}
-backPick.querySelectorAll("button").forEach((b, k) => b.onclick = () => setClassicBack(k));
-packStage.appendChild(backPick);
-setClassicBack(classicBack);
-setClassicSkin(classicSkin);
-const classicName = () => "pack-" + CLASSIC_SKINS[classicSkin][0];
+const backName = () => "back-" + (document.documentElement.dataset.back || "spectre");
+// the classic booster is Le Mur, its cards have the Spectre back; genre boosters are duotones with the Égaliseur back
+const classicName = () => "pack-wall";
 let tornCut = null;                       // the shape of the last tear, so the pack in the opening is torn the same way
 skin(packBtn, classicName, { sway: true, canTear: () => !busy && !packBtn.disabled, tear: cut => { tornCut = cut; openPack(BOOSTER); } });
-document.documentElement.dataset.back = "vinyl";
-if (!/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) skinPick.hidden = backPick.hidden = true;
-const studioScript = document.createElement("script"); studioScript.type = "module"; studioScript.src = "studio.js?v=13"; document.head.appendChild(studioScript);
+document.documentElement.dataset.back = "spectre";
+const studioScript = document.createElement("script"); studioScript.type = "module"; studioScript.src = "studio.js?v=15"; document.head.appendChild(studioScript);
 function renderStock() {
   if (TEST_MODE) {
     stockEl.innerHTML = `<b>Boosters illimités</b><span class="test-badge">Mode test</span>
@@ -728,10 +701,9 @@ async function openPack(p, opts = {}) {
   deal.innerHTML = "";
   const rip = document.createElement("div"); rip.className = "rip loading" + (god ? " god" : "");
   const pk = p.el.cloneNode(true); pk.tabIndex = -1; pk.disabled = true; pk.removeAttribute("id");
-  document.documentElement.dataset.back = p === BOOSTER ? CLASSIC_BACKS[classicBack][0] : "eq";
+  document.documentElement.dataset.back = p === BOOSTER ? "spectre" : "eq";
   skin(pk, p === BOOSTER ? classicName() : "pack-" + TYPES[p.g].k, { live: true, cut: tornCut });   // the copy in the opening
   tornCut = null;
-  if (p === BOOSTER) { setClassicSkin(classicSkin + 1); setClassicBack(classicBack + 1); }   // the next booster has the next design and the next back
   if (god) pk.classList.add("god");
   const line = document.createElement("p"); line.textContent = god ? "GOD PACK ! 1 chance sur 3 000…" : pick(LOADING_LINES);
   rip.append(pk, line); deal.appendChild(rip);
@@ -938,7 +910,7 @@ const Stage = (() => {
   }
   // the 3D scene is a separate file, fetched only when a booster holds a hit; null if WebGL or the CDN fails
   let hit3d = null, hit3dP = null;
-  const load3d = () => hit3dP ??= import("./hit3d.js?v=18").then(m => m.create($s(".fx-gl-host"))).then(async x => { await x.warmup(); return hit3d = x; })
+  const load3d = () => hit3dP ??= import("./hit3d.js?v=19").then(m => m.create($s(".fx-gl-host"))).then(async x => { await x.warmup(); return hit3d = x; })
     .catch(e => { console.warn("3D indisponible, animation simple", e); return null; });
   /* GOD pack: "GOD PACK" is written in gold in the dark, the lamp lights a solid gold record, the needle lands, light
      leaks out of the grooves and the record bursts into five cards turning in a ring around the deck. Each tap brings

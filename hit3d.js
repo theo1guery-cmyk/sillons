@@ -225,7 +225,7 @@ export async function create(host) {
   card.add(cardFace);
   const plainBack = cardFace.material.map, backs = {};   // demo: the back of the booster being opened (vinyl, equaliser)
   const backStill = k => backs[k] ??= (window.Studio?.still("back-" + k) || Promise.resolve(null)).then(c => c && texOf(c));
-  backStill("vinyl"); backStill("eq");
+  backStill("spectre"); backStill("eq");
   const cardHalo = new THREE.Mesh(new THREE.PlaneGeometry(CARD_W * 3.2, CARD_H * 2.6), new THREE.MeshBasicMaterial({ map: dotTex, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
   cardHalo.position.z = -.03; card.add(cardHalo);
 
@@ -341,7 +341,7 @@ export async function create(host) {
       recordMat.map = recordMat.emissiveMap = god ? goldTex : vinylTex; recordMat.needsUpdate = true;
       spin = spinTo = 0; beatOn = false; pulse = 0; calm = 0; drift = 0; sideOn = 0;
       card.visible = false; cardHalo.material.opacity = 0;
-      const bk = await backStill(document.documentElement.dataset.back || "vinyl");
+      const bk = await backStill(document.documentElement.dataset.back || "spectre");
       cardFace.material.map = bk || plainBack; cardFace.material.transparent = !!bk; cardFace.material.needsUpdate = true;
       labelMat.map = god ? labelGod : shiny ? labelShiny : labelPlain; labelMat.color.set(shiny || god ? 0xffffff : 0xd9ad5b); labelMat.needsUpdate = true;
       recordMat.color.set(god ? 0xe0b25a : 0x6a6a70); recordMat.emissive.set(0);
