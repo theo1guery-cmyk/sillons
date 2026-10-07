@@ -65,33 +65,3 @@
 #v2Player button:hover{filter:brightness(1.15)}
 @media (max-width:860px){#v2Player{bottom:calc(76px + env(safe-area-inset-bottom,0px))}.v2 .pack-stage .pack{width:220px}.v2-wall img{width:110px;height:110px}}
 
-
-/* design pack demo: boosters and card backs printed in 3D (studio.js) */
-.pack-gl,.back-gl{display:block;position:absolute;opacity:0;pointer-events:none}   /* sized but unseen until the studio has drawn it */
-.pack.gl{background:none!important;border:0;box-shadow:none!important;overflow:visible}
-.pack.gl>.pack-logo,.pack.gl>.lbl,.pack.gl>.pack-shine,.pack.gl::before,.pack.gl::after{display:none!important}
-.pack-gl{inset:-4% -8%;width:116%;height:108%}
-.pack.gl .pack-gl{opacity:1;pointer-events:auto;filter:drop-shadow(0 26px 30px rgba(0,0,0,.55))}
-.v2 .pack-stage .pack.gl{transform:translateY(var(--ty,0))}
-.pack.gl.god .pack-gl{filter:sepia(.6) saturate(1.8) brightness(1.15) drop-shadow(0 0 30px rgba(245,194,77,.8))}
-.skin-pick{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap}
-.skin-pick[hidden]{display:none}
-.skin-pick small{font:500 .7rem var(--mono);letter-spacing:.14em;text-transform:uppercase;color:#a99cc6;margin-right:4px}
-.skin-pick button{padding:6px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.06);color:#e9e2f5;font:600 .78rem var(--body);cursor:pointer}
-.skin-pick button.on{background:#f4ead6;color:#140f1c;border-color:#f4ead6}
-.back.gl{padding:0;background:none;box-shadow:none;overflow:visible}
-.back.gl .in{display:none}
-.back-gl{inset:0;width:100%;height:100%}
-.back.gl .back-gl{opacity:1;filter:drop-shadow(0 8px 14px rgba(0,0,0,.5))}
-.tear-hint{display:none;margin:-10px 0 0;font:500 .72rem var(--mono);letter-spacing:.14em;text-transform:uppercase;color:#cdbfdc;text-align:center}
-.pack.gl+.tear-hint{display:block}
-.rip .tear-hint{display:none!important}
-.tear-stage{position:fixed;inset:0;z-index:50;display:grid;place-items:center;align-content:center;gap:14px;padding:20px;background:rgba(6,4,10,.8);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);animation:tsIn .3s ease-out}
-.tear-stage[hidden]{display:none}
-@keyframes tsIn{from{opacity:0}}
-.ts-head{text-align:center}
-.ts-head b{display:block;font:900 clamp(20px,3vw,28px) var(--display);color:#ffe2a0}
-.ts-head small{font:500 .75rem var(--mono);letter-spacing:.14em;text-transform:uppercase;color:#cdbfdc}
-.stage-pack{position:relative;height:min(64vh,600px);aspect-ratio:5/8;cursor:default;animation:none!important}
-.stage-pack:hover{transform:none!important}
-.ts-hint{margin:0;font:500 .75rem var(--mono);letter-spacing:.14em;text-transform:uppercase;color:#cdbfdc}

@@ -471,14 +471,7 @@ function cardEl(c, holo) {
   const w = document.createElement("div"); w.className = "cq"; w.appendChild(el);
   return w;
 }
-function backEl(gl = false) {
-  const w = document.createElement("div"); w.className = "cq"; w.innerHTML = '<div class="back"><div class="in"><img src="brand/zikhunter-icon.svg" alt=""><b>ZIK HUNTER</b></div></div>';
-  if (gl) {                               // the design pack back, printed in 3D (the plain back until the studio is ready)
-    const back = w.firstChild, cv = document.createElement("canvas"); cv.className = "back-gl"; cv.setAttribute("aria-hidden", "true"); back.appendChild(cv);
-    withStudio(S => S.card(cv, backName, { host: back }));
-  }
-  return w;
-}
+function backEl() { const w = document.createElement("div"); w.className = "cq"; w.innerHTML = '<div class="back"><div class="in"><img src="brand/zikhunter-icon.svg" alt=""><b>ZIK HUNTER</b></div></div>'; return w; }
 
 /* ---------- views ---------- */
 const views = { shop: $("#view-shop"), store: $("#view-store"), binder: $("#view-binder"), catalog: $("#view-catalog"), trades: $("#view-trades"), defis: $("#view-defis"), market: $("#view-market"), albums: $("#view-albums"), duels: $("#view-duels") };
@@ -532,60 +525,16 @@ const BOOSTER = { g: -1, n: "Booster" };
 const shelf = $("#shelf");
 const packBtn = document.createElement("button");
 packBtn.className = "pack mix";
-packBtn.innerHTML = `<span class="pack-shine" aria-hidden="true"></span><canvas class="pack-gl" aria-hidden="true"></canvas><img class="pack-logo" src="brand/zikhunter-icon.svg" alt=""><span class="lbl"><b>Booster</b><span>5 cartes · tout Deezer</span></span>`;
+packBtn.innerHTML = `<span class="pack-shine" aria-hidden="true"></span><img class="pack-logo" src="brand/zikhunter-icon.svg" alt=""><span class="lbl"><b>Booster</b><span>5 cartes · tout Deezer</span></span>`;
 packBtn.setAttribute("aria-label", "Ouvrir un booster");
-packBtn.onclick = e => { if (e.detail && packBtn.classList.contains("gl")) return; openPack(BOOSTER); };   // the 3D pack is torn open, not clicked
+packBtn.onclick = () => openPack(BOOSTER);
 BOOSTER.el = packBtn;
 const stockEl = document.createElement("div"); stockEl.className = "stock"; stockEl.setAttribute("aria-live", "polite");
 const packStage = document.createElement("div"); packStage.className = "pack-stage";
 const openBig = document.createElement("button"); openBig.className = "btn primary big"; openBig.id = "openBig"; openBig.textContent = "Ouvrir un booster";
 openBig.onclick = () => openPack(BOOSTER);
-const tearHint = document.createElement("p"); tearHint.className = "tear-hint"; tearHint.textContent = "Déchire le haut du sachet pour l'ouvrir";
-packStage.append(packBtn, tearHint, openBig);
+packStage.append(packBtn, openBig);
 shelf.append(packStage, stockEl);
-// design pack demo (local): boosters and card backs printed in 3D by studio.js. The classic booster takes the
-// Mur, Vinyle and Spirale designs in turn (one per opening, or picked below); genre boosters are duotones;
-// cards get the Vinyle back in a classic booster and the Égaliseur back in a genre booster
-const studioQueue = [];
-const withStudio = fn => window.Studio ? fn(window.Studio) : studioQueue.push(fn);
-addEventListener("zh:studio", () => studioQueue.splice(0).forEach(fn => fn(window.Studio)));
-function skin(el, name, opts) {           // name: a design, or a function giving the current one
-  const cv = el.querySelector(".pack-gl"); if (!cv) return;
-  el.classList.remove("gl");                 // a copied pack shows its plain design until it is drawn
-  withStudio(S => S.pack(cv, name, { ...opts, host: el }));
-}
-const backName = () => "back-" + (document.documentElement.dataset.back || "vinyl");
-const CLASSIC_SKINS = [["wall", "Le Mur"], ["window", "Vinyle"], ["spiral", "Spirale"]];
-let classicSkin = (() => { try { return +localStorage.getItem("zh-demo-pack") % 3 || 0; } catch { return 0; } })();
-const skinPick = document.createElement("div"); skinPick.className = "skin-pick";
-function setClassicSkin(i) {
-  classicSkin = (i + 3) % 3;
-  try { localStorage.setItem("zh-demo-pack", classicSkin); } catch {}
-  skinPick.querySelectorAll("button").forEach((b, k) => b.classList.toggle("on", k === classicSkin));
-}
-skinPick.innerHTML = `<small>Design du booster</small>` + CLASSIC_SKINS.map(([, n]) => `<button type="button">${n}</button>`).join("");
-skinPick.querySelectorAll("button").forEach((b, k) => b.onclick = () => setClassicSkin(k));
-packStage.appendChild(skinPick);
-// the classic booster's card backs take turns too: Égaliseur, Monogramme, Prisme, Vinyle
-const CLASSIC_BACKS = [["eq", "Égaliseur"], ["mono", "Monogramme"], ["holo", "Prisme"], ["vinyl", "Vinyle"]];
-let classicBack = (() => { try { return +localStorage.getItem("zh-demo-back") % 4 || 0; } catch { return 0; } })();
-const backPick = document.createElement("div"); backPick.className = "skin-pick";
-backPick.innerHTML = `<small>Dos des cartes</small>` + CLASSIC_BACKS.map(([, n]) => `<button type="button">${n}</button>`).join("");
-function setClassicBack(i) {
-  classicBack = (i + 4) % 4;
-  try { localStorage.setItem("zh-demo-back", classicBack); } catch {}
-  backPick.querySelectorAll("button").forEach((b, k) => b.classList.toggle("on", k === classicBack));
-}
-backPick.querySelectorAll("button").forEach((b, k) => b.onclick = () => setClassicBack(k));
-packStage.appendChild(backPick);
-setClassicBack(classicBack);
-setClassicSkin(classicSkin);
-const classicName = () => "pack-" + CLASSIC_SKINS[classicSkin][0];
-let tornCut = null;                       // the shape of the last tear, so the pack in the opening is torn the same way
-skin(packBtn, classicName, { sway: true, canTear: () => !busy && !packBtn.disabled, tear: cut => { tornCut = cut; openPack(BOOSTER); } });
-document.documentElement.dataset.back = "vinyl";
-if (!/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) skinPick.hidden = backPick.hidden = true;
-const studioScript = document.createElement("script"); studioScript.type = "module"; studioScript.src = "studio.js?v=13"; document.head.appendChild(studioScript);
 function renderStock() {
   if (TEST_MODE) {
     stockEl.innerHTML = `<b>Boosters illimités</b><span class="test-badge">Mode test</span>
@@ -612,45 +561,16 @@ const STORE_PRICE = 100;                 // Streams, charged by the server
 for (const p of STORE_PACKS) {
   const offer = document.createElement("div"); offer.className = "offer";
   const b = document.createElement("button"); b.className = "pack"; b.style.setProperty("--h", TYPES[p.g].h);
-  b.innerHTML = `<span class="pack-shine" aria-hidden="true"></span><canvas class="pack-gl" aria-hidden="true"></canvas><img class="pack-logo" src="brand/zikhunter-icon.svg" alt=""><span class="lbl"><b>${p.n}</b><span>5 cartes ${p.n}</span></span>`;
-  skin(b, "pack-" + TYPES[p.g].k);
+  b.innerHTML = `<span class="pack-shine" aria-hidden="true"></span><img class="pack-logo" src="brand/zikhunter-icon.svg" alt=""><span class="lbl"><b>${p.n}</b><span>5 cartes ${p.n}</span></span>`;
   b.setAttribute("aria-label", "Ouvrir un booster " + p.n);
-  b.onclick = () => buyPack(p);
+  b.onclick = () => openPack(p);
   p.el = b;
   const price = document.createElement("div"); price.className = "price";
   price.innerHTML = `<b>${STORE_PRICE} Streams</b><small>5 cartes ${p.n}</small>`;
   const buy = document.createElement("button"); buy.className = "btn primary"; buy.textContent = "Acheter";
   buy.setAttribute("aria-label", "Acheter un booster " + p.n + " pour " + STORE_PRICE + " Streams");
-  buy.onclick = () => buyPack(p);
+  buy.onclick = () => openPack(p);
   offer.append(b, price, buy); $("#store").appendChild(offer);
-}
-
-// buying a genre booster brings it up big, centre screen: it is torn open there (nothing is paid until then)
-const tearStage = document.createElement("div"); tearStage.className = "tear-stage"; tearStage.hidden = true;
-tearStage.setAttribute("role", "dialog"); tearStage.setAttribute("aria-modal", "true"); tearStage.setAttribute("aria-label", "Ouvrir le booster");
-tearStage.innerHTML = `<div class="ts-head"><b></b><small>${STORE_PRICE} Streams · 5 cartes</small></div>
-  <div class="pack stage-pack"><canvas class="pack-gl" aria-hidden="true"></canvas></div>
-  <p class="ts-hint">Déchire le haut du sachet pour l'ouvrir</p>
-  <button class="btn" type="button">Annuler</button>`;
-document.body.appendChild(tearStage);
-let stagePack = null;
-const stageHost = tearStage.querySelector(".stage-pack");
-function closeStage() { tearStage.hidden = true; document.removeEventListener("keydown", stageKeys); }
-const stageKeys = e => { if (e.key === "Escape") closeStage(); };
-tearStage.querySelector("button").onclick = closeStage;
-tearStage.addEventListener("click", e => { if (e.target === tearStage) closeStage(); });
-let stageReady = false;
-function buyPack(p) {
-  // the checks of the opening come first (account, Streams), so a pack you can't open is never shown torn
-  if (busy || !Online.active || (S.streams || 0) < STORE_PRICE || !window.Studio) return openPack(p);
-  stagePack = p;
-  tearStage.querySelector(".ts-head b").textContent = "Booster " + p.n;
-  if (!stageReady) {
-    stageReady = true;
-    skin(stageHost, () => "pack-" + TYPES[stagePack.g].k, { sway: true, canTear: () => !busy && !tearStage.hidden,
-      tear: cut => { tornCut = cut; closeStage(); openPack(stagePack); } });
-  }
-  tearStage.hidden = false; document.addEventListener("keydown", stageKeys);
 }
 
 /* ---------- drawing a booster (no UI) ---------- */
@@ -728,10 +648,6 @@ async function openPack(p, opts = {}) {
   deal.innerHTML = "";
   const rip = document.createElement("div"); rip.className = "rip loading" + (god ? " god" : "");
   const pk = p.el.cloneNode(true); pk.tabIndex = -1; pk.disabled = true; pk.removeAttribute("id");
-  document.documentElement.dataset.back = p === BOOSTER ? CLASSIC_BACKS[classicBack][0] : "eq";
-  skin(pk, p === BOOSTER ? classicName() : "pack-" + TYPES[p.g].k, { live: true, cut: tornCut });   // the copy in the opening
-  tornCut = null;
-  if (p === BOOSTER) { setClassicSkin(classicSkin + 1); setClassicBack(classicBack + 1); }   // the next booster has the next design and the next back
   if (god) pk.classList.add("god");
   const line = document.createElement("p"); line.textContent = god ? "GOD PACK ! 1 chance sur 3 000…" : pick(LOADING_LINES);
   rip.append(pk, line); deal.appendChild(rip);
@@ -812,7 +728,7 @@ const Stage = (() => {
       <div class="fx-god" aria-live="polite"><b></b><small>1 chance sur 3 000</small></div>
       <div class="fx-row" aria-hidden="true"></div>`;
     document.body.appendChild(el);
-    el.querySelector(".face.back").appendChild(backEl(true));
+    el.querySelector(".face.back").appendChild(backEl());
     sparks = Particles(el.querySelector(".fx-canvas"));
     el.addEventListener("click", () => tapped?.());
     const tilt = el.querySelector(".tilt");
@@ -938,7 +854,7 @@ const Stage = (() => {
   }
   // the 3D scene is a separate file, fetched only when a booster holds a hit; null if WebGL or the CDN fails
   let hit3d = null, hit3dP = null;
-  const load3d = () => hit3dP ??= import("./hit3d.js?v=18").then(m => m.create($s(".fx-gl-host"))).then(async x => { await x.warmup(); return hit3d = x; })
+  const load3d = () => hit3dP ??= import("./hit3d.js?v=15").then(m => m.create($s(".fx-gl-host"))).then(async x => { await x.warmup(); return hit3d = x; })
     .catch(e => { console.warn("3D indisponible, animation simple", e); return null; });
   /* GOD pack: "GOD PACK" is written in gold in the dark, the lamp lights a solid gold record, the needle lands, light
      leaks out of the grooves and the record bursts into five cards turning in a ring around the deck. Each tap brings
@@ -1104,7 +1020,7 @@ function slotEl(pl, i) {
   const slot = document.createElement("div"); slot.className = "slot"; slot.style.animationDelay = (i * 90) + "ms";
   slot.style.setProperty("--aura", RCOL[pl.c.tier]);
   const f = document.createElement("button"); f.className = "flip"; f.setAttribute("aria-label", "Retourner la carte " + (i + 1));
-  const back = document.createElement("div"); back.className = "face"; back.appendChild(backEl(true));
+  const back = document.createElement("div"); back.className = "face"; back.appendChild(backEl());
   const front = document.createElement("div"); front.className = "face front"; front.appendChild(cardEl(pl.c, pl.holo));
   f.append(back, front);
   const tag = document.createElement("span"); tag.className = "tag"; tag.innerHTML = "&nbsp;";
