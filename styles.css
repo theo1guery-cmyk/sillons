@@ -94,7 +94,7 @@ section .sub{color:var(--muted);margin:0 0 16px;font-size:.92rem;max-width:62ch}
 
 /* ---------- card: full-bleed sleeve art, text on a dark fade ---------- */
 .cq{container-type:inline-size;width:100%}
-.card{--c:hsl(var(--h) 85% 66%);position:relative;width:100%;aspect-ratio:63/88;border-radius:5cqw;
+.card{--c:hsl(var(--h) 85% 66%);position:relative;width:100%;aspect-ratio:63/88;min-height:0;contain:size layout paint;border-radius:5cqw;
   background:var(--rc);padding:1.6cqw;box-shadow:0 8px 22px rgba(0,0,0,.5);overflow:hidden;color:#fff;text-align:left;user-select:none}
 .card .in{position:relative;height:100%;border-radius:3.8cqw;overflow:hidden;background:hsl(var(--h) 40% 12%);display:flex;flex-direction:column}
 .card .in>.bg{position:absolute;inset:-12%;width:124%;height:124%;object-fit:cover;filter:blur(18px) saturate(1.3) brightness(.75);transform:translateZ(0)}

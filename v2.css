@@ -154,3 +154,36 @@
 .dcard .sweep{position:absolute;inset:0;z-index:9;pointer-events:none;border-radius:inherit;mix-blend-mode:screen;
   background:linear-gradient(115deg,transparent 38%,rgba(214,232,255,.10) 45%,rgba(240,248,255,.45) 50%,rgba(214,232,255,.10) 55%,transparent 62%);background-size:320% 100%;background-position:120% 0;animation:sweep 7s cubic-bezier(.45,0,.25,1) infinite}
 @media (prefers-reduced-motion:reduce){.dcard .sweep{animation:none}}
+
+/* ---------- Disque de diamant · Prisme: a glacier frame that throws rainbow fire as the light turns, the name in iced chrome ---------- */
+@property --mx{syntax:"<number>";inherits:true;initial-value:.3}
+@property --my{syntax:"<number>";inherits:true;initial-value:.4}
+@keyframes prism{0%{--mx:0;--my:.2}50%{--mx:1;--my:.8}100%{--mx:0;--my:.2}}
+.dcard{padding:3.4cqw;animation:prism 9s ease-in-out infinite;
+  background:conic-gradient(from calc(var(--mx) * 360deg) at 50% 50%,#e9f8ff,#9fd8ff,#ffffff,#b8e6ff,#ffd6f2 8%,#d6f6ff,#fff7c9 4%,#a6dcff,#ffffff,#8fd0ff,#e9f8ff);
+  box-shadow:0 10px 26px rgba(0,0,0,.55),0 0 34px rgba(159,216,255,.28)}
+.dcard::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;mix-blend-mode:overlay;
+  background:repeating-linear-gradient(115deg,rgba(255,255,255,0) 0 3cqw,rgba(255,255,255,.45) 3.2cqw,rgba(255,255,255,0) 3.6cqw 6cqw)}
+.dcard .fire{position:absolute;inset:0;z-index:1;pointer-events:none;mix-blend-mode:color-dodge;opacity:.55;border-radius:inherit;
+  background:linear-gradient(calc(var(--mx) * 180deg + 30deg),transparent 35%,rgba(255,80,80,.35) 42%,rgba(255,220,80,.35) 46%,rgba(80,255,160,.35) 50%,rgba(80,170,255,.4) 54%,rgba(190,90,255,.35) 58%,transparent 65%);
+  background-size:220% 220%;background-position:calc(var(--mx) * 100%) calc(var(--my) * 100%)}
+.dcard .in{z-index:2;border-radius:3cqw;box-shadow:0 0 0 .35cqw rgba(255,255,255,.6)}
+.dcard .ice{display:none}
+.dcard .shade{background:linear-gradient(180deg,rgba(4,10,22,.35),transparent 24%,transparent 48%,rgba(4,10,22,.94) 86%)}
+.dcard .vname{margin-left:9cqw}
+.dcard .chrome .depth{color:#0c2a4a;text-shadow:.15cqw .15cqw 0 #0e2f52,.3cqw .3cqw 0 #0e2f52,.45cqw .45cqw 0 #0c2a4a,.6cqw .6cqw 0 #0a2442,.75cqw .75cqw 0 #081e38,1.6cqw 1.8cqw 2cqw rgba(0,0,0,.7)}
+.dcard .chrome .face{background:linear-gradient(180deg,#ffffff 0%,#e3f6ff 30%,#6fbef0 48%,#0c2a4a 52%,#8fd2fb 66%,#f2fbff 85%,#bfe6ff);-webkit-background-clip:text!important;background-clip:text!important;color:transparent}
+.dcard .badge{background:rgba(6,16,32,.6);border-color:#d6f0ff}
+.dcard .pw{border-color:#d6f0ff;background:rgba(6,16,32,.55)}
+.dcard .sig{background:linear-gradient(100deg,#8fd0ff,#ffffff 35%,#ffd6f2 50%,#bfe8ff 65%,#8fd0ff);-webkit-background-clip:text;background-clip:text}
+.dcard .stl{color:rgba(214,240,255,.8)}
+.dcard.bd{background:conic-gradient(from calc(var(--mx) * 360deg) at 50% 50%,#05070c,#3a5a80,#05070c,#bfe8ff 6%,#05070c,#2a4060,#05070c,#9fd8ff 5%,#05070c);
+  box-shadow:0 10px 26px rgba(0,0,0,.7),0 0 30px rgba(159,216,255,.18)}
+.dcard.bd .in{box-shadow:0 0 0 .35cqw rgba(191,232,255,.55)}
+.dcard.bd .badge,.dcard.bd .pw{background:#000;border-color:#bfe8ff}
+.dcard.bd .chrome .depth{color:#000;text-shadow:.15cqw .15cqw 0 #05070c,.3cqw .3cqw 0 #05070c,.45cqw .45cqw 0 #05070c,.6cqw .6cqw 0 #05070c,1.4cqw 1.6cqw 2cqw rgba(0,0,0,.8)}
+.dcard.bd .chrome .face{background:linear-gradient(180deg,#ffffff 0%,#e8f6ff 30%,#9fb8d0 48%,#1a2232 52%,#bfe8ff 66%,#ffffff 85%,#cfe4f5);-webkit-background-clip:text!important;background-clip:text!important;color:transparent}
+.dcard.bd .sig{background:linear-gradient(100deg,#9fb8d0,#ffffff 35%,#bfe8ff 55%,#ffffff 75%,#9fb8d0);-webkit-background-clip:text;background-clip:text}
+.dcard .ribbon,.dcard .sweep{z-index:10}
+.big .dcard{animation:none}
+@media (prefers-reduced-motion:reduce){.dcard{animation:none}}

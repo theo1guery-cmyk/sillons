@@ -426,14 +426,14 @@ function artistStats(c) {
 // certification's material (kraft, lacquer, silver, gold, platinum, cut crystal)
 function artistCardEl(c, holo) {
   const st = artistStats(c);
-  if (c.tier === 5 && c.cov) {             // Disque de diamant: the Icône. Its Shiny is the Black Diamond (black lacquer, platinum, photo in black and white)
+  if (c.tier === 5 && c.cov) {             // Disque de diamant: the Prisme, a glacier frame throwing rainbow fire. Its Shiny is the Black Diamond (black crystal, photo in black and white)
     const shiny = holo && !c.collector, name = c.t.toUpperCase();
     const sig = c.t === c.t.toUpperCase() ? c.t.toLowerCase().replace(/(^|[\s-])\p{L}/gu, m => m.toUpperCase()) : c.t;
     const nfs = Math.min(16, fitCqw(name, LEG_TITLE_FONT, -.02, 108)), sfs = Math.min(12, fitCqw(sig, LEG_SIG_FONT, 0, 64));
     const fans = c.rank >= 1e6 ? (c.rank / 1e6).toFixed(1).replace(".", ",") + " M" : fmtFans(c.rank);
     const el = document.createElement("div");
     el.className = "dcard" + (shiny ? " bd" : "") + (c.collector ? " collector" : ""); el.dataset.cert = 5; el.dataset.r = 5;
-    el.innerHTML = `<div class="in"><img class="photo" src="${esc(c.cov.replace(/\/\d+x\d+-/, "/1000x1000-"))}" alt="Photo de ${esc(c.t)}" loading="lazy" decoding="async"><div class="ice"></div><div class="shade"></div>
+    el.innerHTML = `<div class="fire"></div><div class="in"><img class="photo" src="${esc(c.cov.replace(/\/\d+x\d+-/, "/1000x1000-"))}" alt="Photo de ${esc(c.t)}" loading="lazy" decoding="async"><div class="ice"></div><div class="shade"></div>
       <div class="vname"><span class="chrome" style="font-size:${nfs.toFixed(2)}cqw"><span class="depth">${esc(name)}</span><span class="face">${esc(name)}</span></span></div>
       <div class="head"><span class="badge"><span class="gem"></span>${shiny ? "BLACK DIAMOND" : "DIAMANT"}</span><span class="pw" title="Puissance">${st.pw}</span></div>
       <div class="foot"><div class="sig" style="font-size:${sfs.toFixed(2)}cqw">${esc(sig)}</div><div class="fans">${fans}<small>FANS SUR DEEZER</small></div>
@@ -1396,7 +1396,7 @@ function openModal(c, shiny) {
   box.onpointermove = e => {
     const r = box.getBoundingClientRect(), px = (e.clientX - r.left) / r.width, py = (e.clientY - r.top) / r.height;
     w.style.transform = `rotateY(${(px - .5) * 22}deg) rotateX(${(.5 - py) * 22}deg)`;
-    w.style.setProperty("--fx", px * 100 + "%"); w.style.setProperty("--fy", py * 100 + "%");
+    w.style.setProperty("--fx", px * 100 + "%"); w.style.setProperty("--fy", py * 100 + "%"); w.style.setProperty("--mx", px.toFixed(3)); w.style.setProperty("--my", py.toFixed(3));
   };
   box.onpointerleave = () => { w.style.transform = ""; };
 }
