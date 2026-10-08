@@ -242,7 +242,7 @@
     }
   }
   function syncCatalog() {
-    const browsing = !CAT.q;
+    const browsing = !CAT.q && CAT.mode !== "artists";   // the artists are a plain grid
     cat.classList.toggle("v3-browse", browsing);
     if (browsing && !rowsBuilt && !cat.hidden) buildRows();
   }

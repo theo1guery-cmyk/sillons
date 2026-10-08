@@ -531,7 +531,7 @@ function show(v) {
   for (const k in views) { views[k].hidden = k !== v; $("#tab-" + k).setAttribute("aria-selected", k === v); }
   if (!busy) unseatTable();   // leaving the tab puts the booster back
   if (v === "binder") { renderBinder(); Online.renderDiscard?.(); }
-  if (v === "catalog") { if (!CAT.loaded) catLoad(true); else renderCatalog(); }
+  if (v === "catalog") { if (!(CAT.mode === "artists" ? ART : CAT).loaded) catLoad(true); else renderCatalog(); }
   if (v === "trades") Online.renderTrades();
   if (v === "defis") Online.renderDefis();
   if (v === "market") Online.renderMarket();
@@ -1291,6 +1291,7 @@ const catCard = t => {
 };
 
 async function catLoad(reset) {
+  if (CAT.mode === "artists") return artLoad(reset);
   const seq = ++CAT.seq;
   CAT.loading = true;
   if (reset) { CAT.items = []; CAT.index = 0; CAT.total = 0; CAT.wanted = 24; $("#catalog").innerHTML = ""; }
@@ -1323,6 +1324,7 @@ async function catLoad(reset) {
 
 let catObserver = null;
 function renderCatalog() {
+  if (CAT.mode === "artists") return renderArtists();
   $("#catFilters").innerHTML = [-1, ...RAR.keys()].map(r => `<button class="chip" data-r="${r}" aria-pressed="${CAT.r === r}">${r < 0 ? "Toutes raretés" : `<i style="background:${RCOL[r]}"></i>${RAR[r]}`}</button>`).join("") +
     `<label for="catOwn">Afficher <select id="catOwn"><option value="all">toutes les cartes</option><option value="own">mes cartes</option><option value="miss">à trouver</option></select></label>`;
   $("#catOwn").value = CAT.own;
@@ -1387,13 +1389,91 @@ async function completeCell(cell) {
   return fullCards[t.id];
 }
 
+/* ---------- catalogue, artists: the artists of the moment, or any Deezer artist by name ---------- */
+const ART = { q: "", items: [], ids: [], index: 0, total: 0, loaded: false, loading: false, seq: 0, r: -1, own: "all" };
+const artistCard = a => ({ kind: "artist", id: "a" + a.id, aid: a.id, t: a.name, a: "Artiste", al: "", cov: (a.picture_big || a.picture_medium || "").replace(/^http:/, "https:"),
+  rank: a.nb_fan || 0, albums: a.nb_album || 0, tier: certOf(a.nb_fan || 0, a.id), collector: false, g: null });
+async function artLoad(reset) {
+  const seq = ++ART.seq;
+  if (reset) { ART.items = []; ART.ids = []; ART.index = 0; ART.total = 0; $("#catalog").innerHTML = ""; }
+  ART.loaded = true; ART.loading = true;
+  $("#catMore").hidden = true;
+  $("#catStatus").textContent = "Chargement des artistes…";
+  try {
+    if (!ART.q) {
+      // the artists of the moment (the Deezer chart), plus the Diamants d'honneur; the chart has no fan counts, so each
+      // artist is fetched, 24 at a time
+      if (!ART.ids.length) ART.ids = [...new Set([...HONOR, ...((await dz("chart/0/artists", { limit: 100 }, true)).data || []).map(a => a.id)])];
+      const next = ART.ids.slice(ART.index, ART.index + PAGE);
+      const got = await Promise.all(next.map(id => dz("artist/" + id, {}, true).catch(() => null)));
+      if (seq !== ART.seq) return;
+      ART.items.push(...got.filter(a => a && a.id)); ART.index += next.length; ART.total = ART.ids.length;
+    } else {
+      const d = await dz("search/artist", { q: ART.q, limit: PAGE, index: ART.index }, true);
+      if (seq !== ART.seq) return;
+      const seen = new Set(ART.items.map(a => a.id));
+      ART.items.push(...(d.data || []).filter(a => !seen.has(a.id))); ART.index += (d.data || []).length || PAGE; ART.total = d.total || 0;
+    }
+    ART.loading = false;
+    renderCatalog();
+  } catch (e) {
+    if (seq !== ART.seq) return;
+    ART.loading = false;
+    $("#catStatus").textContent = e.code === 4 ? "Deezer limite le nombre de demandes. Attends quelques secondes puis réessaie." : "Deezer ne répond pas. Vérifie ta connexion puis réessaie.";
+  }
+}
+function renderArtists() {
+  $("#catFilters").innerHTML = [-1, ...CERT.keys()].map(r => `<button class="chip" data-r="${r}" aria-pressed="${ART.r === r}">${r < 0 ? "Toutes certifications" : `<i style="background:${CCOL[r]}"></i>${CERT[r]}`}</button>`).join("") +
+    `<label for="catOwn">Afficher <select id="catOwn"><option value="all">tous les artistes</option><option value="own">mes cartes</option><option value="miss">à trouver</option></select></label>`;
+  $("#catOwn").value = ART.own;
+  $("#catFilters").querySelectorAll(".chip").forEach(b => b.onclick = () => { ART.r = +b.dataset.r; renderArtists(); });
+  $("#catOwn").onchange = e => { ART.own = e.target.value; renderArtists(); };
+  // the best artists first (a search for "travis" puts Travis Scott before the many small Travis)
+  const all = [...ART.items].sort((a, b) => certOf(b.nb_fan, b.id) - certOf(a.nb_fan, a.id) || b.nb_fan - a.nb_fan);
+  const list = all.filter(a => (ART.r < 0 || certOf(a.nb_fan, a.id) === ART.r) && (ART.own === "all" || (ART.own === "own") === ownsTrack("a" + a.id)));
+  const ownedHere = ART.items.filter(a => ownsTrack("a" + a.id)).length;
+  $("#catStatus").textContent = !ART.items.length
+    ? (ART.q ? `Aucun artiste trouvé pour « ${ART.q} ».` : "Aucun artiste à afficher.")
+    : `${ART.q ? fmt(ART.total) + " artistes pour « " + ART.q + " »" : "Les artistes du moment sur Deezer"} · ${fmt(ART.items.length)} affichés, dont ${ownedHere} dans ta collection`;
+  const grid = $("#catalog"); grid.innerHTML = "";
+  CAT.sentinel?.remove(); CAT.endObserver?.disconnect(); catObserver?.disconnect();
+  if (ART.items.length && !list.length) grid.innerHTML = `<div class="empty">Aucun artiste ne correspond à ces filtres.</div>`;
+  for (const a of list) {
+    const c = artistCard(a), own = versionsOf(c.id).reduce((b, v) => !b || v.tier > b.tier ? v : b, null);
+    const b = document.createElement("button");
+    b.className = "cell" + (own ? "" : " locked");
+    b.setAttribute("aria-label", c.t + ", " + CERT[(own || c).tier] + (own ? ", dans ta collection" : ", pas encore trouvé"));
+    b.appendChild(cardEl(own || c, own?.holo > 0));
+    if (own) { if (own.n > 1) { const n = document.createElement("span"); n.className = "cnt"; n.textContent = "×" + own.n; b.appendChild(n); } }
+    else { const l = document.createElement("span"); l.className = "lock"; l.textContent = "À trouver"; b.appendChild(l); }
+    b.onclick = () => openModal(own || c);
+    grid.appendChild(b);
+  }
+  $("#catMore").hidden = ART.loading || ART.index >= ART.total;
+  $("#catMore").textContent = "Voir plus d'artistes";
+}
+
+// Morceaux / Artistes
+function setCatMode(m) {
+  CAT.mode = m;
+  document.querySelectorAll("#catMode button").forEach(b => b.setAttribute("aria-pressed", b.dataset.m === m));
+  $("#q").placeholder = m === "artists" ? "Nom d'un artiste : Daft Punk, Aya Nakamura…" : "Titre ou artiste : Daft Punk, Bohemian Rhapsody…";
+  $("#qOrder").hidden = m === "artists";
+  $("#q").value = m === "artists" ? ART.q : CAT.q;
+  $("#catMore").textContent = m === "artists" ? "Voir plus d'artistes" : "Voir plus de cartes";
+  const st = m === "artists" ? ART : CAT;
+  if (!st.loaded) catLoad(true); else { if (m !== "artists") $("#catMore").hidden = true; renderCatalog(); }
+}
+document.querySelectorAll("#catMode button").forEach(b => b.onclick = () => setCatMode(b.dataset.m));
+
 let searchTimer;
+const catSearch = () => { const q = $("#q").value.trim(); if (CAT.mode === "artists") ART.q = q; else CAT.q = q; catLoad(true); };
 $("#q").addEventListener("input", () => {
   clearTimeout(searchTimer);
-  searchTimer = setTimeout(() => { CAT.q = $("#q").value.trim(); catLoad(true); }, 350);
+  searchTimer = setTimeout(catSearch, 350);
 });
 $("#qOrder").onchange = () => { CAT.order = $("#qOrder").value; if (CAT.q) catLoad(true); };
-$("#searchForm").onsubmit = e => { e.preventDefault(); clearTimeout(searchTimer); CAT.q = $("#q").value.trim(); catLoad(true); };
+$("#searchForm").onsubmit = e => { e.preventDefault(); clearTimeout(searchTimer); catSearch(); };
 $("#catMore").onclick = () => catLoad(false);
 
 /* ---------- detail + preview audio ---------- */

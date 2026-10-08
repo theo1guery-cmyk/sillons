@@ -191,6 +191,10 @@ img{max-width:100%}
 .search input:focus{outline:2px solid var(--brass);outline-offset:1px}
 .search select{background:var(--felt-2);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:0 10px;font:inherit;font-size:.86rem;min-height:46px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.cat-mode{display:inline-flex;gap:4px;padding:4px;margin:0 0 14px;border:1px solid var(--line);border-radius:999px;background:rgba(0,0,0,.28)}
+.cat-mode button{border:0;background:none;color:var(--muted);font:600 .9rem var(--display,inherit);padding:8px 18px;border-radius:999px;cursor:pointer;transition:background .2s,color .2s}
+.cat-mode button[aria-pressed="true"]{background:var(--ink);color:#0b0910}
+.cat-mode button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 .cat-status{margin:0 0 14px;color:var(--muted);font-size:.86rem;min-height:1.3em}
 .more{display:flex;justify-content:center;margin-top:20px}
 .cell.locked .cq{filter:saturate(.35) brightness(.72);transition:filter .2s ease}
