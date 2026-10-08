@@ -187,3 +187,9 @@
 .dcard .ribbon,.dcard .sweep{z-index:10}
 .big .dcard{animation:none}
 @media (prefers-reduced-motion:reduce){.dcard{animation:none}}
+
+/* iOS Safari can leave a percentage height unresolved inside an aspect-ratio box: the inside then outgrows the
+   coloured frame and the frame looks cut at the bottom. Anchor the inside to the frame instead of sizing it. */
+.card .in{position:absolute;inset:1.6cqw;height:auto}
+.dcard .in{position:absolute;inset:3.4cqw;height:auto}
+.acard .frame{position:absolute;inset:4.2cqw;height:auto}
