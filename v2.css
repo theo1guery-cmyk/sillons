@@ -155,41 +155,76 @@
   background:linear-gradient(115deg,transparent 38%,rgba(214,232,255,.10) 45%,rgba(240,248,255,.45) 50%,rgba(214,232,255,.10) 55%,transparent 62%);background-size:320% 100%;background-position:120% 0;animation:sweep 7s cubic-bezier(.45,0,.25,1) infinite}
 @media (prefers-reduced-motion:reduce){.dcard .sweep{animation:none}}
 
-/* ---------- Disque de diamant · Prisme: a glacier frame that throws rainbow fire as the light turns, the name in iced chrome ---------- */
-@property --mx{syntax:"<number>";inherits:true;initial-value:.3}
-@property --my{syntax:"<number>";inherits:true;initial-value:.4}
-@keyframes prism{0%{--mx:0;--my:.2}50%{--mx:1;--my:.8}100%{--mx:0;--my:.2}}
-.dcard{padding:3.4cqw;animation:prism 9s ease-in-out infinite;
-  background:conic-gradient(from calc(var(--mx) * 360deg) at 50% 50%,#e9f8ff,#9fd8ff,#ffffff,#b8e6ff,#ffd6f2 8%,#d6f6ff,#fff7c9 4%,#a6dcff,#ffffff,#8fd0ff,#e9f8ff);
-  box-shadow:0 10px 26px rgba(0,0,0,.55),0 0 34px rgba(159,216,255,.28)}
-.dcard::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;mix-blend-mode:overlay;
-  background:repeating-linear-gradient(115deg,rgba(255,255,255,0) 0 3cqw,rgba(255,255,255,.45) 3.2cqw,rgba(255,255,255,0) 3.6cqw 6cqw)}
-.dcard .fire{position:absolute;inset:0;z-index:1;pointer-events:none;mix-blend-mode:color-dodge;opacity:.55;border-radius:inherit;
-  background:linear-gradient(calc(var(--mx) * 180deg + 30deg),transparent 35%,rgba(255,80,80,.35) 42%,rgba(255,220,80,.35) 46%,rgba(80,255,160,.35) 50%,rgba(80,170,255,.4) 54%,rgba(190,90,255,.35) 58%,transparent 65%);
-  background-size:220% 220%;background-position:calc(var(--mx) * 100%) calc(var(--my) * 100%)}
-.dcard .in{z-index:2;border-radius:3cqw;box-shadow:0 0 0 .35cqw rgba(255,255,255,.6)}
-.dcard .ice{display:none}
-.dcard .shade{background:linear-gradient(180deg,rgba(4,10,22,.35),transparent 24%,transparent 48%,rgba(4,10,22,.94) 86%)}
-.dcard .vname{margin-left:9cqw}
-.dcard .chrome .depth{color:#0c2a4a;text-shadow:.15cqw .15cqw 0 #0e2f52,.3cqw .3cqw 0 #0e2f52,.45cqw .45cqw 0 #0c2a4a,.6cqw .6cqw 0 #0a2442,.75cqw .75cqw 0 #081e38,1.6cqw 1.8cqw 2cqw rgba(0,0,0,.7)}
-.dcard .chrome .face{background:linear-gradient(180deg,#ffffff 0%,#e3f6ff 30%,#6fbef0 48%,#0c2a4a 52%,#8fd2fb 66%,#f2fbff 85%,#bfe6ff);-webkit-background-clip:text!important;background-clip:text!important;color:transparent}
-.dcard .badge{background:rgba(6,16,32,.6);border-color:#d6f0ff}
-.dcard .pw{border-color:#d6f0ff;background:rgba(6,16,32,.55)}
-.dcard .sig{background:linear-gradient(100deg,#8fd0ff,#ffffff 35%,#ffd6f2 50%,#bfe8ff 65%,#8fd0ff);-webkit-background-clip:text;background-clip:text}
-.dcard .stl{color:rgba(214,240,255,.8)}
-.dcard.bd{background:conic-gradient(from calc(var(--mx) * 360deg) at 50% 50%,#05070c,#3a5a80,#05070c,#bfe8ff 6%,#05070c,#2a4060,#05070c,#9fd8ff 5%,#05070c);
-  box-shadow:0 10px 26px rgba(0,0,0,.7),0 0 30px rgba(159,216,255,.18)}
-.dcard.bd .in{box-shadow:0 0 0 .35cqw rgba(191,232,255,.55)}
-.dcard.bd .badge,.dcard.bd .pw{background:#000;border-color:#bfe8ff}
-.dcard.bd .chrome .depth{color:#000;text-shadow:.15cqw .15cqw 0 #05070c,.3cqw .3cqw 0 #05070c,.45cqw .45cqw 0 #05070c,.6cqw .6cqw 0 #05070c,1.4cqw 1.6cqw 2cqw rgba(0,0,0,.8)}
-.dcard.bd .chrome .face{background:linear-gradient(180deg,#ffffff 0%,#e8f6ff 30%,#9fb8d0 48%,#1a2232 52%,#bfe8ff 66%,#ffffff 85%,#cfe4f5);-webkit-background-clip:text!important;background-clip:text!important;color:transparent}
-.dcard.bd .sig{background:linear-gradient(100deg,#9fb8d0,#ffffff 35%,#bfe8ff 55%,#ffffff 75%,#9fb8d0);-webkit-background-clip:text;background-clip:text}
+/* ---------- Disque de diamant: the very first Diamant look — an octagon cut like a stone, an iridescent frame turning
+   through ice, pink, champagne and mint, a dark inner bezel, sparkles and foil — with the name down the side and the signature ---------- */
+.dcard{border-radius:0;padding:0;box-shadow:none;clip-path:polygon(9% 0,91% 0,100% 6.5%,100% 93.5%,91% 100%,9% 100%,0 93.5%,0 6.5%);
+  background:conic-gradient(from var(--spin,0deg),#bdf0ff,#f8c8ff,#fff7c2,#c2ffe1,#bdf0ff,#f8c8ff,#fff7c2,#bdf0ff);animation:spin 6s linear infinite}
+.dcard::before{content:"";position:absolute;inset:1.9cqw;z-index:1;background:rgba(0,0,0,.45);clip-path:polygon(8% 0,92% 0,100% 6%,100% 94%,92% 100%,8% 100%,0 94%,0 6%)}
+.dcard .in{z-index:2;border-radius:0;box-shadow:none;background:#120e16;clip-path:polygon(7% 0,93% 0,100% 5.5%,100% 94.5%,93% 100%,7% 100%,0 94.5%,0 5.5%)}
+.dcard .ice{z-index:4;opacity:1;mix-blend-mode:normal;pointer-events:none;
+  background:radial-gradient(circle at 22% 18%,#fff 0 .5cqw,transparent 1.5cqw),radial-gradient(circle at 80% 38%,#fff 0 .4cqw,transparent 1.2cqw),radial-gradient(circle at 64% 10%,#fff 0 .3cqw,transparent 1cqw),radial-gradient(circle at 12% 56%,#fff 0 .3cqw,transparent 1cqw);
+  animation:dtwinkle 2.4s ease-in-out infinite}
+@keyframes dtwinkle{0%,100%{opacity:.2}50%{opacity:1}}
+.dcard .pave{position:absolute;inset:0;z-index:3;pointer-events:none;mix-blend-mode:color-dodge;opacity:.35;
+  background:linear-gradient(115deg,transparent 25%,rgba(255,80,160,.55) 38%,rgba(255,220,90,.55) 46%,rgba(80,255,200,.5) 54%,rgba(90,140,255,.55) 62%,transparent 75%);
+  background-size:260% 260%;animation:foil 5s linear infinite}
+.dcard .head{left:5.5cqw;right:5.5cqw;top:4.2cqw}
+.dcard .badge,.dcard .pw{background:rgba(0,0,0,.55);border-color:#bdf0ff}
+.dcard .foot{bottom:5cqw}
+.dcard .tw{display:none}
+/* its Shiny, the Black Diamond: the same stone, cut in black — a dark iridescent frame, the photo in black and white */
+.dcard.bd{background:conic-gradient(from var(--spin,0deg),#0b0b0f,#3d4a5c,#0b0b0f,#bdf0ff 7%,#0b0b0f,#5a4560,#0b0b0f,#f8c8ff 5%,#0b0b0f);box-shadow:none}
+.dcard.bd::before{background:rgba(0,0,0,.7)}
+.dcard.bd .in{background:#050506;box-shadow:none}
+.dcard.bd .pave{opacity:.22}
+.dcard.bd .ice{display:block}
+.dcard.bd .badge,.dcard.bd .pw{background:#000;border-color:#d6e2f2}
 .dcard .ribbon,.dcard .sweep{z-index:10}
-.big .dcard{animation:none}
-@media (prefers-reduced-motion:reduce){.dcard{animation:none}}
+.big .dcard .pave{animation:none;background-position:var(--fx,50%) var(--fy,50%)}
+@media (prefers-reduced-motion:reduce){.dcard,.dcard .ice,.dcard .pave{animation:none}}
+
+/* the black versions: a black lacquer stone with a thin edge of colour — iridescent for the Shiny, gold for the Collector */
+.dcard.bd,.dcard.collector{background:conic-gradient(from var(--spin,0deg),#bdf0ff,#f8c8ff,#fff7c2,#c2ffe1,#bdf0ff,#f8c8ff,#fff7c2,#bdf0ff)}
+.dcard.collector{background:linear-gradient(135deg,#7a5a14,#f7e08a 22%,#b38a26 40%,#fff1b0 58%,#8f6b18 78%,#efd27a);animation:none}
+.dcard.bd::after,.dcard.collector::after{content:"";position:absolute;inset:.6cqw;z-index:0;clip-path:polygon(8.6% 0,91.4% 0,100% 6.2%,100% 93.8%,91.4% 100%,8.6% 100%,0 93.8%,0 6.2%);
+  background:linear-gradient(145deg,#050506,#24222a 30%,#0a0a0c 50%,#2c2a33 70%,#060607)}
+.dcard.bd::before,.dcard.collector::before{background:#000}
+.dcard.bd .photo,.dcard.collector .photo{filter:grayscale(1) contrast(1.3) brightness(1.02)}
+.dcard.bd .in,.dcard.collector .in{background:#050506}
+.dcard.bd .chrome .face{background:linear-gradient(180deg,#ffffff 0%,#bdf0ff 25%,#f8c8ff 45%,#2a2433 50%,#fff7c2 62%,#c2ffe1 80%,#ffffff 100%);-webkit-background-clip:text!important;background-clip:text!important;color:transparent}
+.dcard.bd .sig{background:linear-gradient(100deg,#bdf0ff,#ffffff 30%,#f8c8ff 50%,#fff7c2 70%,#c2ffe1);-webkit-background-clip:text;background-clip:text}
+.dcard.bd .pave{opacity:.55}
+.dcard.bd .fans small{color:#f8c8ff}
+.dcard.collector .chrome .depth{color:#000;text-shadow:.15cqw .15cqw 0 #0b0b0d,.3cqw .3cqw 0 #0b0b0d,.45cqw .45cqw 0 #0b0b0d,.6cqw .6cqw 0 #0b0b0d,1.4cqw 1.6cqw 2cqw rgba(0,0,0,.8)}
+.dcard.collector .chrome .face{background:linear-gradient(180deg,#fff6cf 0%,#f7e08a 30%,#b38a26 48%,#3a2a08 52%,#d9a83f 66%,#fff1b0 85%,#efd27a);-webkit-background-clip:text!important;background-clip:text!important;color:transparent}
+.dcard.collector .sig{background:linear-gradient(100deg,#b8862b,#fff1b8 30%,#d9a83f 55%,#fff6cf 75%,#b8862b);-webkit-background-clip:text;background-clip:text}
+.dcard.collector .badge,.dcard.collector .pw{background:#000;border-color:#e9c46a;color:#f5d27a}
+.dcard.collector .gem{background:linear-gradient(135deg,#fff6cf,#d9a83f 50%,#fff1b8)}
+.dcard.collector .fans small,.dcard.collector .stl{color:#e9c46a}
+.dcard.collector .pave{display:none}
+.dcard.collector .ribbon{background:#000;color:#f5d27a;border-color:#e9c46a}
+
+/* the Shiny is metal, not hologram: a silver edge, silver chrome, and only a white light when you pass over it */
+.dcard.bd{background:linear-gradient(135deg,#ffffff,#b9c4d6 22%,#6f7c94 40%,#eef3fb 58%,#8e9bb3 78%,#ffffff);animation:none}
+.dcard.bd .pave{display:none}
+.dcard.bd .chrome .face{background:linear-gradient(180deg,#ffffff 0%,#e4ecf7 30%,#8391a9 48%,#1d2638 52%,#9fb2cc 66%,#f4f8ff 85%,#b9c7da 100%);-webkit-background-clip:text!important;background-clip:text!important;color:transparent}
+.dcard.bd .sig{background:linear-gradient(100deg,#8d9ab0,#ffffff 30%,#cfd9e8 55%,#ffffff 75%,#8d9ab0);-webkit-background-clip:text;background-clip:text}
+.dcard.bd .fans small{color:#d6e2f2}
+/* the same Shiny light as the music cards: a warm sweep every few seconds, under the finger in the big view */
+.dcard.bd .sweep{opacity:1;mix-blend-mode:screen;animation:sweep 7s cubic-bezier(.45,0,.25,1) infinite;
+  background:linear-gradient(115deg,transparent 38%,rgba(255,236,190,.10) 45%,rgba(255,248,230,.42) 50%,rgba(255,236,190,.10) 55%,transparent 62%) 120% 0/320% 100%}
+.big .dcard.bd .sweep{animation:none;background-position:calc(110% - var(--fx,50%) * 1.3) 0}
+/* gold outlines on the lettering */
+/* the outline sits on the layer behind the chrome: a clean gold edge all round, no stroke drawn over the letters */
+.dcard.bd .chrome{filter:drop-shadow(.8cqw 1cqw 1.2cqw rgba(0,0,0,.75))}
+.dcard.bd .chrome .depth{color:transparent;text-shadow:none;-webkit-text-stroke:.7cqw #e9c46a}
+.dcard.bd .sig{-webkit-text-stroke:.12cqw #e9c46a}
+.dcard.bd .fans{-webkit-text-stroke:.18cqw #e9c46a}
+.dcard.bd .badge,.dcard.bd .pw{border-color:#e9c46a}
+.dcard.bd .ribbon{border-color:#e9c46a}
 
 /* iOS Safari can leave a percentage height unresolved inside an aspect-ratio box: the inside then outgrows the
    coloured frame and the frame looks cut at the bottom. Anchor the inside to the frame instead of sizing it. */
 .card .in{position:absolute;inset:1.6cqw;height:auto}
-.dcard .in{position:absolute;inset:3.4cqw;height:auto}
+.dcard .in{position:absolute;inset:2.6cqw;height:auto}
 .acard .frame{position:absolute;inset:4.2cqw;height:auto}
