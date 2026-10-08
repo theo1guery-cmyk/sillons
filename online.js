@@ -1393,7 +1393,7 @@ async function buildWall() {
     }
     const artists = await Promise.all([246791, 27, 13].map(id => dz("artist/" + id).catch(() => null)));
     const artistCards = artists.filter(a => a && a.id).map((a, i) => ({ kind: "artist", id: "a" + a.id, aid: a.id, t: a.name, a: "Artiste",
-      cov: (a.picture_big || "").replace("http:", "https:"), rank: a.nb_fan, albums: a.nb_album || 0, tier: certOf(a.nb_fan), collector: i === 2 }));
+      cov: (a.picture_big || "").replace("http:", "https:"), rank: a.nb_fan, albums: a.nb_album || 0, tier: certOf(a.nb_fan, a.id), collector: i === 2 }));
     const best = picked.filter(c => c.tier >= MYTH);
     const shinyId = best[0]?.id;
     const all = [...picked.sort(() => Math.random() - .5)];

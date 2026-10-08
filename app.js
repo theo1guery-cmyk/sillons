@@ -58,9 +58,12 @@ const MYTH = 4, LEG = 5, TOP = RAR.length - 1;
 // artist cards: their rarity is a sales certification, from Deezer fans
 const CERT = ["Démo", "Single", "Disque d'argent", "Disque d'or", "Disque de platine", "Disque de diamant"];
 const CCOL = ["var(--c0)", "var(--c1)", "var(--c2)", "var(--c3)", "var(--c4)", "var(--c5)"];
-const CERT_MIN = [0, 1000, 20000, 150000, 1000000, 10000000];
-const certOf = fans => CERT_MIN.reduce((t, m, i) => fans >= m ? i : t, 0);
-const inCert = (fans, t) => fans >= CERT_MIN[t] && (t === 5 || fans < CERT_MIN[t + 1]);
+const CERT_MIN = [0, 1000, 20000, 150000, 1000000, 7000000];
+// "Diamant d'honneur": stars that Deezer's mostly French audience undercounts (Travis Scott, Kanye West, Kendrick Lamar).
+// Same list on the server (cert_of in supabase/migrations/20261008000100_diamond_at_7m.sql)
+const HONOR = new Set([4495513, 230, 525046]);
+const certOf = (fans, id) => HONOR.has(+id) ? 5 : CERT_MIN.reduce((t, m, i) => fans >= m ? i : t, 0);
+const inCert = (fans, t, id) => certOf(fans, id) === t;
 const isArtist = c => c && c.kind === "artist";
 const rarName = c => isArtist(c) ? CERT[c.tier] : RAR[c.tier];
 const fmtFans = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 0 : 1).replace(".", ",") + " M" : n >= 1e3 ? Math.round(n / 1e3) + " k" : String(n);
@@ -248,6 +251,8 @@ async function certArtistPool(tier) {
     // the French chart, plus worldwide stars so the walk doesn't stay among French artists
     if (!famous.seeds) famous.seeds = [...((await dz("chart/0/artists", { limit: 100 })).data || []).map(a => a.id),
       246791, 13, 564, 4050205, 75798, 1424821, 1182, 27, 12246, 4495513, 5313805, 288166, 1188, 9635624];
+    if (!famous.honor) famous.honor = Promise.all([...HONOR].map(id => dz("artist/" + id).then(a => a.id && famous.pool.set(a.id, a)).catch(() => {})));
+    await famous.honor;
     const known = [...famous.pool.values()].filter(a => a.nb_fan >= CERT_MIN[3]);
     const from = known.length && Math.random() < .6 ? pick(known).id : pick(famous.seeds);
     const rel = (await dz(`artist/${from}/related`, { limit: 50 })).data || [];
@@ -258,11 +263,11 @@ async function certArtistPool(tier) {
   const d = await dz("search/artist", { q, limit: 100, index: randInt(tier >= 2 ? 50 : 150) });
   return d.data || [];
 }
-async function findArtist(tier, used) {
+async function findArtist(tier, used, owned = false) {   // owned: local previews may give an artist already in the collection
   let best = null;
   for (let attempt = 0; attempt < 12; attempt++) {
-    const pool = (await certArtistPool(tier).catch(() => [])).filter(a => a.id && a.nb_fan != null && !used.has(a.id) && !ownsTrack("a" + a.id));
-    const hits = pool.filter(a => inCert(a.nb_fan, tier));
+    const pool = (await certArtistPool(tier).catch(() => [])).filter(a => a.id && a.nb_fan != null && !used.has(a.id) && (owned || !ownsTrack("a" + a.id)));
+    const hits = pool.filter(a => inCert(a.nb_fan, tier, a.id));
     if (hits.length) return pick(hits);
     for (const a of pool) {
       const d = a.nb_fan < CERT_MIN[tier] ? CERT_MIN[tier] - a.nb_fan : tier < 5 ? a.nb_fan - CERT_MIN[tier + 1] : 0;
@@ -686,10 +691,10 @@ async function drawPack(p, god = false, forced = null, artistTier = null) {   //
   if (raws.length < 5 - (artistTier != null)) throw { code: "short" };
   const cards = await Promise.all(raws.map(t => enrich(t, p.g)));
   if (artistTier != null) {               // local preview: the last card is a certified artist
-    const f = await findArtist(artistTier, new Set());
+    const f = await findArtist(artistTier, new Set(), true);
     if (!f) throw { code: "short" };
     cards.push({ kind: "artist", id: "a" + f.id, aid: f.id, t: f.name, a: "Artiste", al: "", cov: (f.picture_big || f.picture_medium || "").replace("http:", "https:"),
-      rank: f.nb_fan, albums: f.nb_album || 0, tier: certOf(f.nb_fan), collector: false, g: null });
+      rank: f.nb_fan, albums: f.nb_album || 0, tier: certOf(f.nb_fan, f.id), collector: false, g: null });
   }
   const pulls = cards.map((c, i) => {
     const holo = c.tier >= MYTH && (devShiny || Math.random() < SHINY_CHANCE), prev = S.c[ck(c)];   // Shiny: Mythique / Légendaire only
@@ -712,8 +717,11 @@ async function openPack(p, opts = {}) {
   refill();
   if (!Online.active && !TEST_MODE && S.stock <= 0) { renderStock(); toast("Plus de booster pour l'instant. Le prochain arrive dans " + Math.ceil(nextRefillMs() / 60000) + " min."); return; }
   busy = true; lastPack = p;
+  // local preview only (#god, #demo, #shiny, #platine, #diamant…): drawn here even when signed in, and never sent to
+  // the server (with an account nothing is saved locally either, so the preview card is gone on reload)
+  const devHash = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && p === BOOSTER && /^#(god|demo|shiny|platine|diamant)(-shiny)?$/.test(location.hash) ? location.hash : "";
   let serverPack = null;                 // with an account the server rolls the rarities (and the GOD pack)
-  if (Online.active) {
+  if (Online.active && !devHash) {
     try { serverPack = await Online.startPack(p); }
     catch (e) { busy = false; renderStock(); toast(Online.message(e)); return; }
   }
@@ -724,9 +732,8 @@ async function openPack(p, opts = {}) {
   }
   renderStock();
   document.querySelectorAll(".pack, .offer .btn, #again, #openBig, #tableBack, #flipAll").forEach(b => b.disabled = true);
-  // local preview only: #god turns the next booster into a GOD pack,
+  // #god turns the next booster into a GOD pack,
   // #demo gives one with a Commune, a Peu commune, an Épique, a Mythique and a Légendaire
-  const devHash = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && p === BOOSTER && !serverPack ? location.hash : "";
   // #platine, #diamant, #platine-shiny, #diamant-shiny: four tracks then a certified artist (Shiny if asked)
   const devArtist = { "#platine": 4, "#diamant": 5, "#platine-shiny": 4, "#diamant-shiny": 5 }[devHash];
   if (devHash === "#god" || devHash === "#demo" || devHash === "#shiny" || devArtist != null) history.replaceState(null, "", location.pathname);
@@ -753,7 +760,7 @@ async function openPack(p, opts = {}) {
     const pulls = serverPack ? await Online.drawPack(p, serverPack) : await drawPack(p, god, opts.slots, opts.artist);
     if (god && reduceMotion()) toast("GOD PACK ! Que des Mythiques et des Légendaires.");   // the GOD pack has its own announcement
     renderCounters();
-    if (pulls.some(Stage.isHit)) Stage.prepare();
+    if (pulls.some(Stage.isHit)) Stage.prepare(pulls);
     for (const pl of pulls) if (Stage.isHit(pl)) Stage.warm(pl);   // the hits' tracks load while the first cards flip
     deal.innerHTML = "";
     const grid = document.createElement("div"); grid.className = "deal"; deal.appendChild(grid);
@@ -878,7 +885,7 @@ const Stage = (() => {
     // decode the artwork now, so it doesn't freeze the animation when the card comes out
     await Promise.race([Promise.all([...front.querySelectorAll("img")].map(i => i.decode().catch(() => {}))), wait(700)]);
     const title = pl.holo ? "SHINY" : rarName(pl.c).toUpperCase();
-    $s(".fx-title b").innerHTML = [...title].map((ch, k) => `<span style="--k:${k}">${ch === " " ? "&nbsp;" : ch}</span>`).join("");
+    $s(".fx-title b").style.setProperty("--n", title.length); $s(".fx-title b").innerHTML = [...title].map((ch, k) => `<span style="--k:${k}">${ch === " " ? "&nbsp;" : ch}</span>`).join("");
     $s(".fx-title small").textContent = (pl.isNew ? "Nouvelle carte · " : "Doublon · ") + (pl.holo ? rarName(pl.c) + " · " : "") + (isArtist(pl.c) ? pl.c.t : pl.c.a);
     $s(".fx-hint").textContent = "";
     sparks.start(col, big);
@@ -887,9 +894,28 @@ const Stage = (() => {
       if (url) { clearInterval(fading); audio.src = url; audio.volume = 0; audio.play().then(() => { fadeIn(); window.NowPlaying?.(pl.c, audio); }).catch(() => {}); }
     };
     const flash = () => { const f = document.createElement("div"); f.className = "flash"; document.body.appendChild(f); setTimeout(() => f.remove(), 900); };
-    const g = await Promise.race([load3d(), wait(1200)]);
+    // a Platine or Diamant artist gets its own film: the signed sleeve (falls back to the turntable, then to CSS)
+    const sl = isArtist(pl.c) && pl.c.tier >= MYTH && !reduceMotion() ? await Promise.race([loadSleeve(), wait(2500)]) : null;
+    const g = sl ? null : await Promise.race([load3d(), wait(1200)]);
     let r;
-    if (g) {
+    if (sl) {
+      el.classList.add("three", "sleeve");
+      const small = innerWidth <= 600;
+      const w = small ? Math.min(innerWidth * .62, 260) : Math.min(Math.min(innerWidth, innerHeight) * .44, 300);
+      const kind = pl.c.collector ? "collector" : pl.holo ? "shiny" : pl.c.tier >= LEG ? "diamant" : "platine";
+      let url = null;
+      r = await sl.play({ kind, w, cy: small ? .42 : .46, name: pl.c.t, photo: (pl.c.cov || "").replace(/\/\d+x\d+-/, "/1000x1000-"), on: {
+        start: () => el.classList.add("s-in"),   // not before: the canvas still holds the last frame of the previous film
+        // the track starts low behind the sleeve, and opens up when the record comes out
+        music: async () => { url = await Promise.race([pl.preview, wait(500)]); if (url) { clearInterval(fading); audio.src = url; audio.volume = 0; audio.play().then(() => { audio.volume = .22; window.NowPlaying?.(pl.c, audio); }).catch(() => {}); } },
+        open: () => { if (url) fadeIn(); },
+      } });
+      el.style.setProperty("--vc", col);
+      const card = $s(".fx-card");
+      Object.assign(card.style, { left: r.left + "px", top: r.top + "px", width: r.width + "px" });
+      $s(".fx-title").style.top = (r.top + r.height + 18) + "px";
+      el.classList.add("s-reveal");
+    } else if (g) {
       // the 3D turntable: intro, the needle lands (the music starts on the touch), the card rises out of the record
       el.classList.add("three");
       void el.offsetWidth; el.classList.add("s-in");
@@ -926,8 +952,7 @@ const Stage = (() => {
       spin.to = .35;
     }
     r = $s(".fx-card").getBoundingClientRect();
-    sparks.burst(r.left + r.width / 2, r.top + r.height / 2, big ? 260 : 150);
-    if (big) flash();
+    if (!sl) { sparks.burst(r.left + r.width / 2, r.top + r.height / 2, big ? 260 : 150); if (big) flash(); }
     await wait(1100);
     el.classList.add("s-hold");
     $s(".fx-hint").textContent = "Touche pour continuer";
@@ -947,8 +972,14 @@ const Stage = (() => {
     el.hidden = true; document.body.classList.remove("fx-on");
     card.getAnimations().forEach(a => a.cancel());
     card.removeAttribute("style"); $s(".fx-title").removeAttribute("style");
-    cancelAnimationFrame(spin.raf); sparks.stop(); hit3d?.stop();
+    el.className = "fx-screen";
+    cancelAnimationFrame(spin.raf); sparks.stop(); hit3d?.stop(); sleeve3d?.stop();
   }
+  // the signed sleeve, for Platine and Diamant artists: its own file, fetched only when a booster holds one
+  let sleeve3d = null, sleeveP = null;
+  const loadSleeve = () => sleeveP ??= Promise.all([document.fonts.load('40px "Mrs Saint Delafield"'), document.fonts.load('900 34px "Unbounded"'), document.fonts.load('500 20px "DM Mono"')])
+    .then(() => import("./sleeve3d.js?v=5")).then(m => m.create($s(".fx-gl-host"))).then(async x => { await x.warmup(); return sleeve3d = x; })
+    .catch(e => { console.warn("Pochette 3D indisponible", e); return null; });
   // the 3D scene is a separate file, fetched only when a booster holds a hit; null if WebGL or the CDN fails
   let hit3d = null, hit3dP = null;
   const load3d = () => hit3dP ??= import("./hit3d.js?v=21").then(m => m.create($s(".fx-gl-host"))).then(async x => { await x.warmup(); return hit3d = x; })
@@ -993,7 +1024,7 @@ const Stage = (() => {
       el.style.setProperty("--vc", col);
       front.innerHTML = ""; front.appendChild(cardEl(pl.c, pl.holo));
       const title = pl.holo ? "SHINY" : rarName(pl.c).toUpperCase();
-      $s(".fx-title b").innerHTML = [...title].map((ch, k) => `<span style="--k:${k}">${ch === " " ? "&nbsp;" : ch}</span>`).join("");
+      $s(".fx-title b").style.setProperty("--n", title.length); $s(".fx-title b").innerHTML = [...title].map((ch, k) => `<span style="--k:${k}">${ch === " " ? "&nbsp;" : ch}</span>`).join("");
       $s(".fx-title small").textContent = (pl.isNew ? "Nouvelle carte · " : "Doublon · ") + (pl.holo ? rarName(pl.c) + " · " : "") + (isArtist(pl.c) ? pl.c.t : pl.c.a);
       const r = await g.godPick(i, w * 88 / 63, small ? .4 : .42, col);
       const url = await Promise.race([pl.preview, wait(400)]);
@@ -1034,10 +1065,11 @@ const Stage = (() => {
     return true;
   }
   // built and decoded ahead of time (when the pack holds a hit), so the screen opens without a hitch
-  function prepare() {
+  function prepare(pulls = []) {
     if (!el) build();
     el.querySelectorAll("img").forEach(i => i.decode().catch(() => {}));
-    load3d();
+    if (pulls.some(pl => isArtist(pl.c) && pl.c.tier >= MYTH)) loadSleeve();
+    if (pulls.some(pl => !isArtist(pl.c) && isHit(pl)) || !pulls.length) load3d();
   }
   return { isHit, warm, hit, god, prepare };
 })();
@@ -1435,7 +1467,7 @@ async function buildGallery() {
   };
   const add = (g, c, holo) => { const b = document.createElement("button"); b.className = "cell"; b.appendChild(cardEl(c, holo)); b.onclick = () => openModal(c, holo); g.appendChild(b); };
   const artist = (f, collector) => ({ kind: "artist", id: (collector ? "col" : "a") + f.id, aid: f.id, t: f.name, a: "Artiste",
-    cov: (f.picture_big || "").replace("http:", "https:"), rank: f.nb_fan, albums: f.nb_album || 0, tier: certOf(f.nb_fan), collector });
+    cov: (f.picture_big || "").replace("http:", "https:"), rank: f.nb_fan, albums: f.nb_album || 0, tier: certOf(f.nb_fan, f.id), collector });
   const gT = section("Les morceaux", "Une carte par rareté, de la Commune à la Légendaire, plus une Mythique et une Légendaire Shiny.");
   const used = new Set();
   for (const t of [0, 1, 2, 3, 4, 5]) { const raw = await findTrack(-1, t, used); if (raw) { used.add(raw.id); add(gT, await enrich(raw, -1), false); } }

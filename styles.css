@@ -992,7 +992,7 @@ body.fx-on{overflow:hidden}
 .fx-card .face .cq{width:100%}
 
 .fx-title{position:absolute;left:0;right:0;top:calc(46% + var(--card)*.7 + 18px);display:grid;justify-items:center;gap:6px;text-align:center;pointer-events:none;padding:0 16px}
-.fx-title b{font-family:var(--display);font-weight:900;font-size:clamp(1.5rem,5vw,3rem);letter-spacing:.14em;line-height:1;white-space:nowrap;
+.fx-title b{font-family:var(--display);font-weight:900;font-size:min(clamp(1.5rem,5vw,3rem),calc((100vw - 32px) / var(--n,8) / 1.12));letter-spacing:.14em;line-height:1;white-space:nowrap;
   color:color-mix(in srgb,var(--vc) 70%,#fff);text-shadow:0 0 18px color-mix(in srgb,var(--vc) 80%,transparent)}
 .fx-title b span{display:inline-block;opacity:0;transform:translateY(.6em) scale(.6)}
 .fx-title small{font-family:var(--mono);font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.7);opacity:0}
@@ -1047,6 +1047,11 @@ body.fx-on{overflow:hidden}
 .fx-screen.three.s-reveal .flipper{animation:cardFlip .8s cubic-bezier(.3,1.4,.45,1) both}
 .fx-screen.three.s-hold .fx-card{animation:float 3.2s ease-in-out infinite}
 .fx-screen.three.s-out .fx-gl{opacity:0;transition-duration:.45s}
+/* the signed sleeve (Platine and Diamant artists) has its own canvas; only one of the two 3D scenes shows */
+.fx-screen.sleeve .fx-gl:not(.fx-gl-sleeve),.fx-screen:not(.sleeve) .fx-gl-sleeve{display:none}
+.fx-screen.sleeve .fx-gl{transition-duration:.2s}
+.fx-screen.sleeve.s-reveal .flipper{animation:sleeveTurn .75s cubic-bezier(.3,1.3,.45,1) both}   /* the record was edge-on: the card finishes its turn */
+@keyframes sleeveTurn{from{transform:rotateY(90deg)}to{transform:rotateY(180deg)}}
 
 /* GOD pack: the announcement in gold, then the row where the five revealed cards wait */
 .fx-god{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:14px;pointer-events:none;opacity:0;z-index:3}
