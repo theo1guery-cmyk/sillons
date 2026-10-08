@@ -426,6 +426,22 @@ function artistStats(c) {
 // certification's material (kraft, lacquer, silver, gold, platinum, cut crystal)
 function artistCardEl(c, holo) {
   const st = artistStats(c);
+  if (c.tier === 5 && c.cov) {             // Disque de diamant: the Icône. Its Shiny is the Black Diamond (black lacquer, platinum, photo in black and white)
+    const shiny = holo && !c.collector, name = c.t.toUpperCase();
+    const sig = c.t === c.t.toUpperCase() ? c.t.toLowerCase().replace(/(^|[\s-])\p{L}/gu, m => m.toUpperCase()) : c.t;
+    const nfs = Math.min(16, fitCqw(name, LEG_TITLE_FONT, -.02, 108)), sfs = Math.min(12, fitCqw(sig, LEG_SIG_FONT, 0, 64));
+    const fans = c.rank >= 1e6 ? (c.rank / 1e6).toFixed(1).replace(".", ",") + " M" : fmtFans(c.rank);
+    const el = document.createElement("div");
+    el.className = "dcard" + (shiny ? " bd" : "") + (c.collector ? " collector" : ""); el.dataset.cert = 5; el.dataset.r = 5;
+    el.innerHTML = `<div class="in"><img class="photo" src="${esc(c.cov.replace(/\/\d+x\d+-/, "/1000x1000-"))}" alt="Photo de ${esc(c.t)}" loading="lazy" decoding="async"><div class="ice"></div><div class="shade"></div>
+      <div class="vname"><span class="chrome" style="font-size:${nfs.toFixed(2)}cqw"><span class="depth">${esc(name)}</span><span class="face">${esc(name)}</span></span></div>
+      <div class="head"><span class="badge"><span class="gem"></span>${shiny ? "BLACK DIAMOND" : "DIAMANT"}</span><span class="pw" title="Puissance">${st.pw}</span></div>
+      <div class="foot"><div class="sig" style="font-size:${sfs.toFixed(2)}cqw">${esc(sig)}</div><div class="fans">${fans}<small>FANS SUR DEEZER</small></div>
+        <div class="stl"><span>FANS <b>${fmtFans(c.rank)}</b></span><span>ALBUMS <b>${c.albums || "?"}</b></span><span>AURA <b>${st.aura}</b></span></div></div></div>
+      ${shiny ? '<span class="ribbon">SHINY</span><div class="sweep"></div>' : c.collector ? '<span class="ribbon">COLLECTOR</span>' : ""}`;
+    const w = document.createElement("div"); w.className = "cq"; w.appendChild(el);
+    return w;
+  }
   const el = document.createElement("div");
   el.className = "acard" + (holo && c.tier >= MYTH && !c.collector ? " shiny" : "") + (c.collector ? " collector" : ""); el.dataset.cert = c.tier; el.dataset.r = c.tier;
   const pic = c.cov ? `<img class="bg" src="${esc(c.cov)}" alt="" loading="lazy" decoding="async"><img class="photo" src="${esc(c.cov)}" alt="Photo de ${esc(c.t)}" loading="lazy" decoding="async">`

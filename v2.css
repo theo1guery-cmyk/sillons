@@ -115,3 +115,42 @@
 .card.legend:not(.shiny) .foil{display:none}
 .card.legend.shiny .lhead{right:17cqw}
 @media (prefers-reduced-motion:reduce){.card.legend .sig{animation:none}}
+
+/* Artiste Disque de diamant: the Icône. Platinum frame, photo in colour, the name down the side in chrome with depth, a silver signature */
+.dcard{position:relative;width:100%;aspect-ratio:63/88;border-radius:5cqw;padding:1.5cqw;color:#fff;text-align:left;user-select:none;overflow:hidden;
+  background:linear-gradient(135deg,#ffffff,#b9c4d6 22%,#6f7c94 40%,#eef3fb 58%,#8e9bb3 78%,#ffffff);box-shadow:0 10px 26px rgba(0,0,0,.6),0 0 30px rgba(159,216,255,.16)}
+.dcard .in{position:relative;height:100%;border-radius:3.8cqw;overflow:hidden;background:#05070d}
+.dcard .photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 20%;filter:contrast(1.08) saturate(1.12)}
+.dcard .ice{position:absolute;inset:0;background:linear-gradient(200deg,rgba(159,216,255,.45),transparent 45%);mix-blend-mode:soft-light;opacity:.35}
+.dcard .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(5,7,13,.45),transparent 22%,transparent 50%,rgba(5,7,13,.92) 84%)}
+.dcard .vname{position:absolute;z-index:5;left:0;top:50%;rotate:-90deg;translate:-50% -50%;margin-left:9.5cqw}
+.dcard .chrome{position:relative;display:inline-block;white-space:nowrap;font-family:var(--display);font-weight:900;line-height:1;letter-spacing:-.02em}
+.dcard .chrome .depth{position:absolute;inset:0;color:#16233b;text-shadow:.15cqw .15cqw 0 #1b2a44,.3cqw .3cqw 0 #1b2a44,.45cqw .45cqw 0 #18263f,.6cqw .6cqw 0 #142035,.75cqw .75cqw 0 #101a2c,.9cqw .9cqw 0 #0c1424,1.6cqw 1.8cqw 2cqw rgba(0,0,0,.7)}
+.dcard .chrome .face{position:relative;color:transparent;background:linear-gradient(180deg,#ffffff 0%,#e4ecf7 30%,#8391a9 48%,#1d2638 52%,#9fb2cc 66%,#f4f8ff 85%,#b9c7da 100%);-webkit-background-clip:text;background-clip:text}
+.dcard .head{position:absolute;z-index:8;left:3.6cqw;right:3.6cqw;top:3.6cqw;display:flex;justify-content:space-between;align-items:center}
+.dcard .gem{display:inline-block;width:5.4cqw;aspect-ratio:1.15;flex:none;background:conic-gradient(from 200deg at 50% 38%,#ffffff,#bfe6ff,#7fb6e8,#e9f6ff,#9fd8ff,#ffffff);clip-path:polygon(22% 0,78% 0,100% 30%,50% 100%,0 30%);filter:drop-shadow(0 0 .8cqw rgba(159,216,255,.9))}
+.dcard .badge{display:inline-flex;align-items:center;gap:1.4cqw;padding:.7cqw 2.4cqw .7cqw 1.4cqw;border-radius:99px;background:rgba(6,10,20,.55);border:.3cqw solid rgba(214,236,255,.7);font:500 2.7cqw var(--mono);letter-spacing:.2em;color:#e6f3ff}
+.dcard .pw{display:grid;place-items:center;width:10.5cqw;height:10.5cqw;border-radius:50%;border:.45cqw solid #d6ecff;font:900 4.2cqw var(--display);color:#fff;background:rgba(6,10,20,.5)}
+.dcard .foot{position:absolute;z-index:6;left:21cqw;right:4cqw;bottom:4cqw}
+.dcard .sig{font-family:"Mrs Saint Delafield",cursive;line-height:1;white-space:nowrap;padding:2cqw 6cqw 1cqw 4cqw;margin:-2cqw -4cqw -1cqw -4cqw;transform:rotate(-6deg);color:transparent;
+  background:linear-gradient(100deg,#8d9ab0,#ffffff 35%,#bfe6ff 55%,#8d9ab0);-webkit-background-clip:text;background-clip:text;filter:drop-shadow(0 .3cqw .4cqw rgba(0,0,0,.8))}
+.dcard .fans{margin:2cqw 0 2.4cqw;font:900 7.6cqw/1 var(--display);color:#fff}
+.dcard .fans small{display:block;margin-top:.8cqw;font:500 2.7cqw var(--mono);letter-spacing:.24em;color:#9fd8ff}
+.dcard .stl{display:flex;justify-content:space-between;font:500 2.7cqw var(--mono);letter-spacing:.12em;color:rgba(214,236,255,.8)}
+.dcard .stl b{color:#fff;font-weight:500}
+.dcard .ribbon{position:absolute;top:5.5cqw;right:-9cqw;width:40cqw;transform:rotate(38deg);text-align:center;z-index:10;background:#000;color:#e6f0ff;border-block:.35cqw solid #d6e2f2;
+  font:500 3.1cqw var(--mono);letter-spacing:.24em;padding:.6cqw 0;box-shadow:0 .6cqw 1.2cqw rgba(0,0,0,.6)}
+.dcard.collector .head,.dcard.bd .head{right:15cqw}
+/* its Shiny, the Black Diamond: black lacquer, a platinum double line, one slow sweep, the photo in black and white */
+.dcard.bd{background:linear-gradient(145deg,#050506,#24222a 30%,#0a0a0c 50%,#2c2a33 70%,#060607);
+  box-shadow:0 10px 26px rgba(0,0,0,.7),inset 0 0 0 .5cqw #d6e2f2,inset 0 0 0 1.2cqw #0b0b0d,inset 0 0 0 1.5cqw rgba(214,226,242,.45)}
+.dcard.bd .in{box-shadow:0 0 0 .3cqw rgba(214,226,242,.6)}
+.dcard.bd .photo{filter:grayscale(1) contrast(1.32) brightness(1.02)}
+.dcard.bd .ice{display:none}
+.dcard.bd .badge{background:#000;border-color:#d6e2f2}
+.dcard.bd .chrome .depth{color:#000;text-shadow:.15cqw .15cqw 0 #0b0b0d,.3cqw .3cqw 0 #0b0b0d,.45cqw .45cqw 0 #0b0b0d,.6cqw .6cqw 0 #0b0b0d,1.4cqw 1.6cqw 2cqw rgba(0,0,0,.8)}
+.dcard.bd .sig{background:linear-gradient(100deg,#8d9ab0,#ffffff 30%,#cfd9e8 55%,#ffffff 75%,#8d9ab0);-webkit-background-clip:text;background-clip:text}
+.dcard.bd .fans small{color:#d6e2f2}
+.dcard .sweep{position:absolute;inset:0;z-index:9;pointer-events:none;border-radius:inherit;mix-blend-mode:screen;
+  background:linear-gradient(115deg,transparent 38%,rgba(214,232,255,.10) 45%,rgba(240,248,255,.45) 50%,rgba(214,232,255,.10) 55%,transparent 62%);background-size:320% 100%;background-position:120% 0;animation:sweep 7s cubic-bezier(.45,0,.25,1) infinite}
+@media (prefers-reduced-motion:reduce){.dcard .sweep{animation:none}}
