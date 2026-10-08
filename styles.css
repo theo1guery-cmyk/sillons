@@ -1066,3 +1066,16 @@ body.fx-on{overflow:hidden}
 .fx-row i.on{border-color:transparent}
 .fx-row .cq{width:100%;will-change:transform}
 .fx-screen.god.s-out .fx-row i{border-color:transparent}
+
+/* ---------- phones: a whole booster on one screen — 3 cards then 2, the buttons underneath ---------- */
+@media (max-width:600px){
+  .table{display:flex;flex-direction:column;padding:14px 10px 16px;border-radius:20px}
+  .table-head{order:2;margin:14px 0 0;gap:8px;justify-content:center}
+  .table-head h3{display:none}
+  .table-head .btns{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+  .table-head .btn{padding:9px 13px;font-size:.82rem}
+  .deal{grid-template-columns:repeat(6,minmax(0,1fr));gap:12px 8px}
+  .deal>*{grid-column:span 2}
+  .deal>:nth-child(4):nth-last-child(2){grid-column:2/span 2}
+  .slot .tag{margin-top:5px;font-size:.58rem;letter-spacing:.04em}
+}
