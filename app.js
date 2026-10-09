@@ -811,7 +811,9 @@ const Stage = (() => {
   const audio = new Audio(); audio.preload = "auto";
   const isHit = pl => pl.c.tier >= MYTH;
   const css = v => v.startsWith("var(") ? getComputedStyle(document.documentElement).getPropertyValue(v.slice(4, -1)).trim() : v;
-  const colorOf = pl => pl.holo ? "#f5d27a" : css(isArtist(pl.c) ? CCOL[pl.c.tier] : RCOL[pl.c.tier]);
+  // a Shiny Mythique track is black and silver, every other Shiny black and gold
+  const silverOf = pl => pl.holo && pl.c.tier === MYTH && !isArtist(pl.c);
+  const colorOf = pl => silverOf(pl) ? "#dfe5ee" : pl.holo ? "#f5d27a" : css(isArtist(pl.c) ? CCOL[pl.c.tier] : RCOL[pl.c.tier]);
   const warm = pl => pl.preview ??= (isArtist(pl.c) ? dz(`artist/${pl.c.aid}/top`, { limit: 1 }, true).then(d => (d.data || [])[0]?.preview)
     : dz("track/" + pl.c.id, {}, true).then(t => t.preview)).catch(() => null);
 
@@ -884,7 +886,7 @@ const Stage = (() => {
     el.style.setProperty("--vc", "#cfc8da");
     el.style.setProperty("--beat", (60 / bpm).toFixed(3) + "s");
     if (big) el.classList.add("big");
-    if (pl.holo) el.classList.add("shiny");
+    if (pl.holo) el.classList.add("shiny"); if (silverOf(pl)) el.classList.add("silver");
     const front = $s(".face.front"); front.innerHTML = ""; front.appendChild(cardEl(pl.c, pl.holo));
     // decode the artwork now, so it doesn't freeze the animation when the card comes out
     await Promise.race([Promise.all([...front.querySelectorAll("img")].map(i => i.decode().catch(() => {}))), wait(700)]);
@@ -932,7 +934,7 @@ const Stage = (() => {
       // the 3D turntable: intro, the needle lands (the music starts on the touch), the card rises out of the record
       el.classList.add("three");
       void el.offsetWidth; el.classList.add("s-in");
-      await g.intro({ shiny: !!pl.holo, big });
+      await g.intro({ shiny: !!pl.holo, silver: silverOf(pl), big });
       el.style.setProperty("--vc", col);
       const n = await g.needle(col, bpm, big);
       playTrack();
@@ -996,7 +998,7 @@ const Stage = (() => {
     .catch(e => { console.warn("Pochette 3D indisponible", e); sleeveP = null; return null; }))(performance.now());
   // the 3D scene is a separate file, fetched only when a booster holds a hit; null if WebGL or the CDN fails
   let hit3d = null, hit3dP = null;
-  const load3d = () => hit3dP ??= import("./hit3d.js?v=21").then(m => m.create($s(".fx-gl-host"))).then(async x => { await x.warmup(); return hit3d = x; })
+  const load3d = () => hit3dP ??= import("./hit3d.js?v=22").then(m => m.create($s(".fx-gl-host"))).then(async x => { await x.warmup(); return hit3d = x; })
     .catch(e => { console.warn("3D indisponible, animation simple", e); return null; });
   /* GOD pack: "GOD PACK" is written in gold in the dark, the lamp lights a solid gold record, the needle lands, light
      leaks out of the grooves and the record bursts into five cards turning in a ring around the deck. Each tap brings
@@ -1033,8 +1035,8 @@ const Stage = (() => {
     for (let i = 0; i < pulls.length; i++) {                     // 4. one card at a time
       const pl = pulls[i], col = colorOf(pl), big = pl.c.tier === LEG || pl.holo;
       $s(".fx-hint").textContent = "";
-      el.classList.remove("s-reveal", "s-hold", "big", "shiny");
-      if (big) el.classList.add("big"); if (pl.holo) el.classList.add("shiny");
+      el.classList.remove("s-reveal", "s-hold", "big", "shiny", "silver");
+      if (big) el.classList.add("big"); if (pl.holo) el.classList.add("shiny"); if (silverOf(pl)) el.classList.add("silver");
       el.style.setProperty("--vc", col);
       front.innerHTML = ""; front.appendChild(cardEl(pl.c, pl.holo));
       const title = pl.holo ? "SHINY" : rarName(pl.c).toUpperCase();
