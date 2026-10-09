@@ -59,9 +59,11 @@ const MYTH = 4, LEG = 5, TOP = RAR.length - 1;
 const CERT = ["Démo", "Single", "Disque d'argent", "Disque d'or", "Disque de platine", "Disque de diamant"];
 const CCOL = ["var(--c0)", "var(--c1)", "var(--c2)", "var(--c3)", "var(--c4)", "var(--c5)"];
 const CERT_MIN = [0, 1000, 20000, 150000, 1000000, 7000000];
-// "Diamant d'honneur": stars that Deezer's mostly French audience undercounts (Travis Scott, Kanye West, Kendrick Lamar).
-// Same list on the server (cert_of in supabase/migrations/20261008000100_diamond_at_7m.sql)
-const HONOR = new Set([4495513, 230, 525046]);
+// "Diamant d'honneur": artists who are Diamant whatever their fan count — stars that Deezer's mostly French audience
+// undercounts (Travis Scott, Kanye West, Kendrick Lamar), plus Theo's picks (Mauvais Djo, Céline Dion, Aya Nakamura,
+// GIMS, Niska, Booba, PNL). Same list on the server (cert_of(int, bigint), latest in
+// supabase/migrations/20261009000000_honor_list.sql)
+const HONOR = new Set([4495513, 230, 525046, 148380152, 198, 8909272, 4429712, 5288900, 390, 1519461]);
 const certOf = (fans, id) => HONOR.has(+id) ? 5 : CERT_MIN.reduce((t, m, i) => fans >= m ? i : t, 0);
 const inCert = (fans, t, id) => certOf(fans, id) === t;
 const isArtist = c => c && c.kind === "artist";
