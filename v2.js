@@ -23,7 +23,7 @@
   /* booster page: "?" instead of the paragraph, the covers wall behind a big booster that follows the pointer */
   const shop = $("#view-shop"), h2 = shop.querySelector("h2");
   const help = document.createElement("button"); help.className = "v2-help"; help.textContent = "?";
-  help.setAttribute("aria-label", "Comment ça marche et chances par carte");
+  help.setAttribute("aria-label", "Comment ça marche");
   help.onclick = () => shop.classList.toggle("v2-open");
   h2.appendChild(help);
 

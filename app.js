@@ -1535,9 +1535,6 @@ addEventListener("keydown", e => { if (e.key === "Escape" && !modal.hidden) clos
 
 renderCounters();
 renderStock();
-$("#odds").innerHTML = `<table><tr><th>Rareté</th><th>Chance par carte</th><th>Classement Deezer</th></tr>${RAR.map((r, i) =>
-  `<tr><td><i style="background:${RCOL[i]}"></i>${r}</td><td>${String(DROP[i]).replace(".", ",")} %</td><td>${i === TOP ? fmt(TIER_MIN[i]) + " et plus" : fmt(TIER_MIN[i]) + " – " + fmt(TIER_MIN[i + 1] - 1)}</td></tr>`).join("")}</table>
-  <p class="god-odds"><b>GOD PACK</b> : 1 booster sur 3 000 se transforme en GOD pack. Il contient 1 Légendaire garantie, et ses 4 autres cartes ont chacune 50 % de chances d'être Mythique et 50 % d'être Légendaire.</p>`;
 
 /* ---------- local preview only: http://localhost:8765/#galerie shows one card of every kind ---------- */
 async function buildGallery() {
