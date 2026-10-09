@@ -39,7 +39,7 @@ Puis ouvrir http://localhost:8765.
 - **Raccourcis locaux** (seulement sur localhost) : `#god` à la fin de l'adresse donne un GOD pack au prochain booster, `#demo` un booster avec une Épique, une Mythique et une Légendaire.
 - **Pitié** : après 70 boosters sans Mythique ni Légendaire, le suivant en contient une.
 - **Mode test** (`TEST_MODE` dans `app.js`) : boosters illimités. Une fois désactivé, le stock s'applique.
-- **Stock** : 10 boosters maximum, un nouveau toutes les 30 minutes quand le stock n'est pas plein. Un booster qui échoue à s'ouvrir est rendu.
+- **Stock** : 10 boosters maximum, un nouveau toutes les 10 minutes quand le stock n'est pas plein. Un booster qui échoue à s'ouvrir est rendu.
 - **Stats** : rythme (BPM), endurance (durée), hype (classement), puissance (moyenne pondérée).
 - **Comptes (Supabase)** : connexion par e-mail et mot de passe, avec vérification de l'adresse par lien. Avec un compte, la collection est sur le serveur. Le serveur tire les raretés (GOD pack et pitié compris), le navigateur cherche les morceaux, puis le serveur les vérifie sur Deezer : une carte n'est jamais plus rare que son tirage. Toutes les écritures passent par des fonctions SQL (`supabase/migrations/`), les tables sont en lecture seule pour les joueurs.
 - **Échanges** : 1 à 5 cartes de chaque côté. Le serveur échange les deux côtés d'un coup, ou rien du tout ; une offre dont une carte a changé de main expire. Il faut un compte assez ancien (réglage `trade_min_age`, 48 h prévu, 0 pendant les tests) et 20 offres en attente au maximum. Une collection importée d'avant les comptes est échangeable elle aussi.

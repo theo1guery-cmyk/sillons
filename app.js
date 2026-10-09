@@ -82,7 +82,7 @@ const PITY = 70;                         // boosters without a Mythique or bette
 let devShiny = false;                  // local preview (#shiny): every Mythique / Légendaire comes out Shiny
 const SHINY_CHANCE = 0.01;               // a Mythique or Légendaire has 1 chance in 100 to be Shiny
 const GOD_CHANCE = 1 / 3000;             // a booster turns into a GOD pack: 1 Légendaire + 4 cards that are Mythique or Légendaire (50/50)
-const STOCK_MAX = 10, REFILL_MS = 30 * 60 * 1000;
+const STOCK_MAX = 10, REFILL_MS = 10 * 60 * 1000;
 let TEST_MODE = true;                   // unlimited free boosters while the game is being tested (read from the server when signed in)
 // signed-in play lives in online.js; this flag switches the game between the guest (this browser) and account modes
 const Online = { active: false };
@@ -397,7 +397,7 @@ for (const c of Object.values(S.c)) c.tier = tierOf(c.rank || 0);
 if (S.stock == null) { S.stock = STOCK_MAX; S.stockAt = Date.now(); }
 if (S.dry == null) S.dry = 0;            // boosters opened since the last Mythique or better
 
-/* booster stock: one more every 30 min, up to 10 */
+/* booster stock: one more every 10 min, up to 10 */
 function refill() {
   const now = Date.now();
   if (S.stock >= STOCK_MAX) { S.stockAt = now; return; }
@@ -610,7 +610,7 @@ const studioScript = document.createElement("script"); studioScript.type = "modu
 function renderStock() {
   if (TEST_MODE) {
     stockEl.innerHTML = `<b>Boosters illimités</b><span class="test-badge">Mode test</span>
-      <small>Le stock de 10 boosters (un nouveau toutes les 30 min) sera activé à la sortie du jeu.</small>
+      <small>Le stock de 10 boosters (un nouveau toutes les 10 min) sera activé à la sortie du jeu.</small>
       <small>Mythique garantie dans ${Math.max(1, PITY - S.dry)} booster${PITY - S.dry > 1 ? "s" : ""} si tu n'en tires pas avant</small>`;
     if (!busy) { packBtn.disabled = false; openBig.disabled = false; $("#again").disabled = false; }
     return;
@@ -620,7 +620,7 @@ function renderStock() {
   const pips = Array.from({ length: STOCK_MAX }, (_, i) => `<i class="${i < S.stock ? "on" : ""}"></i>`).join("");
   stockEl.innerHTML = `<b>${S.stock} / ${STOCK_MAX}</b> booster${S.stock > 1 ? "s" : ""} disponible${S.stock > 1 ? "s" : ""}
     <span class="pips" aria-hidden="true">${pips}</span>
-    <small>${S.stock >= STOCK_MAX ? "Stock plein. Un nouveau booster arrive toutes les 30 min quand le stock n'est pas plein." : `Prochain booster dans ${min >= 60 ? "1 h" : min + " min"}`}</small>
+    <small>${S.stock >= STOCK_MAX ? "Stock plein. Un nouveau booster arrive toutes les 10 min quand le stock n'est pas plein." : `Prochain booster dans ${min >= 60 ? "1 h" : min + " min"}`}</small>
     <small>Mythique garantie dans ${Math.max(1, PITY - S.dry)} booster${PITY - S.dry > 1 ? "s" : ""} si tu n'en tires pas avant</small>`;
   const empty = S.stock <= 0;
   if (!busy) { packBtn.disabled = empty; openBig.disabled = empty; $("#again").disabled = empty; }
