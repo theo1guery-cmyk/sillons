@@ -897,7 +897,14 @@ const Stage = (() => {
     };
     const flash = () => { const f = document.createElement("div"); f.className = "flash"; document.body.appendChild(f); setTimeout(() => f.remove(), 900); };
     // a Platine or Diamant artist gets its own film: the signed sleeve (falls back to the turntable, then to CSS)
-    let sl = isArtist(pl.c) && pl.c.tier >= MYTH && !reduceMotion() ? await Promise.race([loadSleeve(), wait(2500)]) : null;
+    // the sleeve's 3D (about 4 MB) may still be on its way when the card is flipped right after the opening: a black
+    // screen while it loads (a word after a second), rather than falling back to the turntable too early
+    let sl = null;
+    if (isArtist(pl.c) && pl.c.tier >= MYTH && !reduceMotion()) {
+      const slow = setTimeout(() => { $s(".fx-hint").textContent = "Chargement…"; }, 1200);
+      sl = await Promise.race([loadSleeve(), wait(15000)]);
+      clearTimeout(slow); $s(".fx-hint").textContent = "";
+    }
     if (sl?.lost) { dropSleeve(); sl = null; }                   // its 3D died since last time: the turntable, and a fresh one next time
     const g = sl ? null : await Promise.race([load3d(), wait(1200)]);
     let r;
@@ -982,9 +989,9 @@ const Stage = (() => {
   // the signed sleeve, for Platine and Diamant artists: its own file, fetched only when a booster holds one
   let sleeve3d = null, sleeveP = null;
   const dropSleeve = () => { sleeve3d?.canvas.remove(); sleeve3d = null; sleeveP = null; };
-  const loadSleeve = () => sleeveP ??= Promise.all([document.fonts.load('40px "Mrs Saint Delafield"'), document.fonts.load('900 34px "Unbounded"'), document.fonts.load('500 20px "DM Mono"')])
-    .then(() => import("./sleeve3d.js?v=6")).then(m => m.create($s(".fx-gl-host"))).then(async x => { await x.warmup(); return sleeve3d = x; })
-    .catch(e => { console.warn("Pochette 3D indisponible", e); return null; });
+  const loadSleeve = () => sleeveP ??= (t => Promise.all([document.fonts.load('40px "Mrs Saint Delafield"'), document.fonts.load('900 34px "Unbounded"'), document.fonts.load('500 20px "DM Mono"')])
+    .then(() => import("./sleeve3d.js?v=7")).then(m => m.create($s(".fx-gl-host"))).then(async x => { await x.warmup(); console.info("Pochette 3D prête en", Math.round(performance.now() - t), "ms"); return sleeve3d = x; })
+    .catch(e => { console.warn("Pochette 3D indisponible", e); sleeveP = null; return null; }))(performance.now());
   // the 3D scene is a separate file, fetched only when a booster holds a hit; null if WebGL or the CDN fails
   let hit3d = null, hit3dP = null;
   const load3d = () => hit3dP ??= import("./hit3d.js?v=21").then(m => m.create($s(".fx-gl-host"))).then(async x => { await x.warmup(); return hit3d = x; })
