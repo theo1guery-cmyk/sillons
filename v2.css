@@ -228,3 +228,42 @@
 .card .in{position:absolute;inset:1.6cqw;height:auto}
 .dcard .in{position:absolute;inset:2.6cqw;height:auto}
 .acard .frame{position:absolute;inset:4.2cqw;height:auto}
+
+/* ---------- Disque de platine: the Icône's little sister — the same full photo and name down the side, but a rounded
+   frame of brushed platinum, a satin name without chrome or depth, a disc in the badge, and no signature (that stays the Diamant's) ---------- */
+.dcard.pcard{clip-path:none;border-radius:5cqw;animation:none;
+  background:linear-gradient(135deg,#9fb3c8,#ffffff 20%,#c3d1e0 38%,#f6f9fd 55%,#8ea3ba 76%,#e6eef8);
+  box-shadow:0 10px 26px rgba(0,0,0,.6),inset 0 0 0 .3cqw rgba(255,255,255,.75)}
+.dcard.pcard::after{content:"";position:absolute;inset:0;z-index:0;border-radius:inherit;pointer-events:none;mix-blend-mode:overlay;
+  background:repeating-linear-gradient(90deg,rgba(255,255,255,.22) 0 .2cqw,rgba(0,0,0,.06) .2cqw .5cqw)}
+.dcard.pcard::before{clip-path:none;border-radius:4.2cqw;background:rgba(10,14,22,.55)}
+.dcard.pcard .in{clip-path:none;border-radius:3.6cqw;background:#0b0f17}
+.dcard.pcard .photo{filter:contrast(1.05) saturate(1.05)}
+.dcard.pcard .shade{background:linear-gradient(180deg,rgba(6,9,15,.5),transparent 22%,transparent 48%,rgba(6,9,15,.92) 82%)}
+.dcard.pcard .chrome{filter:drop-shadow(.4cqw .6cqw 1cqw rgba(0,0,0,.7))}
+.dcard.pcard .chrome .face{background:linear-gradient(180deg,#ffffff 0%,#f2f6fb 40%,#cdd8e6 62%,#ffffff 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.dcard.pcard .badge,.dcard.pcard .pw{background:rgba(6,10,20,.55);border-color:#e6eef8}
+.dcard.pcard .vinyl{width:4.4cqw;height:4.4cqw;border-radius:50%;flex:none;box-shadow:0 0 0 .3cqw #e6eef8;
+  background:radial-gradient(circle,#0b0f17 0 12%,#e6eef8 13% 30%,transparent 31%),repeating-radial-gradient(circle,#1a2230 0 .35cqw,#2d3a4d .35cqw .6cqw)}
+.dcard.pcard .fans small{color:#cfdbea}
+.dcard.pcard.shiny .head{right:15cqw}
+/* its Shiny: black lacquer with a double gold line, gold lettering, the photo in colour and the warm Shiny light */
+.dcard.pcard.shiny{background:linear-gradient(145deg,#050506,#24222a 30%,#0a0a0c 50%,#2c2a33 70%,#060607);
+  box-shadow:0 10px 26px rgba(0,0,0,.7),inset 0 0 0 .4cqw #e9c46a,inset 0 0 0 1.1cqw #0b0b0d,inset 0 0 0 1.4cqw rgba(233,196,106,.45)}
+.dcard.pcard.shiny::after{content:none}
+.dcard.pcard.shiny::before{background:#000}
+.dcard.pcard.shiny .in{background:#050506}
+.dcard.pcard.shiny .chrome .face,.dcard.pcard.collector .chrome .face{background:linear-gradient(180deg,#fff6cf 0%,#f7e08a 35%,#d9a83f 60%,#fff1b0 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.dcard.pcard.shiny .badge,.dcard.pcard.shiny .pw{background:#000;border-color:#e9c46a;color:#f5d27a}
+.dcard.pcard.shiny .vinyl,.dcard.pcard.collector .vinyl{box-shadow:0 0 0 .3cqw #e9c46a;
+  background:radial-gradient(circle,#000 0 12%,#e9c46a 13% 30%,transparent 31%),repeating-radial-gradient(circle,#0b0b0d 0 .35cqw,#24222a .35cqw .6cqw)}
+.dcard.pcard.shiny .fans small,.dcard.pcard.shiny .stl{color:#e9c46a}
+.dcard.pcard.shiny .ribbon{color:#f5d27a;border-color:#e9c46a}
+.dcard.pcard.shiny .sweep{background:linear-gradient(115deg,transparent 38%,rgba(255,236,190,.10) 45%,rgba(255,248,230,.42) 50%,rgba(255,236,190,.10) 55%,transparent 62%) 120% 0/320% 100%}
+.big .dcard.pcard.shiny .sweep{animation:none;background-position:calc(110% - var(--fx,50%) * 1.3) 0}
+/* its Collector: the Diamant's black and gold, with rounded corners */
+.dcard.pcard.collector::after{inset:.6cqw;border-radius:4.6cqw;clip-path:none;mix-blend-mode:normal;background:linear-gradient(145deg,#050506,#24222a 30%,#0a0a0c 50%,#2c2a33 70%,#060607)}
+.dcard.pcard.collector{background:linear-gradient(135deg,#7a5a14,#f7e08a 22%,#b38a26 40%,#fff1b0 58%,#8f6b18 78%,#efd27a);box-shadow:0 10px 26px rgba(0,0,0,.7)}
+.dcard.pcard.collector::before{background:#000}
+.dcard.pcard.collector .in{background:#050506}
+.dcard.pcard.collector .photo{filter:grayscale(1) contrast(1.3) brightness(1.02)}
