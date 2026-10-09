@@ -897,7 +897,8 @@ const Stage = (() => {
     };
     const flash = () => { const f = document.createElement("div"); f.className = "flash"; document.body.appendChild(f); setTimeout(() => f.remove(), 900); };
     // a Platine or Diamant artist gets its own film: the signed sleeve (falls back to the turntable, then to CSS)
-    const sl = isArtist(pl.c) && pl.c.tier >= MYTH && !reduceMotion() ? await Promise.race([loadSleeve(), wait(2500)]) : null;
+    let sl = isArtist(pl.c) && pl.c.tier >= MYTH && !reduceMotion() ? await Promise.race([loadSleeve(), wait(2500)]) : null;
+    if (sl?.lost) { dropSleeve(); sl = null; }                   // its 3D died since last time: the turntable, and a fresh one next time
     const g = sl ? null : await Promise.race([load3d(), wait(1200)]);
     let r;
     if (sl) {
@@ -916,7 +917,8 @@ const Stage = (() => {
       const card = $s(".fx-card");
       Object.assign(card.style, { left: r.left + "px", top: r.top + "px", width: r.width + "px" });
       $s(".fx-title").style.top = (r.top + r.height + 18) + "px";
-      el.classList.add("s-reveal");
+      if (sl.lost) dropSleeve();
+      el.classList.add("s-in", "s-reveal");
     } else if (g) {
       // the 3D turntable: intro, the needle lands (the music starts on the touch), the card rises out of the record
       el.classList.add("three");
@@ -979,8 +981,9 @@ const Stage = (() => {
   }
   // the signed sleeve, for Platine and Diamant artists: its own file, fetched only when a booster holds one
   let sleeve3d = null, sleeveP = null;
+  const dropSleeve = () => { sleeve3d?.canvas.remove(); sleeve3d = null; sleeveP = null; };
   const loadSleeve = () => sleeveP ??= Promise.all([document.fonts.load('40px "Mrs Saint Delafield"'), document.fonts.load('900 34px "Unbounded"'), document.fonts.load('500 20px "DM Mono"')])
-    .then(() => import("./sleeve3d.js?v=5")).then(m => m.create($s(".fx-gl-host"))).then(async x => { await x.warmup(); return sleeve3d = x; })
+    .then(() => import("./sleeve3d.js?v=6")).then(m => m.create($s(".fx-gl-host"))).then(async x => { await x.warmup(); return sleeve3d = x; })
     .catch(e => { console.warn("Pochette 3D indisponible", e); return null; });
   // the 3D scene is a separate file, fetched only when a booster holds a hit; null if WebGL or the CDN fails
   let hit3d = null, hit3dP = null;

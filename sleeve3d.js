@@ -24,7 +24,7 @@ const FLICK_COL = { platine: [0xe6eef8], diamant: [0xbdf0ff, 0xf8c8ff, 0xfff7c2,
 export async function create(host) {
   const mobile = Math.min(innerWidth, innerHeight) < 600 || /Android|iPhone|iPad/.test(navigator.userAgent);
   const renderer = new THREE.WebGLRenderer({ antialias: !mobile, powerPreference: "high-performance" });
-  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, mobile ? 1.5 : 1.75)); renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, mobile ? 1.25 : 1.75)); renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap; renderer.setClearColor(0x050403, 1);
   const canvas = renderer.domElement; canvas.className = "fx-gl fx-gl-sleeve"; host.prepend(canvas);
   const scene = new THREE.Scene(); scene.background = new THREE.Color(0x050403);
@@ -138,7 +138,12 @@ export async function create(host) {
       noise(SLIDE, 1, { f0: 900, f1: 500, q: .8, gain: .12, attack: .3 }); } catch {}
   }
 
-  let raf = 0, last = 0, t0 = 0, kind = "diamant", cues = [], onSwap = null, swapRect = null, cardW = 260, cardCy = .46;
+  let raf = 0, last = 0, t0 = 0, kind = "diamant", cues = [], onSwap = null, cardW = 260, cardCy = .46, dog = 0, lost = false;
+  // the card is shown at the swap — or right away if the 3D dies on the way (a phone out of GPU memory loses its WebGL
+  // context; the sounds are already scheduled, so without this the player would hear the film and see nothing)
+  function swap() { clearTimeout(dog); if (!onSwap) return; const cb = onSwap; onSwap = null; const w = cardW, h = w * 88 / 63, W = host.clientWidth || innerWidth, H = host.clientHeight || innerHeight; cb({ left: (W - w) / 2, top: H * cardCy - h / 2, width: w, height: h }); }
+  function fail(e) { console.warn("Pochette 3D interrompue", e); lost = true; cancelAnimationFrame(raf); raf = 0; while (cues.length) cues.shift()[1](); swap(); }
+  canvas.addEventListener("webglcontextlost", e => { e.preventDefault(); fail("contexte WebGL perdu"); });
   const KEYS = [[PRE, [.02, .5, .36], [0, 0, .02]], [SIGN0, [.06, .4, .3], [0, 0, .06]], [SIGN1, [.03, .38, .32], [0, 0, .07]], [SLIDE, [.06, .36, .42], [.03, .02, .02]], [RISE, [.05, .27, .52], [.05, .1, .02]], [SWAP + .6, [.04, .22, .52], [.04, .14, .03]], [SWAP + 12, [.06, .225, .5], [.04, .14, .03]]];
   const portrait = () => clamp(.95 / camera.aspect, 1, 2.3);   // on a tall phone screen, step back so the sleeve stays in frame
   function camAt(t) { if (t < PRE) { const a = ease.inOut(seg(t, 0, PRE)); return [V(lerp(0, .02, a), lerp(.62, .5, a), lerp(.5, .36, a)), V(0, 0, .02)]; }
@@ -147,6 +152,9 @@ export async function create(host) {
   addEventListener("resize", () => raf && resize());
 
   function frame(now) {
+    try { step(now); } catch (e) { fail(e); }
+  }
+  function step(now) {
     const dt = Math.min(.05, (now - (last || now)) / 1000); last = now; const t = (now - t0) / 1000;
     const [cp, ct] = camAt(t), pk = portrait(); camera.position.copy(ct).add(cp.clone().sub(ct).multiplyScalar(pk)); camera.lookAt(ct);
     // the lamp: flickers in the colour of what is coming, then warm light for good
@@ -167,7 +175,7 @@ export async function create(host) {
     recHold.rotation.x = r * Math.PI / 2 * .92; rec.rotation.y += dt * (2 + r * 9); recHold.rotation.y = seg(t, SWAP - .3, SWAP) * Math.PI / 2;
     recHold.visible = t > PRE && t < SWAP;
     while (cues.length && t >= cues[0][0]) cues.shift()[1]();
-    if (t >= SWAP && onSwap) { const cb = onSwap; onSwap = null; const w = cardW, h = w * 88 / 63, W = host.clientWidth || innerWidth, H = host.clientHeight || innerHeight; cb({ left: (W - w) / 2, top: H * cardCy - h / 2, width: w, height: h }); }
+    if (t >= SWAP) swap();
     for (let i = 0; i < ND; i++) { dP[i * 3 + 1] += Math.sin(now / 1000 * .3 + i) * .00004; dP[i * 3] += Math.cos(now / 1000 * .2 + i * 1.3) * .00003; } dust.geometry.attributes.position.needsUpdate = true;
     grade.uniforms.uTime.value = now / 1000 % 100; grade.uniforms.uBlack.value = t < PRE ? 1 - seg(t, 0, .6) * .85 : 0;
     if (bokeh) { const fp = t < PRE ? sleeve.position : t < SLIDE ? pen.position : t < SWAP ? recHold.position : V(.04, .14, .03); bokeh.uniforms.focus.value = camera.position.distanceTo(fp); bokeh.uniforms.aperture.value = t < SWAP ? .03 : .06; }
@@ -180,11 +188,14 @@ export async function create(host) {
     async play({ kind: k = "diamant", photo, name, w = 260, cy = .46, on = {} }) {
       kind = k; cardW = w; cardCy = cy; cues = [[0, on.start], [PRE + .5, on.music], [SLIDE, on.open]].filter(c => c[1]); await dress({ photo, name }); resize();
       sleeve.rotation.z = Math.PI; recHold.visible = false; pen.visible = false;
-      return new Promise(res => { onSwap = res; t0 = performance.now(); last = 0; score(); cancelAnimationFrame(raf); raf = requestAnimationFrame(frame); });
+      if (lost) return Promise.reject(new Error("3D perdue"));
+      return new Promise(res => { onSwap = res; t0 = performance.now(); last = 0; score(); cancelAnimationFrame(raf); raf = requestAnimationFrame(frame);
+        clearTimeout(dog); dog = setTimeout(() => fail("trop lent"), (SWAP + 2.5) * 1000); });   // watchdog: the card comes, whatever happens
     },
     // compile the shaders ahead of time
-    async warmup() { resize(); camera.position.set(.02, .5, .36); camera.lookAt(0, 0, 0); pen.visible = recHold.visible = true; try { await renderer.compileAsync(scene, camera); } catch {} composer.render(); },
-    stop() { cancelAnimationFrame(raf); raf = 0; onSwap = null; cues = []; },
+    async warmup() { resize(); camera.position.set(.02, .5, .36); camera.lookAt(0, 0, 0); pen.visible = recHold.visible = true; try { await Promise.race([renderer.compileAsync(scene, camera), new Promise(r => setTimeout(r, 4000))]); } catch {} composer.render(); },
+    stop() { cancelAnimationFrame(raf); raf = 0; clearTimeout(dog); onSwap = null; cues = []; },
+    get lost() { return lost; },
     canvas,
   };
 }
