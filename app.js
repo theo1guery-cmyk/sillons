@@ -486,7 +486,8 @@ function cardEl(c, holo) {
   const el = document.createElement("div");
   el.className = "card" + (holo && c.tier >= MYTH ? " shiny" : "") + (c.g == null ? " pending" : ""); el.dataset.r = c.tier;
   el.style.setProperty("--h", T.h); el.style.setProperty("--rc", RCOL[c.tier]);
-  if (c.tier === LEG && c.cov) {          // a Légendaire is a concert poster: the sleeve fills the card, the artist signs it in gold
+  // a Légendaire is a concert poster: the sleeve fills the card, the artist signs it in gold. A Shiny Mythique gets the same poster, in black and silver
+  if ((c.tier === LEG || c.tier === MYTH && holo) && c.cov) {
     const title = c.t.replace(/\s*\((feat|with)\.?[^)]*\)/i, ""), size = title.length > 24 ? " xlong" : title.length > 13 ? " long" : "";
     // the title and the signature shrink just enough for their widest word to fit the card
     const tfs = Math.min(title.length > 24 ? 6.4 : title.length > 13 ? 8 : 11, ...title.toUpperCase().split(/\s+/).map(w => fitCqw(w, LEG_TITLE_FONT, -.02, 88)));
@@ -494,7 +495,7 @@ function cardEl(c, holo) {
     const sfs = Math.min(13, fitCqw(sig, LEG_SIG_FONT, 0, 76));
     el.classList.add("legend");
     el.innerHTML = `<div class="in"><img class="ext" src="${esc(c.cov.replace(/\/\d+x\d+-/, "/120x120-"))}" alt="" loading="lazy" decoding="async"><img class="art" src="${esc(c.cov.replace(/\/\d+x\d+-/, "/500x500-"))}" alt="Pochette de ${esc(c.al)}" loading="lazy" decoding="async"><div class="shade"></div>
-      <div class="lhead"><span>★ LÉGENDAIRE</span><span class="lpw" title="Puissance">${st.pw}</span></div>
+      <div class="lhead"><span>${c.tier === LEG ? "★ LÉGENDAIRE" : "◆ MYTHIQUE"}</span><span class="lpw" title="Puissance">${st.pw}</span></div>
       <div class="lfoot"><div class="sig" style="font-size:${sfs.toFixed(2)}cqw">${esc(sig)}</div><div class="lttl${size}" style="font-size:${tfs.toFixed(2)}cqw">${esc(title)}</div>
         <div class="lst"><span>${T.s.toUpperCase()} <b>${st.flow}</b></span><span>ENDUR. <b>${st.endu}</b></span><span>HYPE <b>${st.hype}</b></span></div></div>
     </div><div class="foil"></div>`;
