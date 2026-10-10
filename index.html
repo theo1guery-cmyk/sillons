@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#16121f">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Instrument+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&family=Mrs+Saint+Delafield&display=swap">
-<link rel="stylesheet" href="styles.css?v=68">
+<link rel="stylesheet" href="styles.css?v=69">
 <link rel="stylesheet" href="v2.css?v=39">
 <link rel="stylesheet" href="v3.css?v=8">
 <link rel="stylesheet" href="admin.css?v=4">
@@ -166,7 +166,7 @@
     <h2>La Bourse aux disques</h2>
     <p class="sub">Achète et vends des cartes contre des Streams. Le vendeur fixe son prix, l'achat est immédiat. Une taxe de 5 % est prélevée sur chaque vente, et une annonce reste 7 jours.</p>
     <div class="market-bar">
-      <div class="wallet-mini">Ton solde : <b id="marketStreams">0</b> Streams</div>
+      <div class="wallet-mini">Ton solde : <b><i class="coin" aria-hidden="true"></i><span id="marketStreams">0</span></b> Streams</div>
       <button class="btn primary" id="sellOpen">Vendre une carte</button>
     </div>
     <div id="sellPanel" hidden></div>
@@ -193,7 +193,7 @@
     <h2>Défis</h2>
     <p class="sub">Gagne des Streams, la monnaie du jeu : une prime chaque jour, trois défis qui changent tous les jours, et des succès permanents en bronze, argent et or.</p>
     <div class="defis-top">
-      <div class="wallet"><small>Ton solde</small><b id="walletStreams">0</b><span>Streams</span></div>
+      <div class="wallet"><small>Ton solde</small><b><i class="coin" aria-hidden="true"></i><span id="walletStreams">0</span></b><span>Streams</span></div>
       <div class="login-box" id="loginBox"></div>
     </div>
     <h3>Défis du jour</h3>
@@ -265,8 +265,8 @@
 </div>
 <div class="toast" id="toast" hidden></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
-<script src="app.js?v=123"></script>
-<script src="online.js?v=64"></script>
+<script src="app.js?v=124"></script>
+<script src="online.js?v=65"></script>
 <script src="duels.js?v=51"></script>
 <script src="admin.js?v=7"></script>
 <script src="v2.js?v=4"></script>

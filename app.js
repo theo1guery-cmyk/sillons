@@ -643,7 +643,7 @@ for (const p of STORE_PACKS) {
   b.onclick = () => buyPack(p);
   p.el = b;
   const price = document.createElement("div"); price.className = "price";
-  price.innerHTML = `<b>${STORE_PRICE} Streams</b><small>5 cartes ${p.n}</small>`;
+  price.innerHTML = `<b><i class="coin" aria-hidden="true"></i>${STORE_PRICE} Streams</b><small>5 cartes ${p.n}</small>`;
   const buy = document.createElement("button"); buy.className = "btn primary"; buy.textContent = "Acheter";
   buy.setAttribute("aria-label", "Acheter un booster " + p.n + " pour " + STORE_PRICE + " Streams");
   buy.onclick = () => buyPack(p);

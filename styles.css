@@ -368,7 +368,7 @@ img{max-width:100%}
 .wallet{border:1px solid var(--brass);border-radius:16px;padding:16px;display:grid;align-content:center;gap:2px;background:linear-gradient(160deg,rgba(231,177,74,.14),transparent)}
 .wallet small{color:var(--muted);font-family:var(--mono);font-size:.72rem;text-transform:uppercase;letter-spacing:.08em}
 .wallet b{font-family:var(--display);font-size:2rem;color:var(--brass);line-height:1.1;font-variant-numeric:tabular-nums}
-.wallet span{font-size:.85rem;color:var(--muted)}
+.wallet>span{font-size:.85rem;color:var(--muted)}
 .login-box{border:1px solid var(--line);border-radius:16px;padding:14px 16px;background:var(--felt-2);display:grid;gap:12px;align-content:start}
 .login-box small{display:block;color:var(--muted);font-size:.84rem;margin-top:2px}
 .login-box .btn{justify-self:start}
@@ -786,7 +786,9 @@ header.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;just
 .pill.streams{border-color:rgba(231,177,74,.45);background:linear-gradient(180deg,rgba(231,177,74,.16),rgba(231,177,74,.04));align-items:center}
 .pill.streams b{color:#ffd98a}
 .pill.leg b{color:var(--r5)}.pill.myth b{color:var(--r4)}
-.coin{width:15px;height:15px;border-radius:50%;flex:none;background:radial-gradient(circle,#2a1d05 0 18%,transparent 20%),var(--gold-grad);box-shadow:0 0 0 1px #8a6218,0 0 10px rgba(231,177,74,.5)}
+.coin{display:inline-block;width:1.05em;height:1.05em;min-width:15px;min-height:15px;border-radius:50%;flex:none;vertical-align:-.16em;background:url(brand/streams-coin.svg) center/contain no-repeat;filter:drop-shadow(0 0 5px rgba(231,177,74,.45))}
+.wallet b{display:flex;align-items:center;gap:10px}.wallet b .coin{width:1em;height:1em}
+.offer .price b,.wallet-mini b,.l-foot .price,.reward{display:inline-flex;align-items:center;gap:6px}
 .account .btn{padding:9px 16px}
 .player{display:flex;align-items:center;gap:10px;padding:5px 14px 5px 5px;border-radius:99px;background:var(--glass);border:1px solid var(--edge);color:var(--ink);text-align:left}
 .player:hover{border-color:var(--edge-hi)}
