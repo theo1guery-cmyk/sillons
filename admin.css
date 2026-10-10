@@ -71,3 +71,4 @@
 .adm-ico{width:68px;height:68px;margin:0 auto 18px;border-radius:50%;display:grid;place-items:center;color:#ff6b78;background:#3a0f16;box-shadow:0 0 0 2px #c8323f,0 0 40px rgba(200,50,63,.4)}
 .adm-why{margin:0 0 10px;color:#ffd0c9}
 .adm-box .adm-small{margin-top:8px}
+.adm h3.adm-sep{margin-top:22px;padding-top:16px;border-top:1px solid var(--edge,var(--line))}
