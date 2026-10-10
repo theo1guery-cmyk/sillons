@@ -16,6 +16,12 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { st
 const backHere = () => location.origin + location.pathname;
 
 const MESSAGES = {
+  account_banned: "Ton compte est suspendu.",
+  not_admin: "Réservé aux admins.",
+  cannot_ban_admin: "Impossible de bannir un admin.",
+  user_not_found: "Joueur introuvable.",
+  empty_message: "Le message est vide.",
+  bad_amount: "Montant invalide.",
   not_signed_in: "Connecte-toi pour faire ça.",
   no_stock: "Plus de booster pour l'instant. Le prochain arrive bientôt.",
   too_many_open_packs: "Trop de boosters en cours d'ouverture. Attends quelques secondes.",
@@ -159,6 +165,7 @@ async function enterAccount(user) {
 }
 function leaveAccount() {
   me = null; Online.active = false;
+  Online.adminOff?.();
   WISH.clear(); TAGS.length = 0; CARD_TAGS.clear(); F.tag = null;
   $("#tagBar").hidden = true; $("#marketBadge").hidden = true;
   try { const p = JSON.parse(localStorage.getItem(LS)); S = p && p.c ? p : { c: {}, opened: 0, stock: STOCK_MAX, stockAt: Date.now(), dry: 0 }; }
@@ -424,6 +431,7 @@ async function pollOffers() {
     $("#tradeBadge").hidden = !count; $("#tradeBadge").textContent = count || "";
   } catch (e) {}
   checkNotifications();
+  Online.beat?.();                       // presence for the admin page, and the ban check
   pollTimer = setTimeout(pollOffers, 30000);
 }
 
@@ -1302,6 +1310,7 @@ async function checkNotifications() {
     else if (x.type === "duel_result") toast(`⚔️ ${x.title} a joué votre clash : le résultat est dans l'onglet Clashs.`);
     else if (x.type === "duel_declined") toast(`${x.title} a refusé ton clash.`);
     else if (x.type === "prank") showPrank(x);
+    else if (x.type === "admin_warning" || x.type === "admin_message") Online.showNotice?.(x);
   }
   if ((data || []).some(x => x.type.startsWith("duel"))) Online.updateDuelsBadge?.();
 }

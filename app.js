@@ -530,7 +530,7 @@ function backEl(gl = false) {
 }
 
 /* ---------- views ---------- */
-const views = { shop: $("#view-shop"), store: $("#view-store"), binder: $("#view-binder"), catalog: $("#view-catalog"), trades: $("#view-trades"), defis: $("#view-defis"), market: $("#view-market"), albums: $("#view-albums"), duels: $("#view-duels") };
+const views = { shop: $("#view-shop"), store: $("#view-store"), binder: $("#view-binder"), catalog: $("#view-catalog"), trades: $("#view-trades"), defis: $("#view-defis"), market: $("#view-market"), albums: $("#view-albums"), duels: $("#view-duels"), admin: $("#view-admin") };
 function show(v) {
   for (const k in views) { views[k].hidden = k !== v; $("#tab-" + k).setAttribute("aria-selected", k === v); }
   if (!busy) unseatTable();   // leaving the tab puts the booster back
@@ -541,6 +541,7 @@ function show(v) {
   if (v === "market") Online.renderMarket();
   if (v === "albums") Online.renderAlbums();
   if (v === "duels") Online.renderDuels?.();
+  if (v === "admin") Online.renderAdmin?.();
 }
 $("#tab-shop").onclick = () => show("shop");
 $("#tab-store").onclick = () => show("store");
@@ -551,6 +552,7 @@ $("#tab-defis").onclick = () => show("defis");
 $("#tab-market").onclick = () => show("market");
 $("#tab-albums").onclick = () => show("albums");
 $("#tab-duels").onclick = () => show("duels");
+$("#tab-admin").onclick = () => show("admin");
 
 const owned = () => Object.values(S.c);
 const ck = c => c.id + "#" + c.tier;                     // key of a card: a track in one rarity
