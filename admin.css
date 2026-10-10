@@ -72,3 +72,7 @@
 .adm-why{margin:0 0 10px;color:#ffd0c9}
 .adm-box .adm-small{margin-top:8px}
 .adm h3.adm-sep{margin-top:22px;padding-top:16px;border-top:1px solid var(--edge,var(--line))}
+.adm-gifts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.adm-gifts .btn{margin:0;font-size:.82rem;padding:8px 10px}
+.adm-gifts .btn.shiny{border-color:rgba(233,196,106,.55);color:#f5d27a;background:linear-gradient(145deg,#050506,#24222a 50%,#0a0a0c)}
+.adm-act.adm-gift{grid-column:1/-1}
