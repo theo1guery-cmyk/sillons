@@ -909,7 +909,8 @@ const Stage = (() => {
       sl = await Promise.race([loadSleeve(), wait(15000)]);
       clearTimeout(slow); $s(".fx-hint").textContent = "";
     }
-    if (sl?.lost) { dropSleeve(); sl = null; }                   // its 3D died since last time: the turntable, and a fresh one next time
+    if (sl?.lost && !reduceMotion()) { dropSleeve(); sl = await Promise.race([loadSleeve(), wait(15000)]); }   // its 3D died while waiting (the computer slept): a fresh one
+    if (sl?.lost) { dropSleeve(); sl = null; }                   // and if that one is lost too: the turntable
     const g = sl ? null : await Promise.race([load3d(), wait(1200)]);
     let r;
     if (sl) {
@@ -1087,8 +1088,20 @@ const Stage = (() => {
     if (pulls.some(pl => isArtist(pl.c) && pl.c.tier >= MYTH)) loadSleeve();
     if (pulls.some(pl => !isArtist(pl.c) && isHit(pl)) || !pulls.length) load3d();
   }
-  return { isHit, warm, hit, god, prepare };
+  // the signed sleeve, prepared ahead of time (on a computer, once the page is open)
+  function preload() { if (!el) build(); loadSleeve(); }
+  return { isHit, warm, hit, god, prepare, preload };
 })();
+
+// the files of the artists' animation are kept on the device after the first visit (sw.js); on a computer, its 3D scene
+// is also prepared in the background once the page is open, so it starts at once when a Platine or Diamant artist comes
+// out — phones keep preparing it only when a booster holds one (memory, mobile data)
+if ("serviceWorker" in navigator && isSecureContext) navigator.serviceWorker.register("sw.js").catch(() => {});
+const isPhone = Math.min(innerWidth, innerHeight) < 600 || /Android|iPhone|iPad/.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
+if (!isPhone && !reduceMotion()) {
+  const go = () => setTimeout(() => (window.requestIdleCallback || setTimeout)(() => Stage.preload()), 3000);
+  if (document.readyState === "complete") go(); else addEventListener("load", go, { once: true });
+}
 
 // light particles for the hit screen: slow embers rising during the charge, a burst when the card comes out
 function Particles(cv) {

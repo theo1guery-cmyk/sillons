@@ -60,6 +60,7 @@ Puis ouvrir http://localhost:8765.
 - `styles.css` : le design (cartes, boosters, collection)
 - `app.js` : les appels Deezer, les tirages, la collection, les extraits audio
 - `online.js` : comptes, collection en ligne, import et échanges (Supabase)
+- `sw.js` : garde sur l'appareil, après la première visite, les fichiers de l'animation des artistes (three.js et modèles de la pochette signée) ; sur ordinateur, la scène est aussi préparée en arrière-plan dès l'ouverture de la page
 - `admin.js`, `admin.css` : page Admin (comptes de la table `admins`) : joueurs en ligne en temps réel, comptes, bannissements, avertissements, message à tous, Streams et boosters, journal des actions ; côté joueur, l'écran de suspension et les messages de l'équipe
 - `duels.js` : clashs blind test et entraînement
 - `supabase/migrations/` : la base de données, les règles d'accès et les fonctions serveur
