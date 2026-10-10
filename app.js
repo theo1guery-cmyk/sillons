@@ -486,8 +486,30 @@ function cardEl(c, holo) {
   const el = document.createElement("div");
   el.className = "card" + (holo && c.tier >= MYTH ? " shiny" : "") + (c.g == null ? " pending" : ""); el.dataset.r = c.tier;
   el.style.setProperty("--h", T.h); el.style.setProperty("--rc", RCOL[c.tier]);
-  // a Légendaire is a concert poster: the sleeve fills the card, the artist signs it in gold. A Shiny Mythique gets the same poster, in black and silver
-  if ((c.tier === LEG || c.tier === MYTH && holo) && c.cov) {
+  // a Shiny Mythique is all black and silver: a chrome frame with a fine inner line, the sleeve set in a silver-edged window in black
+  // and white, chrome lettering and bars, and a silver Shiny ribbon
+  if (c.tier === MYTH && holo) {
+    el.classList.add("smyth");
+    const art = c.cov ? `<img class="cover" src="${esc(c.cov.replace(/\/\d+x\d+-/, "/500x500-"))}" alt="Pochette de ${esc(c.al)}" loading="lazy" decoding="async">` : `<div class="ph">${esc(initials(c.t))}</div>`;
+    el.innerHTML = `<div class="in">
+      <div class="top"><span class="ty">${T.n}</span><span class="brand">ZIK HUNTER</span></div>
+      <div class="win">${art}</div>
+      <div class="body">
+        <div class="nm">${esc(c.t)}${c.x ? '<span class="ex">E</span>' : ""}</div>
+        <div class="meta">${esc(c.a)} · ${esc(c.al)}</div>
+        <div class="st">
+          <i>${T.s.toUpperCase()}</i><span class="bar"><s style="width:${st.flow}%"></s></span><em>${st.flow}</em>
+          <i>ENDUR.</i><span class="bar"><s style="width:${st.endu}%"></s></span><em>${st.endu}</em>
+          <i>HYPE</i><span class="bar"><s style="width:${st.hype}%"></s></span><em>${st.hype}</em>
+        </div>
+      </div>
+      <div class="ft"><span>${c.y || "—"}<b title="Puissance">PW ${st.pw}</b></span><span class="rn">MYTHIQUE</span></div>
+    </div><span class="ribbon">✦ SHINY</span><div class="foil"></div>`;
+    const w = document.createElement("div"); w.className = "cq"; w.appendChild(el);
+    return w;
+  }
+  // a Légendaire is a concert poster: the sleeve fills the card, the artist signs it in gold
+  if (c.tier === LEG && c.cov) {
     const title = c.t.replace(/\s*\((feat|with)\.?[^)]*\)/i, ""), size = title.length > 24 ? " xlong" : title.length > 13 ? " long" : "";
     // the title and the signature shrink just enough for their widest word to fit the card
     const tfs = Math.min(title.length > 24 ? 6.4 : title.length > 13 ? 8 : 11, ...title.toUpperCase().split(/\s+/).map(w => fitCqw(w, LEG_TITLE_FONT, -.02, 88)));
@@ -495,7 +517,7 @@ function cardEl(c, holo) {
     const sfs = Math.min(13, fitCqw(sig, LEG_SIG_FONT, 0, 76));
     el.classList.add("legend");
     el.innerHTML = `<div class="in"><img class="ext" src="${esc(c.cov.replace(/\/\d+x\d+-/, "/120x120-"))}" alt="" loading="lazy" decoding="async"><img class="art" src="${esc(c.cov.replace(/\/\d+x\d+-/, "/500x500-"))}" alt="Pochette de ${esc(c.al)}" loading="lazy" decoding="async"><div class="shade"></div>
-      <div class="lhead"><span>${c.tier === LEG ? "★ LÉGENDAIRE" : "◆ MYTHIQUE"}</span><span class="lpw" title="Puissance">${st.pw}</span></div>
+      <div class="lhead"><span>★ LÉGENDAIRE</span><span class="lpw" title="Puissance">${st.pw}</span></div>
       <div class="lfoot"><div class="sig" style="font-size:${sfs.toFixed(2)}cqw">${esc(sig)}</div><div class="lttl${size}" style="font-size:${tfs.toFixed(2)}cqw">${esc(title)}</div>
         <div class="lst"><span>${T.s.toUpperCase()} <b>${st.flow}</b></span><span>ENDUR. <b>${st.endu}</b></span><span>HYPE <b>${st.hype}</b></span></div></div>
     </div><div class="foil"></div>`;
