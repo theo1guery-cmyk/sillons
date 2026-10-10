@@ -723,7 +723,7 @@ async function renderDefis() {
   for (const c of daily.challenges) {
     const done = c.progress >= c.goal;
     const el = document.createElement("div"); el.className = "daily" + (c.claimed ? " claimed" : done ? " ready" : "");
-    el.innerHTML = `<div class="d-head"><b>${esc(c.label)}</b><span class="reward">+${c.reward}</span></div>
+    el.innerHTML = `<div class="d-head"><b>${esc(c.label)}</b><span class="reward"><i class="coin" aria-hidden="true"></i>+${c.reward}</span></div>
       <div class="meter" role="progressbar" aria-valuemin="0" aria-valuemax="${c.goal}" aria-valuenow="${c.progress}"><s style="width:${c.progress / c.goal * 100}%"></s></div>
       <div class="d-foot"><small>${c.progress} / ${c.goal}</small>${c.claimed ? `<small class="ok">Récupéré</small>` : done ? `<button class="btn primary">Récupérer</button>` : ""}</div>`;
     const b = el.querySelector("button");
@@ -842,7 +842,7 @@ function listingEl(l) {
   cardBtn.appendChild(cardEl(c, l.holo)); cardBtn.onclick = () => openModal(c, l.holo);
   const days = Math.max(0, Math.ceil((Date.parse(l.expires_at) - Date.now()) / 86400000));
   const foot = document.createElement("div"); foot.className = "l-foot";
-  foot.innerHTML = `<b class="price">${streamsTxt(l.price)}</b><small>${mine ? "ta vente" : "par " + esc(l.seller_p?.pseudo || "?")} · ${days} j</small>`;
+  foot.innerHTML = `<b class="price"><i class="coin" aria-hidden="true"></i>${streamsTxt(l.price)}</b><small>${mine ? "ta vente" : "par " + esc(l.seller_p?.pseudo || "?")} · ${days} j</small>`;
   const btn = document.createElement("button"); btn.className = "btn " + (mine ? "" : "primary");
   btn.textContent = mine ? "Retirer" : "Acheter";
   btn.onclick = async () => {

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Streams">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE2A0"/><stop offset=".52" stop-color="#E7B14A"/><stop offset="1" stop-color="#B4812A"/></linearGradient></defs>
+  <circle cx="50" cy="50" r="48" fill="url(#g)" stroke="#8A6218" stroke-width="2"/>
+  <circle cx="50" cy="50" r="40" fill="#15110A"/>
+  <g fill="none" stroke="#E7B14A" stroke-opacity=".55" stroke-width="1.6"><circle cx="50" cy="50" r="35"/><circle cx="50" cy="50" r="30"/><circle cx="50" cy="50" r="25"/></g>
+  <circle cx="50" cy="50" r="18" fill="url(#g)"/>
+  <path d="M45 41 L59 50 L45 59 Z" fill="#2A1D05"/>
+  <path d="M18 30 A38 38 0 0 1 40 13" stroke="#FFF3D0" stroke-opacity=".5" stroke-width="3" fill="none" stroke-linecap="round"/>
+</svg>
