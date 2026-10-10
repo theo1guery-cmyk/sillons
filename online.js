@@ -132,7 +132,9 @@ async function loadProfile() {
   Object.assign(me, data);
   S.opened = data.opened; S.dry = data.dry; S.gods = data.gods;
   S.stock = data.stock; S.stockAt = Date.parse(data.stock_at);
+  const before = S.streams;
   S.streams = data.streams;
+  if (before != null && data.streams > before) coinRain(data.streams - before, before);   // Streams won: coins fall in the counter
 }
 async function loadAll() {
   const [{ data: settings }, cards] = await Promise.all([sb.from("settings").select("*").single(), fetchCards(me.id), loadWishAndTags()]);

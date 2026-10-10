@@ -578,6 +578,48 @@ function renderCounters() {
     + pill("opened", fmt(S.opened), "Boosters");
 }
 
+// Streams won: gold coins fly from where the player clicked (or the middle of the screen) into the counter, which counts up
+let lastTap = null;
+addEventListener("pointerdown", e => { lastTap = { x: e.clientX, y: e.clientY, t: Date.now() }; }, true);
+function coinRain(gain, from) {
+  requestAnimationFrame(() => {
+    const pillNow = () => $("#counters .pill.streams");   // the counter is redrawn often: always take the current one
+    const pill = pillNow(), coin = pill?.querySelector(".coin");
+    if (!pill || !coin || !pill.offsetParent) return;
+    const to = coin.getBoundingClientRect(), tx = to.left + to.width / 2, ty = to.top + to.height / 2;
+    if (reduceMotion()) return;
+    const tap = lastTap && Date.now() - lastTap.t < 4000 ? lastTap : { x: innerWidth / 2, y: innerHeight * .55 };
+    const n = Math.max(4, Math.min(14, Math.round(3 + Math.log10(gain) * 3)));
+    const fly = 650, gap = 55;
+    for (let i = 0; i < n; i++) {
+      const c = document.createElement("i"); c.className = "coin coin-fly"; c.setAttribute("aria-hidden", "true");
+      document.body.appendChild(c);
+      const sx = tap.x + (Math.random() - .5) * 90, sy = tap.y + (Math.random() - .5) * 50;
+      const mx = (sx + tx) / 2 + (Math.random() - .5) * 160, my = Math.max(30, ty + (sy - ty) * .3 - 40 - Math.random() * 60);
+      const a = c.animate([
+        { transform: `translate(${sx}px,${sy}px) scale(.4) rotateY(0deg)`, opacity: 0 },
+        { transform: `translate(${sx}px,${sy - 30}px) scale(1.25) rotateY(180deg)`, opacity: 1, offset: .18 },
+        { transform: `translate(${mx}px,${my}px) scale(1.1) rotateY(360deg)`, offset: .55 },
+        { transform: `translate(${tx}px,${ty}px) scale(.8) rotateY(540deg)`, opacity: 1 },
+      ], { duration: fly, delay: i * gap, easing: "cubic-bezier(.45,0,.55,1)", fill: "both" });
+      a.onfinish = () => { c.remove(); pillNow()?.animate([{ transform: "scale(1)" }, { transform: "scale(1.12)" }, { transform: "scale(1)" }], { duration: 180 }); };
+    }
+    // the number counts up while the coins land, then a "+N" floats above the counter
+    const start = performance.now() + fly, total = (n - 1) * gap + 250;
+    (function tick(now) {
+      const k = Math.min(1, Math.max(0, (now - start) / total)), num = pillNow()?.querySelector("b");
+      if (num) num.textContent = fmt(Math.round(from + (S.streams - from) * k));
+      if (k < 1) requestAnimationFrame(tick);
+    })(performance.now());
+    setTimeout(() => {
+      const plus = document.createElement("span"); plus.className = "coin-plus"; plus.textContent = "+" + fmt(gain);
+      const p = pillNow(); if (!p) return;
+      const r = p.getBoundingClientRect(); plus.style.left = r.left + r.width / 2 + "px"; plus.style.top = r.bottom + 4 + "px";
+      document.body.appendChild(plus); setTimeout(() => plus.remove(), 1600);
+    }, fly + (n - 1) * gap);
+  });
+}
+
 /* ---------- shelf: one booster, limited stock ---------- */
 const BOOSTER = { g: -1, n: "Booster" };
 const shelf = $("#shelf");

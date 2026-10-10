@@ -785,6 +785,9 @@ header.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;just
 .pill small{font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 .pill.streams{border-color:rgba(231,177,74,.45);background:linear-gradient(180deg,rgba(231,177,74,.16),rgba(231,177,74,.04));align-items:center}
 .pill.streams b{color:#ffd98a}
+.coin.coin-fly{position:fixed;left:0;top:0;width:22px;height:22px;margin:-11px 0 0 -11px;z-index:9999;pointer-events:none;will-change:transform}
+.coin-plus{position:fixed;z-index:9999;pointer-events:none;transform:translateX(-50%);font-family:var(--display);font-weight:800;font-size:.95rem;color:#ffd98a;text-shadow:0 0 12px rgba(231,177,74,.8),0 2px 4px rgba(0,0,0,.6);animation:coinPlus 1.6s ease-out forwards}
+@keyframes coinPlus{0%{opacity:0;transform:translate(-50%,-6px) scale(.8)}15%{opacity:1;transform:translate(-50%,0) scale(1.1)}70%{opacity:1}100%{opacity:0;transform:translate(-50%,14px)}}
 .pill.leg b{color:var(--r5)}.pill.myth b{color:var(--r4)}
 .coin{display:inline-block;width:1.05em;height:1.05em;min-width:15px;min-height:15px;border-radius:50%;flex:none;vertical-align:-.16em;background:url(brand/streams-coin.svg) center/contain no-repeat;filter:drop-shadow(0 0 5px rgba(231,177,74,.45))}
 .wallet b{display:flex;align-items:center;gap:10px}.wallet b .coin{width:1em;height:1em}
