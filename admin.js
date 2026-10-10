@@ -185,10 +185,11 @@ async function showUser(u) {
   const box = $("#admDetail");
   box.innerHTML = `<h3>${esc(u.pseudo)}</h3><p class="empty-line">Chargement de la fiche…</p>`;
   let d;
-  let god = false;
-  try { [d, god] = await Promise.all([rpc("admin_user", { p_user: u.id }), rpc("admin_god_pending", { p_user: u.id }).catch(() => false)]); }
+  let gifts = {};
+  try { [d, gifts] = await Promise.all([rpc("admin_user", { p_user: u.id }), rpc("admin_gifts", { p_user: u.id }).catch(() => ({}))]); }
   catch (e) { box.innerHTML = `<p class="empty-line">${esc(message(e))}</p>`; return; }
   if (ADM.sel !== u.id) return;
+  const god = !!gifts.god, gift = gifts.artist || 0, CERTN = { 4: "Platine", 5: "Diamant" };
   const row = (k, v) => `<dt>${k}</dt><dd>${v}</dd>`;
   box.innerHTML = `<div class="adm-head"><h3>${esc(u.pseudo)}</h3>${u.online ? `<span class="tag live">en ligne</span>` : ""}${u.admin ? `<span class="tag adm">admin</span>` : ""}</div>
     ${u.ban ? `<p class="adm-banned">Banni ${u.ban.until ? `jusqu'au ${esc(dateFr(u.ban.until))}` : "définitivement"}${u.ban.reason ? ` · ${esc(u.ban.reason)}` : ""}</p>` : ""}
@@ -220,6 +221,10 @@ async function showUser(u) {
       <div class="adm-act"><h4>GOD pack</h4>
         <p class="adm-small">${god ? "Son prochain booster sera un <b>GOD pack</b>." : "Son prochain booster ouvert sur le site sera un GOD pack (animation complète et annonce Discord)."}</p>
         <button class="btn${god ? "" : " primary"}" id="aGod">${god ? "Annuler le GOD pack" : "Offrir un GOD pack"}</button></div>
+      <div class="adm-act"><h4>Artiste certifié</h4>
+        <p class="adm-small">${gift ? `La dernière carte de son prochain booster sera un artiste <b>${CERTN[gift]}</b>.` : "La dernière carte de son prochain booster sera un artiste certifié (pochette signée et annonce Discord)."}</p>
+        ${gift ? `<button class="btn" id="aArtNo">Annuler l'artiste ${CERTN[gift]}</button>`
+          : `<div class="adm-row"><button class="btn primary" data-tier="5">Offrir un Diamant</button><button class="btn" data-tier="4">Offrir un Platine</button></div>`}</div>
       <form class="adm-act" id="aBoost"><h4>Boosters</h4>
         <div class="adm-row"><input type="number" step="1" min="-100" max="100" placeholder="+5" aria-label="Nombre de boosters" required></div>
         <button class="btn">Appliquer</button></form>
@@ -247,13 +252,17 @@ async function showUser(u) {
   };
   $("#aGod").onclick = () => act("admin_force_god", { p_user: u.id, p_on: !god },
     () => god ? `GOD pack annulé pour ${u.pseudo}.` : `Le prochain booster de ${u.pseudo} sera un GOD pack.`);
+  box.querySelectorAll("[data-tier]").forEach(b => b.onclick = () => act("admin_gift_artist", { p_user: u.id, p_tier: +b.dataset.tier },
+    () => `La dernière carte du prochain booster de ${u.pseudo} sera un artiste ${CERTN[b.dataset.tier]}.`));
+  const no = $("#aArtNo");
+  if (no) no.onclick = () => act("admin_gift_artist", { p_user: u.id, p_tier: 0 }, () => `Artiste annulé pour ${u.pseudo}.`);
   $("#aBoost").onsubmit = e => {
     e.preventDefault(); const v = Math.trunc(+e.target.querySelector("input").value);
     if (v) act("admin_boosters", { p_user: u.id, p_count: v }, s => `${u.pseudo} a maintenant ${fmt(s)} booster${s > 1 ? "s" : ""} en stock.`);
   };
 }
 
-const ACTIONS = { ban: "Banni", unban: "Débanni", warn: "Averti", broadcast: "Message à tous", streams: "Streams", boosters: "Boosters", discord: "Discord", god: "GOD pack" };
+const ACTIONS = { ban: "Banni", unban: "Débanni", warn: "Averti", broadcast: "Message à tous", streams: "Streams", boosters: "Boosters", discord: "Discord", god: "GOD pack", gift: "Cadeau" };
 const actionTxt = a => ACTIONS[a] || a;
 async function loadLog() {
   let l;
