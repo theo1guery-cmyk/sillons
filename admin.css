@@ -76,3 +76,5 @@
 .adm-gifts .btn{margin:0;font-size:.82rem;padding:8px 10px}
 .adm-gifts .btn.shiny{border-color:rgba(233,196,106,.55);color:#f5d27a;background:linear-gradient(145deg,#050506,#24222a 50%,#0a0a0c)}
 .adm-act.adm-gift{grid-column:1/-1}
+.adm-given{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.adm-given .linkish{flex:none;color:#ff9a8c}

@@ -22,6 +22,7 @@ const MESSAGES = {
   user_not_found: "Joueur introuvable.",
   empty_message: "Le message est vide.",
   bad_amount: "Montant invalide.",
+  card_not_found: "Carte introuvable (déjà supprimée ?).",
   bad_webhook: "Adresse de webhook Discord invalide (elle commence par https://discord.com/api/webhooks/).",
   not_signed_in: "Connecte-toi pour faire ça.",
   no_stock: "Plus de booster pour l'instant. Le prochain arrive bientôt.",

@@ -231,8 +231,9 @@ async function showUser(u) {
         <button class="btn">Appliquer</button></form>
     </div>
     <h4>Cartes offertes${given.length ? ` (${given.length})` : ""}</h4>
-    ${given.length ? `<ul class="adm-hist">${given.map(c => `<li><small>${esc(dateFr(c.at))}</small>${esc(giftName({ kind: c.kind, tier: c.tier, shiny: c.holo }))} · ${esc(c.title)}${c.artist ? ` — ${esc(c.artist)}` : ""}</li>`).join("")}</ul>
-      <button class="btn danger" id="aGiftDel">Supprimer les cartes offertes</button>` : `<p class="adm-small">Aucune carte offerte dans sa collection.</p>`}
+    ${given.length ? `<ul class="adm-hist">${given.map(c => `<li class="adm-given"><span><small>${esc(dateFr(c.at))}</small>${esc(giftName({ kind: c.kind, tier: c.tier, shiny: c.holo }))} · ${esc(c.title)}${c.artist ? ` — ${esc(c.artist)}` : ""}</span>
+        <button class="linkish" data-del="${esc(c.id)}" aria-label="Supprimer ${esc(c.title)}">Supprimer</button></li>`).join("")}</ul>
+      <button class="btn danger" id="aGiftDel">Tout supprimer</button>` : `<p class="adm-small">Aucune carte offerte dans sa collection.</p>`}
     ${d.warnings.length ? `<h4>Avertissements</h4><ul class="adm-hist">${d.warnings.map(w => `<li><small>${esc(dateFr(w.at))}${w.read ? " · lu" : " · pas encore lu"}</small>${esc(w.message)}</li>`).join("")}</ul>` : ""}
     ${d.log.length ? `<h4>Historique</h4><ul class="adm-hist">${d.log.map(l => `<li><small>${esc(dateFr(l.at))} · ${esc(l.admin || "?")}</small>${esc(actionTxt(l.action))}${l.detail ? ` · ${esc(l.detail)}` : ""}</li>`).join("")}</ul>` : ""}`;
 
@@ -260,6 +261,11 @@ async function showUser(u) {
     act("admin_gift_card", { p_user: u.id, p_kind: g.kind, p_tier: g.tier, p_shiny: g.shiny }, () => `La dernière carte du prochain booster de ${u.pseudo} sera : ${giftName(g)}.`); });
   const no = $("#aGiftNo");
   if (no) no.onclick = () => act("admin_gift_card", { p_user: u.id, p_kind: "track", p_tier: 0, p_shiny: false }, () => `Carte annulée pour ${u.pseudo}.`);
+  box.querySelectorAll("[data-del]").forEach(b => b.onclick = () => {
+    const c = given.find(x => x.id === b.dataset.del);
+    if (c && confirm(`Supprimer « ${c.title} » (${giftName({ kind: c.kind, tier: c.tier, shiny: c.holo })}) de la collection de ${u.pseudo} ?`))
+      act("admin_delete_gifted_card", { p_card: c.id }, () => `« ${c.title} » supprimée.`);
+  });
   const del = $("#aGiftDel");
   if (del) del.onclick = () => { if (confirm(`Supprimer les ${given.length} carte${given.length > 1 ? "s" : ""} offerte${given.length > 1 ? "s" : ""} de la collection de ${u.pseudo} ?`))
     act("admin_delete_gifted", { p_user: u.id }, n => `${n} carte${n > 1 ? "s" : ""} offerte${n > 1 ? "s" : ""} supprimée${n > 1 ? "s" : ""}.`); };
