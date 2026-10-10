@@ -268,4 +268,3 @@
 .dcard.pcard.collector::before{background:#000}
 .dcard.pcard.collector .in{background:#050506}
 .dcard.pcard.collector .photo{filter:grayscale(1) contrast(1.3) brightness(1.02)}
-.acard.collector .a-top,.acard.shiny .a-top{padding-right:16cqw}   /* the power stays clear of the Collector / Shiny ribbon */
