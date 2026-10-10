@@ -228,6 +228,7 @@
 .card .in{position:absolute;inset:1.6cqw;height:auto}
 .dcard .in{position:absolute;inset:2.6cqw;height:auto}
 .acard .frame{position:absolute;inset:4.2cqw;height:auto}
+.acard.collector .frame{position:absolute}   /* the Collector raised its frame with position:relative, which undid the anchoring: the frame shrank to its text */
 
 /* ---------- Disque de platine: the Icône's little sister — the same full photo and name down the side, but a rounded
    frame of brushed platinum, a satin name without chrome or depth, a disc in the badge, and no signature (that stays the Diamant's) ---------- */
@@ -267,3 +268,4 @@
 .dcard.pcard.collector::before{background:#000}
 .dcard.pcard.collector .in{background:#050506}
 .dcard.pcard.collector .photo{filter:grayscale(1) contrast(1.3) brightness(1.02)}
+.acard.collector .a-top,.acard.shiny .a-top{padding-right:16cqw}   /* the power stays clear of the Collector / Shiny ribbon */
