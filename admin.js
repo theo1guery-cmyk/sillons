@@ -98,6 +98,12 @@ function buildAdmin() {
         <p class="adm-small">Chaque joueur le verra une fois, dans une fenêtre, à sa prochaine connexion (ou dans les 30 secondes s'il joue).</p>
         <textarea id="admBc" maxlength="500" rows="3" placeholder="Ex. : maintenance ce soir à 22 h, le jeu sera coupé 10 minutes."></textarea>
         <div class="adm-row"><button class="btn primary" id="admBcSend">Envoyer à tout le monde</button></div>
+        <h3 class="adm-sep">Annonces Discord</h3>
+        <p class="adm-small">GOD packs, Légendaires, Shiny et artistes Platine ou Diamant sont annoncés dans un salon Discord. Colle l'adresse du webhook du salon (Discord → paramètres du salon → Intégrations → Webhooks → Copier l'URL du webhook).</p>
+        <p class="adm-small" id="admDcState">…</p>
+        <form class="adm-row" id="admDc"><input type="url" id="admDcUrl" placeholder="https://discord.com/api/webhooks/…" aria-label="Adresse du webhook Discord" autocomplete="off">
+          <button class="btn">Enregistrer</button></form>
+        <div class="adm-row"><button class="btn" id="admDcTest">Envoyer un test</button><button class="btn" id="admDcToggle"></button></div>
       </div>
       <div class="adm-panel" role="region" aria-labelledby="admLogT">
         <h3 id="admLogT">Journal des actions</h3>
@@ -115,12 +121,30 @@ function buildAdmin() {
     try { const n = await rpc("admin_broadcast", { p_message: m }); $("#admBc").value = ""; toast(`Message envoyé à ${fmt(n)} joueurs.`); loadLog(); }
     catch (e) { toast(message(e)); }
   };
+  $("#admDc").onsubmit = async e => {
+    e.preventDefault(); const u = $("#admDcUrl").value.trim();
+    try { await rpc("admin_discord_set", { p_url: u, p_enabled: null }); $("#admDcUrl").value = ""; toast(u ? "Webhook Discord enregistré." : "Webhook Discord retiré."); loadDiscord(); loadLog(); }
+    catch (e) { toast(message(e)); }
+  };
+  $("#admDcTest").onclick = async () => { try { await rpc("admin_discord_test"); toast("Message de test envoyé : regarde le salon Discord."); } catch (e) { toast(message(e)); } };
+  $("#admDcToggle").onclick = async () => {
+    try { await rpc("admin_discord_set", { p_url: null, p_enabled: !ADM.discord?.enabled }); loadDiscord(); loadLog(); } catch (e) { toast(message(e)); }
+  };
+}
+
+async function loadDiscord() {
+  try { ADM.discord = await rpc("admin_discord_get"); } catch (e) { $("#admDcState").textContent = message(e); return; }
+  const d = ADM.discord;
+  $("#admDcState").innerHTML = !d.set ? "Aucun webhook enregistré : rien n'est annoncé."
+    : d.enabled ? `Annonces <b>actives</b> (webhook ${esc(d.hint)}).` : `Annonces <b>coupées</b> (webhook ${esc(d.hint)} enregistré).`;
+  $("#admDcToggle").textContent = d.enabled ? "Couper les annonces" : "Réactiver les annonces";
+  $("#admDcToggle").hidden = $("#admDcTest").hidden = !d.set;
 }
 
 async function renderAdmin() {
   if (!me || !ADM.admin) return show("shop");
   buildAdmin();
-  await Promise.all([loadStats(), loadUsers(), loadLog()]);
+  await Promise.all([loadStats(), loadUsers(), loadLog(), loadDiscord()]);
   clearInterval(ADM.timer);
   ADM.timer = setInterval(() => {
     if (views.admin.hidden || !ADM.admin) return clearInterval(ADM.timer);
@@ -222,7 +246,7 @@ async function showUser(u) {
   };
 }
 
-const ACTIONS = { ban: "Banni", unban: "Débanni", warn: "Averti", broadcast: "Message à tous", streams: "Streams", boosters: "Boosters" };
+const ACTIONS = { ban: "Banni", unban: "Débanni", warn: "Averti", broadcast: "Message à tous", streams: "Streams", boosters: "Boosters", discord: "Discord" };
 const actionTxt = a => ACTIONS[a] || a;
 async function loadLog() {
   let l;
