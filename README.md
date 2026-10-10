@@ -62,7 +62,7 @@ Puis ouvrir http://localhost:8765.
 - `online.js` : comptes, collection en ligne, import et échanges (Supabase)
 - **Annonces Discord** : GOD packs, Légendaires, Shiny et artistes Platine ou Diamant sont annoncés dans un salon Discord par un webhook (adresse réglée dans la page Admin, gardée dans une table illisible par les joueurs ; envoi par `pg_net`, sans ralentir le booster). Migration `20261010000200_discord.sql`.
 - **GOD pack offert** : depuis la fiche d'un joueur (page Admin), son prochain booster est un GOD pack (`forced_gods`, vérifié dans `start_pack`). Migration `20261010000300_force_god.sql`.
-- **Artiste offert** : depuis la fiche d'un joueur (page Admin), la dernière carte de son prochain booster est un artiste Platine ou Diamant (`forced_artists`, dans `start_pack`). Migration `20261010000400_gift_artist.sql`.
+- **Carte offerte** : depuis la fiche d'un joueur (page Admin), la dernière carte de son prochain booster est la carte choisie : Mythique, Légendaire, artiste Platine ou Diamant, Shiny ou non (`forced_cards` dans `start_pack`, `packs.shiny_slot` dans `finish_pack`). Migrations `20261010000400_gift_artist.sql` puis `20261010000500_gift_cards.sql`.
 - `sw.js` : garde sur l'appareil, après la première visite, les fichiers de l'animation des artistes (three.js et modèles de la pochette signée) ; sur ordinateur, la scène est aussi préparée en arrière-plan dès l'ouverture de la page
 - `admin.js`, `admin.css` : page Admin (comptes de la table `admins`) : joueurs en ligne en temps réel, comptes, bannissements, avertissements, message à tous, Streams et boosters, journal des actions ; côté joueur, l'écran de suspension et les messages de l'équipe
 - `duels.js` : clashs blind test et entraînement
