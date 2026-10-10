@@ -95,16 +95,15 @@ export async function create(host) {
     g.strokeStyle = light ? "#f0f0f0" : "#26262a"; g.lineWidth = S * .008; g.beginPath(); g.arc(c, c, c * .978, 0, 7); g.stroke();
     return texOf(cv);
   }
-  function labelTexture(shiny, silver) {     // silver: the Shiny Mythique's label, black and silver instead of black and gold
+  function labelTexture(shiny) {
     const S = 1024, cv = document.createElement("canvas"); cv.width = cv.height = S;
     const g = cv.getContext("2d"), c = S / 2;
     const bg = g.createRadialGradient(c * .7, c * .6, 0, c, c, c);
-    if (shiny) { bg.addColorStop(0, silver ? "#24272c" : "#2c241a"); bg.addColorStop(1, silver ? "#08090a" : "#0b0907"); } else { bg.addColorStop(0, "#ffffff"); bg.addColorStop(1, "#d4d4d4"); }
+    if (shiny) { bg.addColorStop(0, "#2c241a"); bg.addColorStop(1, "#0b0907"); } else { bg.addColorStop(0, "#ffffff"); bg.addColorStop(1, "#d4d4d4"); }
     g.fillStyle = bg; g.beginPath(); g.arc(c, c, c, 0, 7); g.fill();
-    const ink = silver ? "#e3e8ef" : "#f5d27a";
-    g.strokeStyle = shiny ? ink : "rgba(0,0,0,.4)"; g.lineWidth = 5; g.beginPath(); g.arc(c, c, c * .93, 0, 7); g.stroke();
-    if (logo) { g.save(); if (!shiny) g.filter = "brightness(0) opacity(.8)"; else if (silver) g.filter = "grayscale(1) brightness(1.25)"; g.drawImage(logo, c - c * .4, c - c * .56, c * .8, c * .8); g.restore(); }
-    g.fillStyle = shiny ? ink : "rgba(0,0,0,.75)"; g.textAlign = "center";
+    g.strokeStyle = shiny ? "#f5d27a" : "rgba(0,0,0,.4)"; g.lineWidth = 5; g.beginPath(); g.arc(c, c, c * .93, 0, 7); g.stroke();
+    if (logo) { g.save(); if (!shiny) g.filter = "brightness(0) opacity(.8)"; g.drawImage(logo, c - c * .4, c - c * .56, c * .8, c * .8); g.restore(); }
+    g.fillStyle = shiny ? "#f5d27a" : "rgba(0,0,0,.75)"; g.textAlign = "center";
     g.font = `600 ${S * .05}px "DM Mono", Menlo, monospace`; g.fillText("ZIK HUNTER · FACE A", c, c + c * .52);
     g.font = `500 ${S * .036}px "DM Mono", Menlo, monospace`; g.fillText("33 ⅓ TOURS", c, c + c * .67);
     g.fillStyle = "#050505"; g.beginPath(); g.arc(c, c, c * .06, 0, 7); g.fill();
@@ -126,7 +125,7 @@ export async function create(host) {
   }
   const vinylTex = vinylTexture(), goldTex = vinylTexture(true);
   const recordMat = new THREE.MeshPhysicalMaterial({ map: vinylTex, emissiveMap: vinylTex, color: 0x6a6a70, roughness: .36, metalness: .1, clearcoat: 1, clearcoatRoughness: .1, envMapIntensity: .8 });
-  const labelPlain = labelTexture(false), labelShiny = labelTexture(true), labelSilver = labelTexture(true, true), labelGod = godLabelTexture();
+  const labelPlain = labelTexture(false), labelShiny = labelTexture(true), labelGod = godLabelTexture();
   const labelMat = new THREE.MeshStandardMaterial({ map: labelPlain, color: 0xd9ad5b, roughness: .55 });
   const record = new THREE.Group();
   const recTop = new THREE.Mesh(new THREE.CircleGeometry(R_REC, 160), recordMat); recTop.position.z = .0021; record.add(recTop);
@@ -334,7 +333,7 @@ export async function create(host) {
 
   return {
     // 1. darkness; the lamp lights up through the haze; the record drops on the platter; the camera rises to 3/4
-    async intro({ shiny, silver, big, god }) {
+    async intro({ shiny, big, god }) {
       resize(); tweens.clear(); last = 0; time = 0; renderer.shadowMap.autoUpdate = true;
       ringOn = 0; orbit = 0; shake = 0; record.visible = true; deckBase.copy(deck.position);
       ring.forEach(c => { c.g.visible = false; c.free = true; });
@@ -344,7 +343,7 @@ export async function create(host) {
       card.visible = false; cardHalo.material.opacity = 0;
       const bk = await backStill(document.documentElement.dataset.back || "plain");
       cardFace.material.map = bk || plainBack; cardFace.material.transparent = !!bk; cardFace.material.needsUpdate = true;
-      labelMat.map = god ? labelGod : silver ? labelSilver : shiny ? labelShiny : labelPlain; labelMat.color.set(shiny || god ? 0xffffff : 0xd9ad5b); labelMat.needsUpdate = true;
+      labelMat.map = god ? labelGod : shiny ? labelShiny : labelPlain; labelMat.color.set(shiny || god ? 0xffffff : 0xd9ad5b); labelMat.needsUpdate = true;
       recordMat.color.set(god ? 0xe0b25a : 0x6a6a70); recordMat.emissive.set(0);
       if (god) { recordMat.color.set(0xd9a640); recordMat.metalness = 1; recordMat.roughness = .24; recordMat.envMapIntensity = 1.4; }   // a solid gold record
       else recordMat.envMapIntensity = .8;

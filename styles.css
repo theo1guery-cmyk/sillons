@@ -960,10 +960,6 @@ body.fx-on{overflow:hidden}
 .fx-screen.shiny .rec .tint{background:radial-gradient(circle,transparent 0 31%,rgba(245,210,122,.18) 32%,transparent 60%,rgba(245,210,122,.25) 97%,transparent 98.6%)}
 .fx-screen.shiny .rec .ltint{background:radial-gradient(circle,#030303 0 4.5%,transparent 5%),radial-gradient(circle at 35% 30%,#2b2418,#0c0a07 70%)}
 .fx-screen.shiny.s-charge .rec .label span,.fx-screen.shiny.s-reveal .rec .label span{color:#f5d27a}
-/* the Shiny Mythique: the same black record, in silver */
-.fx-screen.shiny.silver .rec .tint{background:radial-gradient(circle,transparent 0 31%,rgba(223,229,238,.18) 32%,transparent 60%,rgba(223,229,238,.25) 97%,transparent 98.6%)}
-.fx-screen.shiny.silver .rec .ltint{background:radial-gradient(circle,#030303 0 4.5%,transparent 5%),radial-gradient(circle at 35% 30%,#24272c,#08090a 70%)}
-.fx-screen.shiny.silver.s-charge .rec .label span,.fx-screen.shiny.silver.s-reveal .rec .label span{color:#e3e8ef}
 
 /* the sleeve the record comes out of */
 .fx-sleeve{position:absolute;inset:1%;border-radius:6px;z-index:1;display:grid;place-items:center;align-content:center;gap:2%;opacity:0;
