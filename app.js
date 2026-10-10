@@ -486,30 +486,7 @@ function cardEl(c, holo) {
   const el = document.createElement("div");
   el.className = "card" + (holo && c.tier >= MYTH ? " shiny" : "") + (c.g == null ? " pending" : ""); el.dataset.r = c.tier;
   el.style.setProperty("--h", T.h); el.style.setProperty("--rc", RCOL[c.tier]);
-  // a Shiny Mythique is all black and silver: a chrome frame with a fine inner line, the sleeve set in a silver-edged window in black
-  // and white, chrome lettering and bars, and a silver Shiny ribbon
-  if (c.tier === MYTH && holo) {
-    el.classList.add("smyth");
-    const art = c.cov ? `<img class="cover" src="${esc(c.cov.replace(/\/\d+x\d+-/, "/500x500-"))}" alt="Pochette de ${esc(c.al)}" loading="lazy" decoding="async">` : `<div class="ph">${esc(initials(c.t))}</div>`;
-    el.innerHTML = `<div class="in">
-      <div class="top"><span class="ty">${T.n}</span><span class="brand">ZIK HUNTER</span></div>
-      <div class="win">${art}</div>
-      <div class="body">
-        <div class="nm">${esc(c.t)}${c.x ? '<span class="ex">E</span>' : ""}</div>
-        <div class="meta">${esc(c.a)} · ${esc(c.al)}</div>
-        <div class="st">
-          <i>${T.s.toUpperCase()}</i><span class="bar"><s style="width:${st.flow}%"></s></span><em>${st.flow}</em>
-          <i>ENDUR.</i><span class="bar"><s style="width:${st.endu}%"></s></span><em>${st.endu}</em>
-          <i>HYPE</i><span class="bar"><s style="width:${st.hype}%"></s></span><em>${st.hype}</em>
-        </div>
-      </div>
-      <div class="ft"><span>${c.y || "—"}<b title="Puissance">PW ${st.pw}</b></span><span class="rn">MYTHIQUE</span></div>
-    </div><span class="ribbon">✦ SHINY</span><div class="foil"></div>`;
-    const w = document.createElement("div"); w.className = "cq"; w.appendChild(el);
-    return w;
-  }
-  // a Légendaire is a concert poster: the sleeve fills the card, the artist signs it in gold
-  if (c.tier === LEG && c.cov) {
+  if (c.tier === LEG && c.cov) {          // a Légendaire is a concert poster: the sleeve fills the card, the artist signs it in gold
     const title = c.t.replace(/\s*\((feat|with)\.?[^)]*\)/i, ""), size = title.length > 24 ? " xlong" : title.length > 13 ? " long" : "";
     // the title and the signature shrink just enough for their widest word to fit the card
     const tfs = Math.min(title.length > 24 ? 6.4 : title.length > 13 ? 8 : 11, ...title.toUpperCase().split(/\s+/).map(w => fitCqw(w, LEG_TITLE_FONT, -.02, 88)));
@@ -834,9 +811,7 @@ const Stage = (() => {
   const audio = new Audio(); audio.preload = "auto";
   const isHit = pl => pl.c.tier >= MYTH;
   const css = v => v.startsWith("var(") ? getComputedStyle(document.documentElement).getPropertyValue(v.slice(4, -1)).trim() : v;
-  // a Shiny Mythique track is black and silver, every other Shiny black and gold
-  const silverOf = pl => pl.holo && pl.c.tier === MYTH && !isArtist(pl.c);
-  const colorOf = pl => silverOf(pl) ? "#dfe5ee" : pl.holo ? "#f5d27a" : css(isArtist(pl.c) ? CCOL[pl.c.tier] : RCOL[pl.c.tier]);
+  const colorOf = pl => pl.holo ? "#f5d27a" : css(isArtist(pl.c) ? CCOL[pl.c.tier] : RCOL[pl.c.tier]);
   const warm = pl => pl.preview ??= (isArtist(pl.c) ? dz(`artist/${pl.c.aid}/top`, { limit: 1 }, true).then(d => (d.data || [])[0]?.preview)
     : dz("track/" + pl.c.id, {}, true).then(t => t.preview)).catch(() => null);
 
@@ -909,7 +884,7 @@ const Stage = (() => {
     el.style.setProperty("--vc", "#cfc8da");
     el.style.setProperty("--beat", (60 / bpm).toFixed(3) + "s");
     if (big) el.classList.add("big");
-    if (pl.holo) el.classList.add("shiny"); if (silverOf(pl)) el.classList.add("silver");
+    if (pl.holo) el.classList.add("shiny");
     const front = $s(".face.front"); front.innerHTML = ""; front.appendChild(cardEl(pl.c, pl.holo));
     // decode the artwork now, so it doesn't freeze the animation when the card comes out
     await Promise.race([Promise.all([...front.querySelectorAll("img")].map(i => i.decode().catch(() => {}))), wait(700)]);
@@ -957,7 +932,7 @@ const Stage = (() => {
       // the 3D turntable: intro, the needle lands (the music starts on the touch), the card rises out of the record
       el.classList.add("three");
       void el.offsetWidth; el.classList.add("s-in");
-      await g.intro({ shiny: !!pl.holo, silver: silverOf(pl), big });
+      await g.intro({ shiny: !!pl.holo, big });
       el.style.setProperty("--vc", col);
       const n = await g.needle(col, bpm, big);
       playTrack();
@@ -1021,7 +996,7 @@ const Stage = (() => {
     .catch(e => { console.warn("Pochette 3D indisponible", e); sleeveP = null; return null; }))(performance.now());
   // the 3D scene is a separate file, fetched only when a booster holds a hit; null if WebGL or the CDN fails
   let hit3d = null, hit3dP = null;
-  const load3d = () => hit3dP ??= import("./hit3d.js?v=22").then(m => m.create($s(".fx-gl-host"))).then(async x => { await x.warmup(); return hit3d = x; })
+  const load3d = () => hit3dP ??= import("./hit3d.js?v=23").then(m => m.create($s(".fx-gl-host"))).then(async x => { await x.warmup(); return hit3d = x; })
     .catch(e => { console.warn("3D indisponible, animation simple", e); return null; });
   /* GOD pack: "GOD PACK" is written in gold in the dark, the lamp lights a solid gold record, the needle lands, light
      leaks out of the grooves and the record bursts into five cards turning in a ring around the deck. Each tap brings
@@ -1058,8 +1033,8 @@ const Stage = (() => {
     for (let i = 0; i < pulls.length; i++) {                     // 4. one card at a time
       const pl = pulls[i], col = colorOf(pl), big = pl.c.tier === LEG || pl.holo;
       $s(".fx-hint").textContent = "";
-      el.classList.remove("s-reveal", "s-hold", "big", "shiny", "silver");
-      if (big) el.classList.add("big"); if (pl.holo) el.classList.add("shiny"); if (silverOf(pl)) el.classList.add("silver");
+      el.classList.remove("s-reveal", "s-hold", "big", "shiny");
+      if (big) el.classList.add("big"); if (pl.holo) el.classList.add("shiny");
       el.style.setProperty("--vc", col);
       front.innerHTML = ""; front.appendChild(cardEl(pl.c, pl.holo));
       const title = pl.holo ? "SHINY" : rarName(pl.c).toUpperCase();
