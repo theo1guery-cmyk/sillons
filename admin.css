@@ -1,0 +1,73 @@
+/* ---------- Zik Hunter admin page, and the dialogs the team sends to players ---------- */
+.adm input,.adm select,.adm textarea{background:rgba(0,0,0,.32);color:var(--ink);border:1px solid var(--edge,var(--line));border-radius:10px;padding:9px 11px;font:inherit;font-size:.92rem;min-width:0}
+.adm textarea{width:100%;resize:vertical;box-sizing:border-box}
+.adm input:focus,.adm select:focus,.adm textarea:focus{outline:none;border-color:rgba(231,177,74,.6);box-shadow:0 0 0 3px rgba(231,177,74,.18)}
+.adm h3{margin:0 0 12px;font-family:var(--display);font-size:1rem}
+.adm h4{margin:16px 0 8px;font-family:var(--mono);font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:500}
+.adm-small{color:var(--muted);font-size:.82rem;margin:0 0 10px}
+.adm-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.adm-row>input{flex:1 1 120px}
+
+/* the numbers */
+.adm-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:0 0 18px}
+.adm-tile{display:grid;gap:2px;padding:14px 16px;border-radius:14px;background:var(--glass,rgba(255,255,255,.03));border:1px solid var(--edge,var(--line))}
+.adm-tile b{font-family:var(--display);font-size:1.6rem;line-height:1.1}
+.adm-tile span{font-size:.78rem;color:var(--muted)}
+.adm-tile.live{border-color:rgba(95,196,138,.45);background:linear-gradient(180deg,rgba(95,196,138,.14),rgba(95,196,138,.03))}
+.adm-tile.live b{color:#7fe0a6;display:flex;align-items:center;gap:10px}
+.adm-tile.live b::before{content:"";width:10px;height:10px;border-radius:50%;background:#5fc48a;box-shadow:0 0 0 0 rgba(95,196,138,.6);animation:admPulse 1.8s ease-out infinite}
+.adm-tile.bad b{color:#ff8a7a}
+@keyframes admPulse{to{box-shadow:0 0 0 10px rgba(95,196,138,0)}}
+@media (prefers-reduced-motion:reduce){.adm-tile.live b::before{animation:none}}
+
+.adm-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;margin-bottom:14px}
+@media (max-width:900px){.adm-grid{grid-template-columns:minmax(0,1fr)}}
+.adm-panel{padding:16px;border-radius:16px;background:var(--glass,rgba(255,255,255,.03));border:1px solid var(--edge,var(--line));min-width:0}
+
+/* players */
+.adm-search{display:flex;gap:8px;margin-bottom:10px}
+.adm-search input{flex:1 1 auto}
+.adm-users{display:grid;gap:4px;max-height:520px;overflow:auto;margin:0 -6px;padding:0 6px}
+.adm-user{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;width:100%;padding:9px 10px;border-radius:10px;border:1px solid transparent;background:none;color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.adm-user:hover{background:rgba(255,255,255,.04)}
+.adm-user.on{background:rgba(231,177,74,.1);border-color:rgba(231,177,74,.35)}
+.adm-user .who{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 6px;min-width:0}
+.adm-user .who small{flex-basis:100%;color:var(--muted);font-size:.76rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.adm-user .when{font-size:.76rem;color:var(--muted);white-space:nowrap}
+.adm .dot{width:9px;height:9px;border-radius:50%;background:#4a4257}
+.adm .dot.live{background:#5fc48a;box-shadow:0 0 8px rgba(95,196,138,.7)}
+.adm .tag{font-style:normal;font-family:var(--mono);font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;padding:2px 6px;border-radius:6px;border:1px solid var(--line)}
+.adm .tag.adm{color:var(--brass);border-color:rgba(231,177,74,.45)}
+.adm .tag.ban{color:#ff8a7a;border-color:rgba(255,77,106,.45)}
+.adm .tag.warn{color:#ffc56b;border-color:rgba(255,197,107,.4)}
+.adm .tag.live{color:#7fe0a6;border-color:rgba(95,196,138,.45)}
+
+/* one player */
+.adm-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.adm-head h3{margin:0}
+.adm-banned{margin:10px 0 0;padding:8px 10px;border-radius:10px;background:rgba(255,77,106,.1);border:1px solid rgba(255,77,106,.35);color:#ffb3a9;font-size:.86rem}
+.adm-dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:14px 0 4px;font-size:.88rem}
+.adm-dl dt{color:var(--muted)}
+.adm-dl dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.adm-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:4px 14px}
+.adm-act h4{margin-top:14px}
+.adm-act .btn{margin-top:8px}
+.adm-hist,.adm-log{list-style:none;margin:0;padding:0;display:grid;gap:8px;font-size:.86rem}
+.adm-hist small,.adm-log small{display:block;color:var(--muted);font-size:.74rem}
+.adm-log{max-height:360px;overflow:auto}
+
+/* the dialogs players see */
+.adm-screen{position:fixed;inset:0;z-index:9998;display:grid;place-items:center;padding:24px;background:rgba(8,5,12,.88);backdrop-filter:blur(8px)}
+.adm-box{width:min(460px,100%);text-align:center;padding:28px 24px;border-radius:20px;background:#17121f;border:1px solid rgba(255,255,255,.1);box-shadow:0 30px 80px rgba(0,0,0,.6)}
+.adm-box h2{margin:0 0 12px;font-family:var(--display);font-size:1.35rem}
+.adm-box p{line-height:1.55}
+.adm-box .btn{margin-top:8px}
+.adm-kicker{margin:0 0 6px;font-family:var(--mono);font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--brass)}
+.adm-msg{margin:0 0 14px;padding:14px;border-radius:12px;background:rgba(255,255,255,.04);white-space:pre-wrap;text-align:left}
+.adm-box.warn .adm-kicker{color:#ffc56b}
+.adm-box.warn{border-color:rgba(255,197,107,.35)}
+.adm-box.ban{border-color:rgba(255,77,106,.4)}
+.adm-box.ban h2{color:#ff8a7a}
+.adm-ico{width:68px;height:68px;margin:0 auto 18px;border-radius:50%;display:grid;place-items:center;color:#ff6b78;background:#3a0f16;box-shadow:0 0 0 2px #c8323f,0 0 40px rgba(200,50,63,.4)}
+.adm-why{margin:0 0 10px;color:#ffd0c9}
+.adm-box .adm-small{margin-top:8px}
