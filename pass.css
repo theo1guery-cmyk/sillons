@@ -196,3 +196,57 @@
 .ps-buy-v{display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:8px 12px;border-radius:10px;cursor:pointer;font:500 .85rem var(--body);
   color:#f0c8ff;background:rgba(176,92,255,.12);border:1px solid rgba(176,92,255,.45)}
 .ps-buy-v:hover{background:rgba(176,92,255,.22)}
+
+/* ---------- Boutique: Vinyles ---------- */
+.vshop{--vp1:#ff7ad9;--vp2:#b05cff;--vp3:#5b3bff;margin:0 0 34px}
+.store-h{margin:0 0 6px}
+.vs-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px;margin:0 0 16px}
+.vs-head h3{margin:4px 0 4px;font-family:var(--display);font-size:clamp(1.6rem,3vw,2.2rem);
+  background:linear-gradient(90deg,#ffd0f2,#d6a6ff 50%,#a99bff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.vs-head p{margin:0;color:var(--muted);font-size:.9rem}
+.vs-head .ps-kicker{margin:0;font-family:var(--mono);font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;color:#c9a6ff}
+.vs-bal{display:grid;grid-template-columns:auto auto;align-items:center;column-gap:10px;padding:10px 16px;border-radius:14px;
+  background:linear-gradient(180deg,rgba(176,92,255,.18),rgba(176,92,255,.05));border:1px solid rgba(176,92,255,.45)}
+.vs-bal .vin{grid-row:span 2;width:30px;height:30px}
+.vs-bal b{font-family:var(--display);font-size:1.3rem;color:#f0c8ff;line-height:1}
+.vs-bal small{color:var(--muted);font-size:.72rem}
+
+/* the welcome offer */
+.vs-welcome{position:relative;overflow:hidden;display:flex;flex-wrap:wrap;align-items:center;gap:16px 22px;padding:38px 24px 20px;margin:0 0 14px;border-radius:20px;isolation:isolate;
+  background:radial-gradient(80% 160% at 0% 50%,rgba(255,122,217,.35),transparent 60%),linear-gradient(120deg,#2a1150,#160b2c 60%,#2a1150);border:1px solid rgba(255,122,217,.45)}
+.vs-welcome::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.1) 50%,transparent 65%);background-size:250% 100%;animation:sweep 4.5s ease-in-out infinite}
+.vs-badge{position:absolute;top:10px;left:24px;padding:3px 10px;border-radius:99px;background:#ff4d6a;color:#fff;font:600 .7rem var(--body);letter-spacing:.04em}
+.vs-wtxt{display:grid;flex:1;min-width:140px}
+.vs-wtxt b{font-family:var(--display);font-size:1.6rem;color:#fff}
+.vs-wtxt small{color:#d7c3f0;text-decoration:line-through;font-size:.85rem}
+.vs-welcome .vs-buy{width:auto;min-width:130px;margin:0}
+
+/* the packs */
+.vs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.vs-pack{position:relative;display:grid;justify-items:center;align-content:end;gap:2px;padding:20px 14px 14px;border-radius:18px;text-align:center;
+  background:radial-gradient(90% 60% at 50% 25%,rgba(176,92,255,.28),transparent 70%),linear-gradient(180deg,#1d1330,#110c1c);border:1px solid rgba(176,92,255,.3);
+  transition:transform .15s,border-color .15s}
+.vs-pack:hover{transform:translateY(-3px);border-color:rgba(255,122,217,.6)}
+.vs-pack.hot{border-color:rgba(245,194,77,.6);box-shadow:0 0 0 1px rgba(245,194,77,.25),0 10px 30px rgba(176,92,255,.25)}
+.vs-tag{position:absolute;top:-10px;left:50%;transform:translateX(-50%);white-space:nowrap;padding:3px 10px;border-radius:99px;
+  background:linear-gradient(90deg,#fff1c4,#f5c24d);color:#2a1a00;font:700 .68rem var(--body);letter-spacing:.04em;text-transform:uppercase}
+.vs-n{font-family:var(--display);font-size:1.5rem;color:#fff;line-height:1.1;margin-top:8px}
+.vs-pack small{color:#c9b8e8;font-size:.78rem}
+.vs-bonus{margin:6px 0 10px;padding:2px 8px;border-radius:99px;background:rgba(95,196,138,.15);color:#8fe7b3;font:600 .7rem var(--body)}
+.vs-bonus.none{background:none}
+.vs-buy{width:100%;padding:10px 12px;border:0;border-radius:12px;cursor:pointer;font:700 .95rem var(--body);color:#2a1a00;
+  background:linear-gradient(180deg,#fff1c4,#f5c24d 55%,#d99a2b);box-shadow:0 6px 18px rgba(245,194,77,.25),inset 0 1px 0 rgba(255,255,255,.6)}
+.vs-buy:hover{filter:brightness(1.07)}
+
+/* a pile of records, bigger for bigger packs */
+.vs-stack{position:relative;width:90px;height:64px}
+.vs-stack i{position:absolute;bottom:0;width:46px;height:46px;background:url(brand/vinyl.svg) center/contain no-repeat;filter:drop-shadow(0 4px 8px rgba(0,0,0,.5))}
+.vs-stack i:nth-child(1){left:22px;bottom:0;z-index:6}
+.vs-stack i:nth-child(2){left:4px;bottom:6px;z-index:5;transform:rotate(-14deg)}
+.vs-stack i:nth-child(3){left:40px;bottom:8px;z-index:4;transform:rotate(16deg)}
+.vs-stack i:nth-child(4){left:14px;bottom:18px;z-index:3;transform:rotate(-30deg)}
+.vs-stack i:nth-child(5){left:32px;bottom:20px;z-index:2;transform:rotate(28deg)}
+.vs-stack i:nth-child(6){left:23px;bottom:26px;z-index:1;transform:rotate(6deg)}
+.vs-stack.s1 i:nth-child(1){width:52px;height:52px;left:19px}
+.vs-welcome .vs-stack{width:80px;height:56px}
+@media (prefers-reduced-motion:reduce){.vs-welcome::after{animation:none}}
