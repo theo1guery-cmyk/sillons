@@ -90,7 +90,7 @@ function passBadge() {
 async function loadPass() {
   if (!me) return null;
   try { PASS.data = await rpc("my_season"); } catch (e) { PASS.data = null; }
-  passBadge();
+  passBadge(); renderVinylShop();
   return PASS.data;
 }
 
@@ -254,6 +254,46 @@ async function claimPass(list) {
   if (stop) toast(message(stop));
   renderPass();
 }
+
+/* ---------- the Boutique: buying Vinyles (the payment comes later: for now the buttons say so) ---------- */
+const VINYL_PACKS = [
+  { n: 80, eur: 0.99 }, { n: 170, eur: 1.99 }, { n: 360, eur: 3.99 },
+  { n: 950, eur: 9.99, tag: "Populaire" }, { n: 2000, eur: 19.99 }, { n: 5500, eur: 49.99, tag: "Meilleure offre" },
+];
+const euro = v => v.toFixed(2).replace(".", ",") + " €";
+function renderVinylShop() {
+  const box = $("#vinylShop");
+  if (!box) return;
+  const base = VINYL_PACKS[0].n / VINYL_PACKS[0].eur;
+  box.innerHTML = `
+    <div class="vs-head">
+      <div><p class="ps-kicker">Monnaie rare</p><h3>Vinyles</h3>
+        <p>Achète des paliers du pass saisonnier (${TIER_VINYLS} Vinyles) ou le Pass Premium (${PREMIUM_VINYLS} Vinyles).</p></div>
+      ${me ? `<div class="vs-bal"><i class="vin" aria-hidden="true"></i><b>${fmt(S.vinyls || 0)}</b><small>Ton solde</small></div>` : ""}
+    </div>
+    <div class="vs-welcome">
+      <span class="vs-badge">Offre de bienvenue · une seule fois</span>
+      <div class="vs-stack s3" aria-hidden="true"><i></i><i></i><i></i></div>
+      <div class="vs-wtxt"><b>300 Vinyles</b><small>au lieu de 3,99 €</small></div>
+      <button class="vs-buy" data-n="300" data-eur="0.99">0,99 €</button>
+    </div>
+    <div class="vs-grid">${VINYL_PACKS.map((p, i) => {
+      const bonus = Math.round((p.n / p.eur / base - 1) * 100);
+      return `<div class="vs-pack${p.tag ? " hot" : ""}">
+        ${p.tag ? `<span class="vs-tag">${p.tag}</span>` : ""}
+        <div class="vs-stack s${i + 1}" aria-hidden="true">${"<i></i>".repeat(i + 1)}</div>
+        <b class="vs-n">${fmt(p.n)}</b><small>Vinyles</small>
+        ${bonus > 0 ? `<span class="vs-bonus">+${bonus} % offerts</span>` : `<span class="vs-bonus none">&nbsp;</span>`}
+        <button class="vs-buy" data-n="${p.n}" data-eur="${p.eur}">${euro(p.eur)}</button>
+      </div>`;
+    }).join("")}</div>`;
+  box.querySelectorAll(".vs-buy").forEach(b => b.onclick = () => {
+    if (!me) return toast("Connecte-toi pour acheter des Vinyles.");
+    toast(`${fmt(+b.dataset.n)} Vinyles pour ${euro(+b.dataset.eur)} : le paiement arrive très bientôt !`);
+  });
+}
+renderVinylShop();
+addEventListener("click", e => { if (e.target.closest?.("#tab-store")) renderVinylShop(); }, true);
 
 // the badge on the tab: refreshed at sign-in and after each booster
 const passWatch = () => { if (me) loadPass(); };
