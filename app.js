@@ -761,6 +761,7 @@ async function drawPack(p, god = false, forced = null, artistTier = null) {   //
     for (let s = 0; s < 4; s++) slots.push(Math.random() < .5 ? MYTH : LEG);
   } else {
     for (let s = 0; s < 5; s++) slots.push(rollTier());   // same odds for every card
+    if (slots[4] < 2) slots[4] = 2;                         // the last card is Rare or better
     if (S.dry + 1 >= PITY && Math.max(...slots) < MYTH) slots[0] = rollTopTier();
   }
   const raws = [];
