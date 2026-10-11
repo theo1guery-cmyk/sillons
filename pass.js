@@ -4,10 +4,11 @@
 
 const PASS = { data: null, busy: false, got: {} };
 const PASS_PRICE = "4,99 €";
+const TIER_VINYLS = 30, PREMIUM_VINYLS = 450;   // the prices in Vinyles (checked by the server)
 
 const passCardName = c => (c.kind === "artist" ? (c.tier === 5 ? "Artiste Diamant" : "Artiste Platine") : (c.tier === 5 ? "Légendaire" : "Mythique"))
   + (c.shiny ? " Shiny" : "");
-const passName = r => r.kind === "streams" ? `${fmt(r.amount)} Streams` : r.kind === "boosters" ? `${r.amount} boosters` : passCardName(r.card);
+const passName = r => r.kind === "streams" ? `${fmt(r.amount)} Streams` : r.kind === "vinyls" ? `${r.amount} Vinyles` : r.kind === "boosters" ? `${r.amount} boosters` : passCardName(r.card);
 // the reward pictures are the game's own: the 3D booster of the shop, and real cards of the right rarity. The cards are
 // examples (Deezer's chart and famous artists, Travis Scott first), changing every 2 seconds: a reward is a card of
 // that rarity, not that one. Until the examples are loaded, the player's own cards stand in, or a card back.
@@ -44,6 +45,7 @@ function passArt(c, big = false, got = "") {
 }
 function passIcon(r) {
   if (r.kind === "streams") return `<i class="coin ps-coin" aria-hidden="true"></i>`;
+  if (r.kind === "vinyls") return `<i class="vin ps-vin" aria-hidden="true"></i>`;
   if (r.kind === "boosters") return `<span class="ps-pk-wrap" aria-hidden="true"><span class="pack mix ps-pk"><span class="pack-shine"></span><canvas class="pack-gl"></canvas><img class="pack-logo" src="brand/zikhunter-icon.svg" alt=""></span><b class="ps-x">×${r.amount}</b></span>`;
   return passArt(r.card);
 }
@@ -133,6 +135,8 @@ async function renderPass() {
             <div class="ps-meter"><s style="width:${pct}%"></s></div>
             <small>${max ? "Pass terminé, bravo !" : `${fmt(into)} / ${fmt(d.xp_per_tier)} XP`}</small></div>
         </div>
+        ${max ? "" : `<div class="ps-skip"><button class="ps-buytier" id="psTier">Acheter le palier ${tier + 1} <span>${TIER_VINYLS} <i class="vin" aria-hidden="true"></i></span></button>
+          <small>Tu as <b>${fmt(S.vinyls || 0)}</b> Vinyles</small></div>`}
       </div>
       <div class="ps-hero-r">
         <div class="ps-show">${passArt(final.card, true)}<span class="ps-spark s1"></span><span class="ps-spark s2"></span><span class="ps-spark s3"></span></div>
@@ -157,6 +161,7 @@ async function renderPass() {
         <p class="ps-worth">Plus de <b>${fmt(Math.floor(worth / 1000) * 1000)} Streams</b> de valeur</p>
         <p class="ps-price"><b>${PASS_PRICE}</b><small>pour toute la saison</small></p>
         <button class="btn ps-buy" id="psBuy">Débloquer le Premium</button>
+        <button class="ps-buy-v" id="psBuyV">ou avec ${PREMIUM_VINYLS} <i class="vin" aria-hidden="true"></i> Vinyles</button>
       </div>
     </div>`}
 
@@ -187,6 +192,24 @@ async function renderPass() {
 
   passTick(true); passLoadExamples();
   box.querySelectorAll(".ps-pk").forEach(pk => skin(pk, classicName, {}));   // the shop's 3D booster
+  const buyV = $("#psBuyV");
+  if (buyV) buyV.onclick = async () => {
+    if ((S.vinyls || 0) < PREMIUM_VINYLS) return toast(`Il te faut ${PREMIUM_VINYLS} Vinyles, tu en as ${fmt(S.vinyls || 0)}.`);
+    if (!confirm(`Débloquer le Pass Premium pour ${PREMIUM_VINYLS} Vinyles ?`)) return;
+    try { await rpc("buy_season_premium"); toast("Pass Premium débloqué ! Toutes les récompenses dorées sont à toi."); }
+    catch (e) { return toast(message(e)); }
+    try { await loadProfile(); } catch (e) {}
+    refreshViews(); renderPass();
+  };
+  const tierBtn = $("#psTier");
+  if (tierBtn) tierBtn.onclick = async () => {
+    if ((S.vinyls || 0) < TIER_VINYLS) return toast(`Il te faut ${TIER_VINYLS} Vinyles, tu en as ${fmt(S.vinyls || 0)}.`);
+    tierBtn.disabled = true;
+    try { const t = await rpc("buy_season_tier"); toast(`Palier ${t} débloqué !`); }
+    catch (e) { toast(message(e)); }
+    try { await loadProfile(); } catch (e) {}
+    refreshViews(); renderPass();
+  };
   const buy = $("#psBuy");
   if (buy) buy.onclick = () => toast("Le paiement arrive très bientôt ! En attendant, demande le Pass Premium à l'équipe sur Discord.");
   box.querySelectorAll(".ps-cell.ready").forEach(b => b.onclick = () => claimPass([[+b.dataset.t, b.dataset.p === "1"]]));
@@ -221,8 +244,9 @@ async function claimPass(list) {
   if (got.length) {
     const s = got.filter(r => r.kind === "streams").reduce((a, r) => a + r.amount, 0);
     const b = got.filter(r => r.kind === "boosters").reduce((a, r) => a + r.amount, 0);
+    const v = got.filter(r => r.kind === "vinyls").reduce((a, r) => a + r.amount, 0);
     const c = got.filter(r => r.kind === "card").map(r => passCardName(r.card));
-    const parts = [s && `${fmt(s)} Streams`, b && `${b} booster${b > 1 ? "s" : ""}`, c.length && `${c.join(", ")} (dans ton prochain booster)`].filter(Boolean);
+    const parts = [s && `${fmt(s)} Streams`, v && `${v} Vinyles`, b && `${b} booster${b > 1 ? "s" : ""}`, c.length && `${c.join(", ")} (dans ton prochain booster)`].filter(Boolean);
     toast("Récupéré : " + parts.join(" · ") + (skippedCard ? ". Les autres cartes viendront une à une, après ton prochain booster." : "."));
     try { await loadProfile(); } catch (e) {}
     refreshViews();

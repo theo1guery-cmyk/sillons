@@ -785,6 +785,9 @@ header.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;just
 .pill small{font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 .pill.streams{border-color:rgba(231,177,74,.45);background:linear-gradient(180deg,rgba(231,177,74,.16),rgba(231,177,74,.04));align-items:center}
 .pill.streams b{color:#ffd98a}
+.vin{display:inline-block;width:1.05em;height:1.05em;min-width:15px;min-height:15px;flex:none;vertical-align:-.16em;background:url(brand/vinyl.svg) center/contain no-repeat;filter:drop-shadow(0 0 5px rgba(176,92,255,.55))}
+.pill.vinyls{border-color:rgba(176,92,255,.5);background:linear-gradient(180deg,rgba(176,92,255,.18),rgba(176,92,255,.04));align-items:center}
+.pill.vinyls b{color:#f0c8ff}
 .coin.coin-fly{position:fixed;left:0;top:0;width:22px;height:22px;margin:-11px 0 0 -11px;z-index:9999;pointer-events:none;will-change:transform}
 .coin-plus{position:fixed;z-index:9999;pointer-events:none;transform:translateX(-50%);font-family:var(--display);font-weight:800;font-size:.95rem;color:#ffd98a;text-shadow:0 0 12px rgba(231,177,74,.8),0 2px 4px rgba(0,0,0,.6);animation:coinPlus 1.6s ease-out forwards}
 @keyframes coinPlus{0%{opacity:0;transform:translate(-50%,-6px) scale(.8)}15%{opacity:1;transform:translate(-50%,0) scale(1.1)}70%{opacity:1}100%{opacity:0;transform:translate(-50%,14px)}}
@@ -901,7 +904,7 @@ footer.note{color:#6f6681;border-top:1px solid var(--edge);padding-top:16px}
   .main{padding:0 16px 104px}
   header.top{margin:0 -16px 18px;padding:10px 16px}
   .top-brand{display:block}
-  .pill.opened,.counters .pill:not(.streams):not(.leg){display:none}
+  .pill.opened,.counters .pill:not(.streams):not(.vinyls){display:none}
   .player .who{display:none}
   .player{padding:4px}
   #view-shop .shelf{grid-template-columns:minmax(0,1fr);padding:26px 18px;gap:22px;min-height:0}

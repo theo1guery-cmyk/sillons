@@ -573,7 +573,7 @@ const bestOwned = id => versionsOf(id).reduce((b, c) => !b || c.tier > b.tier ? 
 function renderCounters() {
   const all = owned();
   const pill = (cls, value, label) => `<span class="pill ${cls}"><b>${value}</b><small>${label}</small></span>`;
-  $("#counters").innerHTML = (Online.active ? `<span class="pill streams"><i class="coin" aria-hidden="true"></i><b>${fmt(S.streams || 0)}</b><small>Streams</small></span>` : "")
+  $("#counters").innerHTML = (Online.active ? `<span class="pill streams"><i class="coin" aria-hidden="true"></i><b>${fmt(S.streams || 0)}</b><small>Streams</small></span><span class="pill vinyls" title="Vinyles : la monnaie rare"><i class="vin" aria-hidden="true"></i><b>${fmt(S.vinyls || 0)}</b><small>Vinyles</small></span>` : "")
     + pill("", fmt(all.length), "Cartes")
     + pill("myth", all.filter(c => c.tier === MYTH && !isArtist(c)).length, "Mythiques")
     + pill("leg", all.filter(c => c.tier === LEG && !isArtist(c)).length, "Légendaires")
