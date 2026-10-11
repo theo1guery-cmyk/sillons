@@ -1146,7 +1146,7 @@ async function openAlbum(a) {
 }
 
 // the price of the missing track of an album, by its rarity (album_track_price on the server)
-const ALBUM_TRACK_PRICE = [30, 45, 70, 110, 250, 500];
+const ALBUM_TRACK_PRICE = [30, 45, 70, 110, 400, 1500];
 async function buyAlbumTrack(a, t, price, b) {
   if ((S.vinyls || 0) < price) return toast(`Il te faut ${price} Vinyles, tu en as ${fmt(S.vinyls || 0)}.`);
   if (!confirm(`Obtenir « ${t.title} » pour ${price} Vinyles ? La carte ne pourra pas être échangée.`)) return;
