@@ -405,6 +405,14 @@ function refill() {
   if (gained > 0) { S.stock = Math.min(STOCK_MAX, S.stock + gained); S.stockAt = S.stock >= STOCK_MAX ? now : S.stockAt + gained * REFILL_MS; }
 }
 const nextRefillMs = () => S.stock >= STOCK_MAX ? 0 : S.stockAt + REFILL_MS - Date.now();
+const clock = ms => {
+  const t = Math.max(0, Math.ceil(ms / 1000)), h = Math.floor(t / 3600), m = Math.floor(t / 60) % 60, sec = t % 60;
+  return (h ? h + ":" + String(m).padStart(2, "0") : String(m).padStart(2, "0")) + ":" + String(sec).padStart(2, "0");
+};
+const clockFull = () => {
+  const min = Math.ceil(((STOCK_MAX - S.stock - 1) * REFILL_MS + nextRefillMs()) / 60000);
+  return min >= 60 ? `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, "0")}` : `${min} min`;
+};
 function save() {
   if (Online.active) return;             // with an account, the server holds the collection
   try { localStorage.setItem(LS, JSON.stringify(S)); }
@@ -668,6 +676,7 @@ function renderStock() {
   const left = nextRefillMs(), min = Math.max(1, Math.ceil(left / 60000));
   const pips = Array.from({ length: STOCK_MAX }, (_, i) => `<i class="${i < S.stock ? "on" : ""}"></i>`).join("");
   stockEl.innerHTML = `<b>${S.stock} / ${STOCK_MAX}</b> booster${S.stock > 1 ? "s" : ""} disponible${S.stock > 1 ? "s" : ""}
+    ${S.stock < STOCK_MAX ? `<span class="stock-timer" role="timer"><span class="st-ic" aria-hidden="true"></span>Prochain dans <time>${clock(left)}</time><em> · plein dans ${clockFull()}</em></span>` : `<span class="stock-timer full">Stock plein</span>`}
     <span class="pips" aria-hidden="true">${pips}</span>
     <small>${S.stock >= STOCK_MAX ? "Stock plein. Un nouveau booster arrive toutes les 10 min quand le stock n'est pas plein." : `Prochain booster dans ${min >= 60 ? "1 h" : min + " min"}`}</small>
     <small>Mythique garantie dans ${Math.max(1, PITY - S.dry)} booster${PITY - S.dry > 1 ? "s" : ""} si tu n'en tires pas avant</small>`;
@@ -676,6 +685,16 @@ function renderStock() {
   Online.stockOffers?.(stockEl, empty && Online.active);   // stock empty: recharge, or the guaranteed Mythique now
 }
 setInterval(() => { renderStock(); save(); }, 30000);
+// the countdown to the next booster, every second (the whole stock is redrawn when a booster arrives)
+setInterval(() => {
+  const t = stockEl.querySelector(".stock-timer time");
+  if (!t || document.hidden) return;
+  const left = nextRefillMs();
+  if (left <= 0) { renderStock(); save(); return; }
+  t.textContent = clock(left);
+  const full = stockEl.querySelector(".stock-timer em");
+  if (full) full.textContent = " · plein dans " + clockFull();
+}, 1000);
 
 /* ---------- boutique: one-genre boosters (free while testing, paid later) ---------- */
 const STORE_PACKS = TYPES.slice(0, AUTRE).map((t, g) => ({ g, n: t.n }));
