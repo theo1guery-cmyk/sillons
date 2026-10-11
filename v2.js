@@ -30,7 +30,7 @@
   const shelf = $("#shelf"), wall = document.createElement("div"); wall.className = "v2-wall"; wall.setAttribute("aria-hidden", "true");
   shelf.prepend(wall);
   function fillWall() {
-    let list = recent().slice(0, 36).map(c => big(c.cov));
+    let list = recent().slice(0, 36).map(c => big(c.cov)).filter(s => /^https:\/\//.test(s || "")).map(esc);   // covers come from the server: escaped
     if (list.length < 6) { wall.innerHTML = ""; return; }
     while (list.length < 24) list = list.concat(list);
     const rows = [0, 1, 2].map(r => list.filter((_, i) => i % 3 === r));
