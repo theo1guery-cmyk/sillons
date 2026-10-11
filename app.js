@@ -149,7 +149,7 @@ function offerToPool(list, artists = false) {
   const q = artists ? POOL_Q.artists : POOL_Q.tracks;
   for (const x of list) {
     if (!x || !x.id || q.length >= 600) continue;
-    q.push(artists ? { id: x.id, fans: x.nb_fan || 0 } : { id: x.id, rank: x.rank || 0, r: x._src === "id" });
+    q.push(artists ? { id: x.id, fans: x.nb_fan || 0 } : { id: x.id, rank: x.rank || 0 });
   }
 }
 function stash(list) {                   // keep good leftovers instead of throwing fetched tracks away
@@ -159,17 +159,21 @@ function stash(list) {                   // keep good leftovers instead of throw
     if (isPlayable(t) && !ownsTrack(t.id) && r.length < RESERVE_MAX && !r.some(x => x.id === t.id)) r.push(t);
   }
 }
+// with an account, the random numbers come from the server (it draws them; the browser only looks them up and reports)
 async function probeRandomTrack() {
-  try {
-    const t = await dz("track/" + (1 + randInt(ID_MAX)));
-    if (isPlayable(t)) { const [x] = tag([t], "id"); reserve[0].length >= RESERVE_MAX ? offerToPool([x]) : stash([x]); }
-  } catch (e) {}
+  const id = Online.active ? await Online.probeId?.() : 1 + randInt(ID_MAX);
+  if (!id) return;
+  let t = null;
+  try { t = await dz("track/" + id); } catch (e) {}
+  const ok = t && t.id && isPlayable(t);
+  if (Online.active) Online.probeDone?.(id, ok ? t : null);
+  if (ok && reserve[0].length < RESERVE_MAX) stash(tag([t], "id"));
 }
 let slowProbe = 0;
 setInterval(() => {                      // only when Deezer isn't busy with a booster
   if (probing >= 2 || queue.length) return;
-  // reserve full: with an account, keep trying a random number every 3 s for the server's pool
-  if (reserve[0].length >= RESERVE_MAX && (!Online.active || ++slowProbe % 14 || POOL_Q.tracks.length >= 600)) return;
+  // reserve full: with an account, keep looking up the server's random numbers (one every 0.5 s at most)
+  if (reserve[0].length >= RESERVE_MAX && (!Online.active || ++slowProbe % 2)) return;
   probing++; probeRandomTrack().finally(() => probing--);
 }, 220);
 function takeReserve(tier, used) {
