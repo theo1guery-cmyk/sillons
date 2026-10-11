@@ -143,17 +143,33 @@ const tag = (list, src) => { for (const t of list) t._src = t._src || src; retur
 const ID_MAX = 4200000000, RESERVE_MAX = 30;
 const reserve = RAR.map(() => []);       // tracks waiting to be pulled, by rarity
 let probing = 0;
+// with an account, the tracks and artists found on Deezer are offered to the server's pool, where boosters are drawn from
+const POOL_Q = { tracks: [], artists: [] };
+function offerToPool(list, artists = false) {
+  const q = artists ? POOL_Q.artists : POOL_Q.tracks;
+  for (const x of list) {
+    if (!x || !x.id || q.length >= 600) continue;
+    q.push(artists ? { id: x.id, fans: x.nb_fan || 0 } : { id: x.id, rank: x.rank || 0, r: x._src === "id" });
+  }
+}
 function stash(list) {                   // keep good leftovers instead of throwing fetched tracks away
+  offerToPool(list);
   for (const t of list) {
     const r = reserve[tierOf(t.rank || 0)];
     if (isPlayable(t) && !ownsTrack(t.id) && r.length < RESERVE_MAX && !r.some(x => x.id === t.id)) r.push(t);
   }
 }
 async function probeRandomTrack() {
-  try { const t = await dz("track/" + (1 + randInt(ID_MAX))); if (isPlayable(t)) stash(tag([t], "id")); } catch (e) {}
+  try {
+    const t = await dz("track/" + (1 + randInt(ID_MAX)));
+    if (isPlayable(t)) { const [x] = tag([t], "id"); reserve[0].length >= RESERVE_MAX ? offerToPool([x]) : stash([x]); }
+  } catch (e) {}
 }
+let slowProbe = 0;
 setInterval(() => {                      // only when Deezer isn't busy with a booster
-  if (probing >= 2 || queue.length || reserve[0].length >= RESERVE_MAX) return;
+  if (probing >= 2 || queue.length) return;
+  // reserve full: with an account, keep trying a random number every 3 s for the server's pool
+  if (reserve[0].length >= RESERVE_MAX && (!Online.active || ++slowProbe % 14 || POOL_Q.tracks.length >= 600)) return;
   probing++; probeRandomTrack().finally(() => probing--);
 }, 220);
 function takeReserve(tier, used) {
@@ -259,10 +275,12 @@ async function certArtistPool(tier) {
     const from = known.length && Math.random() < .6 ? pick(known).id : pick(famous.seeds);
     const rel = (await dz(`artist/${from}/related`, { limit: 50 })).data || [];
     for (const a of rel) famous.pool.set(a.id, a);
+    offerToPool(rel, true);
     return [...famous.pool.values()];
   }
   const q = tier >= 2 ? randomQuery(true) : randomQuery(false);
   const d = await dz("search/artist", { q, limit: 100, index: randInt(tier >= 2 ? 50 : 150) });
+  offerToPool(d.data || [], true);
   return d.data || [];
 }
 async function findArtist(tier, used, owned = false) {   // owned: local previews may give an artist already in the collection
