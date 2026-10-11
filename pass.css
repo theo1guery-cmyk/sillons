@@ -328,3 +328,9 @@
 .pay-row .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 8px;font-size:.84rem;white-space:nowrap}
 .pay-row .pay-v{color:#fff;border:0;background:linear-gradient(135deg,#7a3cff,#c04bd8);box-shadow:0 6px 16px rgba(160,80,255,.3)}
 .pay-row .pay-v:hover{filter:brightness(1.1)}
+
+/* ---- maintenance (Pass, Vinyles shop) ---- */
+.maint{display:flex;align-items:center;gap:18px;padding:22px 24px;margin:0 0 26px;border-radius:20px;border:1px dashed rgba(255,255,255,.22);background:rgba(255,255,255,.04)}
+.maint-ic{font-size:2rem;line-height:1}
+.maint h3{margin:4px 0 6px;font-family:var(--display);font-size:1.35rem}
+.maint p:last-child{margin:0;color:var(--muted);max-width:60ch}

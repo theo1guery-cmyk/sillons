@@ -92,8 +92,13 @@ const passReady = d => {
   }
   return n;
 };
+// the Pass and the Vinyles shop are closed while their economy is being reworked (false = open again)
+const MAINTENANCE = true;
+const maintenanceCard = (title, text) => `<div class="maint"><span class="maint-ic" aria-hidden="true">🛠️</span>
+  <div><p class="ps-kicker">En maintenance</p><h3>${title}</h3><p>${text}</p></div></div>`;
+
 function passBadge() {
-  const n = passReady(PASS.data), b = $("#passBadge");
+  const n = MAINTENANCE ? 0 : passReady(PASS.data), b = $("#passBadge");
   if (b) { b.hidden = !n; b.textContent = n; }
 }
 
@@ -120,6 +125,10 @@ function daysLeft(t) {
 async function renderPass() {
   const box = views.pass;
   if (!me) return;
+  if (MAINTENANCE) {
+    box.innerHTML = maintenanceCard("Pass Tournée", "Le pass est en cours de refonte et revient très vite. Ton XP continue de compter : rien n'est perdu.");
+    return;
+  }
   if (!PASS.data) box.innerHTML = `<h2>Pass Tournée</h2><p class="empty-line">Chargement du pass…</p>`;
   const d = await loadPass();
   if (!d) { box.innerHTML = `<h2>Pass Tournée</h2><p class="empty-line">Pas de saison en cours. La prochaine arrive bientôt !</p>`; return; }
@@ -319,7 +328,7 @@ async function buyTiers(n, btn) {
 const PITY_PRICE = { 1: 40, 2: 55, 3: 70, 4: 85, 5: 100 };   // pity_price on the server
 function stockOffers(el, on) {
   document.getElementById("stockOffers")?.remove();
-  if (!on) return;
+  if (!on || MAINTENANCE) return;
   const left = SHOP.pity_left ?? (PITY - S.dry), pity = PITY_PRICE[left];
   const box = document.createElement("div"); box.className = "stock-offers"; box.id = "stockOffers";
   box.innerHTML = `<p>Plus de boosters ? Continue tout de suite :</p>
@@ -352,7 +361,7 @@ function afterPack(pulls, god) {
 function fireBar() {
   document.getElementById("fireBar")?.remove();
   const until = SHOP.fire_until && Date.parse(SHOP.fire_until);
-  if (!me || !until || until < Date.now()) return;
+  if (!me || MAINTENANCE || !until || until < Date.now()) return;
   let seen = null; try { seen = localStorage.getItem("zh-fire-closed"); } catch (e) {}
   if (seen === SHOP.fire_until) return;
   const bar = document.createElement("div"); bar.id = "fireBar"; bar.className = "fire-bar"; bar.setAttribute("role", "status");
@@ -404,6 +413,10 @@ const euro = v => v.toFixed(2).replace(".", ",") + " €";
 function renderVinylShop() {
   const box = $("#vinylShop");
   if (!box) return;
+  if (MAINTENANCE) {
+    box.innerHTML = maintenanceCard("Boutique de Vinyles", "La boutique de Vinyles est en maintenance le temps de la retravailler. Tes Vinyles sont bien gardés, et les packs de genre restent disponibles juste en dessous.");
+    return;
+  }
   const base = VINYL_PACKS[0].n / VINYL_PACKS[0].eur;
   box.innerHTML = `
     <div class="vs-head">
