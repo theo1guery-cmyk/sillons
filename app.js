@@ -901,15 +901,7 @@ const Stage = (() => {
   }
   const $s = sel => el.querySelector(sel);
 
-  // the record's rotation runs on its own clock so it can speed up and slow down smoothly
-  let spin = { a: 0, v: 0, to: 0, raf: 0, t: 0 };
-  function spinLoop(t) {
-    const dt = Math.min(.05, (t - (spin.t || t)) / 1000); spin.t = t;
-    spin.v += (spin.to - spin.v) * Math.min(1, dt * 2.2);
-    spin.a = (spin.a + spin.v * 360 * dt) % 360;
-    $s(".rec").style.transform = `rotate(${spin.a}deg)`;
-    spin.raf = requestAnimationFrame(spinLoop);
-  }
+  let spin = { raf: 0 };
 
   function stopAudio(ms = 500) {
     clearInterval(fading);
@@ -944,7 +936,7 @@ const Stage = (() => {
       if (url) { clearInterval(fading); audio.src = url; audio.volume = 0; audio.play().then(() => { fadeIn(); window.NowPlaying?.(pl.c, audio); }).catch(() => {}); }
     };
     const flash = () => { const f = document.createElement("div"); f.className = "flash"; document.body.appendChild(f); setTimeout(() => f.remove(), 900); };
-    // a Platine or Diamant artist gets its own film: the signed sleeve (falls back to the turntable, then to CSS)
+    // a Platine or Diamant artist gets its own film: the signed sleeve
     // the sleeve's 3D (about 4 MB) may still be on its way when the card is flipped right after the opening: a black
     // screen while it loads (a word after a second), rather than falling back to the turntable too early
     let sl = null;
@@ -954,8 +946,19 @@ const Stage = (() => {
       clearTimeout(slow); $s(".fx-hint").textContent = "";
     }
     if (sl?.lost && !reduceMotion()) { dropSleeve(); sl = await Promise.race([loadSleeve(), wait(15000)]); }   // its 3D died while waiting (the computer slept): a fresh one
-    if (sl?.lost) { dropSleeve(); sl = null; }                   // and if that one is lost too: the turntable
-    const g = sl ? null : await Promise.race([load3d(), wait(1200)]);
+    if (sl?.lost) { dropSleeve(); sl = null; }                   // and if that one is lost too: no film
+    // only two films: the turntable for a track, the signed sleeve for an artist. The turntable is waited for like the
+    // sleeve; without 3D (no WebGL, CDN down) there is no film at all and the card simply turns over
+    let g = null;
+    if (!sl && !isArtist(pl.c)) {
+      const slow = setTimeout(() => { $s(".fx-hint").textContent = "Chargement…"; }, 1200);
+      g = await Promise.race([load3d(), wait(15000)]);
+      clearTimeout(slow); $s(".fx-hint").textContent = "";
+    }
+    if (!sl && !g) {
+      sparks.stop(); el.hidden = true; document.body.classList.remove("fx-on"); el.className = "fx-screen";
+      return;
+    }
     let r;
     if (sl) {
       el.classList.add("three", "sleeve");
@@ -995,21 +998,6 @@ const Stage = (() => {
       $s(".fx-title").style.top = (r.top + r.height + 18) + "px";
       el.classList.remove("s-charge"); el.classList.add("s-reveal");
       g.hold(big);
-    } else {
-      // no 3D (old phone, offline CDN): the record and its sleeve in plain CSS
-      spin = { a: 0, v: 0, to: 0, raf: 0, t: 0 };
-      spin.raf = requestAnimationFrame(spinLoop);
-      void el.offsetWidth; el.classList.add("s-in");             // 1. the sleeve appears, the record slides out of it
-      await wait(380); el.classList.add("s-slide");
-      await wait(620); el.classList.add("s-free"); spin.to = .55;   // out of the sleeve, it starts turning
-      await wait(520);
-      el.style.setProperty("--vc", col);                          // 2. it takes the colour of the hit, the needle is down
-      el.classList.add("s-charge"); spin.to = big ? 1.1 : .8;
-      sparks.embers(big ? 3 : 2);
-      await playTrack();
-      await wait(big ? 1450 : 1100);
-      el.classList.remove("s-charge"); el.classList.add("s-reveal");   // 3. burst: the card comes out of the record
-      spin.to = .35;
     }
     r = $s(".fx-card").getBoundingClientRect();
     if (!sl) { sparks.burst(r.left + r.width / 2, r.top + r.height / 2, big ? 260 : 150); if (big) flash(); }
