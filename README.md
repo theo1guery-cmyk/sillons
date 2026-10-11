@@ -16,7 +16,7 @@ Puis ouvrir http://localhost:8765.
 - **Booster** : 5 cartes tirées dans tout Deezer.
   - **Communes** : tirage d'un numéro de morceau au hasard (de 1 à 4,2 milliards), donc chaque morceau a la même chance, même ceux que personne n'écoute. Environ 1 numéro sur 12 est un morceau jouable, alors une boucle en arrière-plan garde une réserve prête quand Deezer n'est pas occupé. Si la réserve est vide, recherche aléatoire (mots, prénoms, villes, années, syllabes).
   - **Raretés plus hautes** : playlists publiques, marche d'artiste en artiste (artistes similaires) et recherches triées par popularité. Les morceaux trouvés en route sont gardés en réserve pour les tirages suivants.
-- **Boutique** : des boosters d'un seul genre (playlists du genre, artistes du genre et radios Deezer, avec vérification du genre de l'album) à 100 Streams (`genre_pack_price`), compte obligatoire. Remboursés si l'ouverture échoue.
+- **Boutique** : des boosters d'un seul genre (playlists du genre, artistes du genre et radios Deezer, avec vérification du genre de l'album) à 400 Streams (`genre_pack_price`) ou 15 Vinyles, compte obligatoire. Remboursés (dans la monnaie payée) si l'ouverture échoue.
 - **Catalogue** : recherche dans tout Deezer (titre ou artiste), avec les tubes du moment par défaut. Chaque carte montre sa rareté et si tu l'as déjà. Le genre, le BPM et l'année ne sont chargés que pour les cartes visibles à l'écran.
 - **Rareté** : selon le classement Deezer (`rank`, de 0 à 1 000 000).
 

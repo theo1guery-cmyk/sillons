@@ -122,7 +122,7 @@ async function renderPass() {
   const [season, title] = d.name.includes("·") ? d.name.split("·").map(x => x.trim()) : ["", d.name];
   const prem = d.rewards.map(r => ({ tier: r.tier, ...r.premium }));
   const premCards = prem.filter(r => r.kind === "card");
-  const worth = prem.reduce((a, r) => a + (r.kind === "streams" ? r.amount : r.kind === "boosters" ? r.amount * STORE_PRICE : 0), 0);
+  const worth = prem.reduce((a, r) => a + (r.kind === "streams" ? r.amount : r.kind === "boosters" ? r.amount * 100 : 0), 0);
   const lockedNow = d.premium ? 0 : prem.filter(r => r.tier <= tier).length;   // Premium rewards already reached, waiting for the pass
   const final = d.rewards[d.rewards.length - 1].premium;
 

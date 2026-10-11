@@ -305,3 +305,9 @@
   background:linear-gradient(135deg,#7a3cff,#c04bd8);border:0;white-space:nowrap}
 .al-buy:disabled{opacity:.6}
 .al-buy-note{padding:8px 10px;border-radius:10px;background:rgba(176,92,255,.14);color:#e6d2ff;font-size:.82rem;list-style:none}
+
+/* genre packs: pay in Streams or in Vinyles */
+.pay-row{display:grid;grid-template-columns:1fr;gap:6px}
+.pay-row .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 8px;font-size:.84rem;white-space:nowrap}
+.pay-row .pay-v{color:#fff;border:0;background:linear-gradient(135deg,#7a3cff,#c04bd8);box-shadow:0 6px 16px rgba(160,80,255,.3)}
+.pay-row .pay-v:hover{filter:brightness(1.1)}
