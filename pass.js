@@ -90,7 +90,7 @@ function passBadge() {
 async function loadPass() {
   if (!me) return null;
   try { PASS.data = await rpc("my_season"); } catch (e) { PASS.data = null; }
-  passBadge(); renderVinylShop();
+  passBadge(); renderVinylShop(); if (!SHOP.loaded) { SHOP.loaded = true; loadOffersUsed(); }
   return PASS.data;
 }
 
@@ -211,7 +211,7 @@ async function renderPass() {
     refreshViews(); renderPass();
   };
   const buy = $("#psBuy");
-  if (buy) buy.onclick = () => toast("Le paiement arrive très bientôt ! En attendant, demande le Pass Premium à l'équipe sur Discord.");
+  if (buy) buy.onclick = () => checkout("pass", buy);
   box.querySelectorAll(".ps-cell.ready").forEach(b => b.onclick = () => claimPass([[+b.dataset.t, b.dataset.p === "1"]]));
   box.querySelectorAll(".ps-cell.lock").forEach(b => b.onclick = () => $("#psBuy")?.scrollIntoView({ behavior: "smooth", block: "center" }));
   $("#psAll").onclick = () => {
@@ -256,10 +256,47 @@ async function claimPass(list) {
 }
 
 /* ---------- the Boutique: buying Vinyles (the payment comes later: for now the buttons say so) ---------- */
+// the ids and prices of shop_packs (the server charges its own price; these are for the display)
 const VINYL_PACKS = [
-  { n: 80, eur: 0.99 }, { n: 170, eur: 1.99 }, { n: 360, eur: 3.99 },
-  { n: 950, eur: 9.99, tag: "Populaire" }, { n: 2000, eur: 19.99 }, { n: 5500, eur: 49.99, tag: "Meilleure offre" },
+  { id: "v80", n: 80, eur: 0.99 }, { id: "v170", n: 170, eur: 1.99 }, { id: "v360", n: 360, eur: 3.99 },
+  { id: "v950", n: 950, eur: 9.99, tag: "Populaire" }, { id: "v2000", n: 2000, eur: 19.99 }, { id: "v5500", n: 5500, eur: 49.99, tag: "Meilleure offre" },
 ];
+const SHOP = { used: [] };     // the one-time offers already bought
+
+// a Stripe Checkout page for a pack (Edge Function create-checkout), then back to the site with ?achat=ok
+async function checkout(pack, btn) {
+  if (!me) return toast("Connecte-toi pour acheter.");
+  const label = btn?.innerHTML;
+  if (btn) { btn.disabled = true; btn.textContent = "Paiement…"; }
+  let url = null, err = null;
+  try {
+    const { data, error } = await sb.functions.invoke("create-checkout", { body: { pack } });
+    if (error) { const b = await error.context?.json?.().catch(() => null); err = b?.error || "payments_off"; }
+    else url = data?.url;
+  } catch (e) { err = "payments_off"; }
+  if (url) { location.href = url; return; }
+  if (err) console.warn("Paiement :", err);
+  if (btn) { btn.disabled = false; btn.innerHTML = label; }
+  toast(message({ message: err || "payments_off" }));
+}
+// back from Stripe: the webhook delivers within a few seconds, so the balance is read again a few times
+(function backFromStripe() {
+  const q = new URLSearchParams(location.search), r = q.get("achat");
+  if (!r) return;
+  q.delete("achat"); history.replaceState(null, "", location.pathname + (q.toString() ? "?" + q : "") + location.hash);
+  if (r !== "ok") return setTimeout(() => toast("Paiement annulé : rien n'a été débité."), 800);
+  setTimeout(() => toast("Paiement reçu, merci ! Tes Vinyles arrivent dans quelques secondes."), 800);
+  let n = 0;
+  const poll = setInterval(async () => {
+    if (++n > 8) return clearInterval(poll);
+    if (!me) return;
+    const before = S.vinyls, prem = PASS.data?.premium;
+    try { await loadProfile(); await loadPass(); } catch (e) { return; }
+    refreshViews();
+    if (!views.pass.hidden) renderPass();
+    if (S.vinyls !== before || PASS.data?.premium !== prem) { clearInterval(poll); toast("C'est arrivé : ton achat est sur ton compte."); }
+  }, 2500);
+})();
 const euro = v => v.toFixed(2).replace(".", ",") + " €";
 function renderVinylShop() {
   const box = $("#vinylShop");
@@ -271,12 +308,12 @@ function renderVinylShop() {
         <p>Achète des paliers du pass saisonnier (${TIER_VINYLS} Vinyles) ou le Pass Premium (${PREMIUM_VINYLS} Vinyles).</p></div>
       ${me ? `<div class="vs-bal"><i class="vin" aria-hidden="true"></i><b>${fmt(S.vinyls || 0)}</b><small>Ton solde</small></div>` : ""}
     </div>
-    <div class="vs-welcome">
+    ${SHOP.used.includes("welcome") ? "" : `<div class="vs-welcome">
       <span class="vs-badge">Offre de bienvenue · une seule fois</span>
       <div class="vs-stack s3" aria-hidden="true"><i></i><i></i><i></i></div>
       <div class="vs-wtxt"><b>300 Vinyles</b><small>au lieu de 3,99 €</small></div>
-      <button class="vs-buy" data-n="300" data-eur="0.99">0,99 €</button>
-    </div>
+      <button class="vs-buy" data-pack="welcome">0,99 €</button>
+    </div>`}
     <div class="vs-grid">${VINYL_PACKS.map((p, i) => {
       const bonus = Math.round((p.n / p.eur / base - 1) * 100);
       return `<div class="vs-pack${p.tag ? " hot" : ""}">
@@ -284,13 +321,15 @@ function renderVinylShop() {
         <div class="vs-stack s${i + 1}" aria-hidden="true">${"<i></i>".repeat(i + 1)}</div>
         <b class="vs-n">${fmt(p.n)}</b><small>Vinyles</small>
         ${bonus > 0 ? `<span class="vs-bonus">+${bonus} % offerts</span>` : `<span class="vs-bonus none">&nbsp;</span>`}
-        <button class="vs-buy" data-n="${p.n}" data-eur="${p.eur}">${euro(p.eur)}</button>
+        <button class="vs-buy" data-pack="${p.id}">${euro(p.eur)}</button>
       </div>`;
     }).join("")}</div>`;
-  box.querySelectorAll(".vs-buy").forEach(b => b.onclick = () => {
-    if (!me) return toast("Connecte-toi pour acheter des Vinyles.");
-    toast(`${fmt(+b.dataset.n)} Vinyles pour ${euro(+b.dataset.eur)} : le paiement arrive très bientôt !`);
-  });
+  box.querySelectorAll(".vs-buy").forEach(b => b.onclick = () => checkout(b.dataset.pack, b));
+}
+async function loadOffersUsed() {
+  if (!me) return;
+  try { SHOP.used = await rpc("my_offers_used") || []; } catch (e) { SHOP.used = []; }
+  renderVinylShop();
 }
 renderVinylShop();
 addEventListener("click", e => { if (e.target.closest?.("#tab-store")) renderVinylShop(); }, true);
