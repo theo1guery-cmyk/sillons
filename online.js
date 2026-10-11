@@ -42,6 +42,9 @@ const MESSAGES = {
   already_imported: "Ta collection a déjà été importée.",
   already_claimed: "Déjà récupéré.",
   no_season: "Pas de saison en cours.",
+  not_enough_vinyls: "Pas assez de Vinyles.",
+  max_tier: "Tu as déjà atteint le dernier palier.",
+  already_premium: "Tu as déjà le Pass Premium.",
   tier_locked: "Tu n'as pas encore atteint ce palier.",
   premium_only: "Cette récompense est réservée au Pass Premium.",
   gift_pending: "Une carte t'attend déjà dans ton prochain booster : ouvre-le avant de récupérer celle-ci.",
@@ -137,7 +140,7 @@ async function loadProfile() {
   S.opened = data.opened; S.dry = data.dry; S.gods = data.gods;
   S.stock = data.stock; S.stockAt = Date.parse(data.stock_at);
   const before = S.streams;
-  S.streams = data.streams;
+  S.streams = data.streams; S.vinyls = data.vinyls || 0;
   if (before != null && data.streams > before) coinRain(data.streams - before, before);   // Streams won: coins fall in the counter
 }
 async function loadAll() {

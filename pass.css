@@ -182,3 +182,17 @@
 .ps-cell.claimed.mine{opacity:1}
 .ps-cell.mine .ps-lbl{font-family:var(--body);font-size:.72rem;color:#cfc4e2}
 .ps-cell.mine .ps-lbl b{display:block;font-family:var(--display);font-size:.76rem;color:#fff}
+
+/* ---- Vinyles: buy a tier, unlock Premium ---- */
+.ps-vin.vin{width:40px;height:40px;min-width:40px;min-height:40px}
+.ps-skip{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin-top:18px}
+.ps-skip small{color:#bfb3d3;font-size:.8rem}
+.ps-skip small b{color:#f0c8ff}
+.ps-buytier{display:inline-flex;align-items:center;gap:10px;padding:10px 16px;border-radius:12px;cursor:pointer;font:600 .9rem var(--body);color:#fff;
+  background:linear-gradient(135deg,#7a3cff,#c04bd8);border:1px solid rgba(255,255,255,.25);box-shadow:0 8px 24px rgba(160,80,255,.35)}
+.ps-buytier span{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:99px;background:rgba(0,0,0,.3);font-family:var(--display);font-size:.8rem}
+.ps-buytier:hover{filter:brightness(1.1)}
+.ps-buytier:disabled{opacity:.6;cursor:default}
+.ps-buy-v{display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:8px 12px;border-radius:10px;cursor:pointer;font:500 .85rem var(--body);
+  color:#f0c8ff;background:rgba(176,92,255,.12);border:1px solid rgba(176,92,255,.45)}
+.ps-buy-v:hover{background:rgba(176,92,255,.22)}
