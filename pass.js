@@ -8,15 +8,34 @@ const PASS_PRICE = "4,99 €";
 const passCardName = c => (c.kind === "artist" ? (c.tier === 5 ? "Artiste Diamant" : "Artiste Platine") : (c.tier === 5 ? "Légendaire" : "Mythique"))
   + (c.shiny ? " Shiny" : "");
 const passName = r => r.kind === "streams" ? `${fmt(r.amount)} Streams` : r.kind === "boosters" ? `${r.amount} boosters` : passCardName(r.card);
-// the reward pictures: a coin, a stack of boosters, a card in its rarity, or a record for an artist
+// the reward pictures are the game's own: a real booster, and a real card of the right rarity. The card shown is an
+// example taken from the player's collection (the best known one of that kind and rarity), or a card back.
+const PS_EX = new Map();
+function passExample(k) {
+  const key = k.kind + k.tier;
+  if (!PS_EX.has(key)) {
+    let best = null;
+    for (const c of owned()) if (c.tier === k.tier && isArtist(c) === (k.kind === "artist") && c.cov && !c.collector && (!best || c.rank > best.rank)) best = c;
+    PS_EX.set(key, best);
+  }
+  return PS_EX.get(key);
+}
 function passArt(c, big = false) {
-  const cls = `${c.kind === "artist" ? "ps-disc" : "ps-mini"} t${c.tier}${c.shiny ? " shiny" : ""}${big ? " big" : ""}`;
-  return c.kind === "artist" ? `<span class="${cls}" aria-hidden="true"><i></i></span>` : `<span class="${cls}" aria-hidden="true"><i></i><em></em></span>`;
+  return `<span class="ps-real${big ? " big" : ""}${c.kind === "artist" ? " art" : ""}" data-kind="${c.kind}" data-tier="${c.tier}" data-shiny="${c.shiny ? 1 : 0}" aria-hidden="true"></span>`;
 }
 function passIcon(r) {
   if (r.kind === "streams") return `<i class="coin ps-coin" aria-hidden="true"></i>`;
-  if (r.kind === "boosters") return `<span class="ps-pack" aria-hidden="true"><b>×${r.amount}</b></span>`;
+  if (r.kind === "boosters") return `<span class="ps-pk-wrap" aria-hidden="true"><span class="pack mix ps-pk"><img class="pack-logo" src="brand/zikhunter-icon.svg" alt=""><span class="lbl"><b>Booster</b></span></span><b class="ps-x">×${r.amount}</b></span>`;
   return passArt(r.card);
+}
+// puts the real cards in their places
+function passFill(root) {
+  root.querySelectorAll(".ps-real:not(.done)").forEach(el => {
+    const k = { kind: el.dataset.kind, tier: +el.dataset.tier }, ex = passExample(k);
+    el.classList.add("done");
+    try { el.appendChild(ex ? cardEl(ex, el.dataset.shiny === "1") : backEl()); }
+    catch (e) { el.appendChild(backEl()); }
+  });
 }
 
 const passTier = d => Math.min(d.tiers, Math.floor(d.xp / d.xp_per_tier));
@@ -127,6 +146,7 @@ async function renderPass() {
       }).join("")}
     </div>`;
 
+  PS_EX.clear(); passFill(box);
   const buy = $("#psBuy");
   if (buy) buy.onclick = () => toast("Le paiement arrive très bientôt ! En attendant, demande le Pass Premium à l'équipe sur Discord.");
   box.querySelectorAll(".ps-cell.ready").forEach(b => b.onclick = () => claimPass([[+b.dataset.t, b.dataset.p === "1"]]));

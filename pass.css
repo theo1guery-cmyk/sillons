@@ -83,10 +83,10 @@
 .ps-bar h3{margin:0;margin-right:auto;font-size:1.2rem}
 .ps-note{flex-basis:100%;color:#ffc56b;font-size:.82rem}
 .ps-track{display:flex;gap:10px;overflow-x:auto;padding:10px 12px 18px;margin:0 -12px;scroll-behavior:smooth;scrollbar-width:thin}
-.ps-labels{flex:none;display:grid;grid-template-rows:30px 150px 150px;gap:10px;width:26px}
+.ps-labels{flex:none;display:grid;grid-template-rows:30px 196px 196px;gap:10px;width:26px}
 .ps-labels span{display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:.64rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);writing-mode:vertical-rl;transform:rotate(180deg)}
 .ps-labels .gold{color:var(--gold2)}
-.ps-tier{flex:none;display:grid;grid-template-rows:30px 150px 150px;gap:10px;width:128px}
+.ps-tier{flex:none;display:grid;grid-template-rows:30px 196px 196px;gap:10px;width:140px}
 .ps-n{position:relative;overflow:hidden;display:grid;place-items:center;border-radius:99px;background:rgba(255,255,255,.05);border:1px solid var(--edge)}
 .ps-n i{position:absolute;left:0;top:0;bottom:0;background:var(--goldg)}
 .ps-n b{position:relative;font-family:var(--display);font-size:.82rem;color:var(--muted)}
@@ -151,3 +151,19 @@
 @media (prefers-reduced-motion:reduce){
   .ps-hero::before,.ps-meter s,.ps-show,.ps-spark,.ps-offer::after,.btn.ps-buy,.ps-cell.ready,.ps-mini em,.ps-disc.big{animation:none}
 }
+
+/* ---- the game's real cards and booster ---- */
+.ps-real{display:block;width:80px;pointer-events:none}
+.ps-real .cq{width:100%}
+.ps-real.big{width:min(210px,70vw);filter:drop-shadow(0 24px 50px rgba(0,0,0,.6))}
+.ps-show .ps-real.big{position:relative;z-index:1;transform:rotate(-4deg)}
+.ps-oc{width:auto;height:auto;padding:6px}
+.ps-oc .ps-real{width:48px}
+.ps-pk-wrap{position:relative;display:block}
+.ps-pk{display:block;width:56px;cursor:inherit;box-shadow:0 8px 18px rgba(0,0,0,.45)}
+.ps-pk .lbl{display:none}
+.ps-pk .pack-logo{top:50%;width:70%}
+.ps-x{position:absolute;right:-14px;bottom:-6px;padding:1px 7px;border-radius:99px;background:var(--goldg);color:#1c1305;font-family:var(--display);font-size:.72rem}
+.ps-cell{gap:8px}
+.ps-cell.star .ps-real{width:84px}
+@media (max-width:900px){.ps-real.big{width:150px}}
