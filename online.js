@@ -234,6 +234,29 @@ async function flushProbes() {
 }
 setInterval(flushProbes, 30000);
 
+// the server's walk through Deezer, helped by this browser while the game is open and idle: it visits the artists the
+// server hands it (top tracks, related artists) and reports them
+const WALK = { ids: [], busy: false, off: 0 };
+async function walkStep() {
+  if (!me || WALK.busy || document.hidden || busy || queue.length || Date.now() < WALK.off) return;
+  WALK.busy = true;
+  try {
+    if (!WALK.ids.length) {
+      WALK.ids = (await rpc("harvest_take", { p_n: 5 })) || [];
+      if (!WALK.ids.length) { WALK.off = Date.now() + 600e3; return; }   // nothing to visit, or enough for today
+    }
+    const id = WALK.ids.shift();
+    const [top, rel] = await Promise.all([dz(`artist/${id}/top`, { limit: 100 }).catch(() => ({})), dz(`artist/${id}/related`, { limit: 50 }).catch(() => ({}))]);
+    await rpc("harvest_report", {
+      p_artist: id,
+      p_tracks: (top.data || []).filter(t => t.id && t.rank >= 250000).map(t => ({ id: t.id, rank: t.rank })),
+      p_related: (rel.data || []).filter(a => a.id && a.nb_fan >= 10000).map(a => ({ id: a.id, fans: a.nb_fan })),
+    });
+  } catch (e) { WALK.off = Date.now() + 60e3; }
+  finally { WALK.busy = false; }
+}
+setInterval(walkStep, 2500);
+
 /* ---------- boosters with an account ---------- */
 Object.assign(Online, {
   message,
