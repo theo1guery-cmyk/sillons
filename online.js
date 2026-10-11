@@ -41,6 +41,10 @@ const MESSAGES = {
   self_trade: "Tu ne peux pas échanger avec toi-même.",
   already_imported: "Ta collection a déjà été importée.",
   already_claimed: "Déjà récupéré.",
+  no_season: "Pas de saison en cours.",
+  tier_locked: "Tu n'as pas encore atteint ce palier.",
+  premium_only: "Cette récompense est réservée au Pass Premium.",
+  gift_pending: "Une carte t'attend déjà dans ton prochain booster : ouvre-le avant de récupérer celle-ci.",
   not_done: "Pas encore terminé.",
   not_today: "Ce défi n'est plus disponible aujourd'hui.",
   keep_one: "Tu dois garder au moins un exemplaire de chaque carte.",
@@ -159,10 +163,10 @@ async function enterAccount(user) {
   try {
     await loadAll();
     Online.active = true;
-    $("#tab-trades").hidden = false; $("#tab-defis").hidden = false; $("#tab-market").hidden = false; $("#tab-albums").hidden = false; $("#tab-duels").hidden = false; $("#navCommunity").hidden = false;
+    $("#tab-trades").hidden = false; $("#tab-defis").hidden = false; $("#tab-market").hidden = false; $("#tab-albums").hidden = false; $("#tab-duels").hidden = false; $("#tab-pass").hidden = false; $("#navCommunity").hidden = false;
     unseatTable();                       // closes the opening table and puts the booster back on its shelf
     refreshViews();
-    pollOffers(); updateDefisBadge();
+    pollOffers(); updateDefisBadge(); Online.loadPass?.();
   } catch (e) {
     me = null; toast(message(e));
   }
@@ -178,7 +182,8 @@ function leaveAccount() {
   $("#tab-trades").hidden = true; $("#tradeBadge").hidden = true;
   $("#tab-defis").hidden = true; $("#defisBadge").hidden = true; $("#tab-market").hidden = true; $("#tab-albums").hidden = true; $("#albumsBadge").hidden = true;
   $("#tab-duels").hidden = true; $("#duelsBadge").hidden = true; $("#navCommunity").hidden = true;
-  if (!views.trades.hidden || !views.defis.hidden || !views.market.hidden || !views.albums.hidden || !views.duels.hidden) show("shop");
+  $("#tab-pass").hidden = true; $("#passBadge").hidden = true;
+  if (!views.trades.hidden || !views.defis.hidden || !views.market.hidden || !views.albums.hidden || !views.duels.hidden || !views.pass.hidden) show("shop");
   unseatTable();
   refreshViews();
 }
@@ -222,7 +227,7 @@ Object.assign(Online, {
       return { c: cardFromRow(row, meta), holo: r.holo, isNew: r.new, wanted: r.wanted };
     }).sort((a, b) => a.c.tier - b.c.tier || a.c.rank - b.c.rank);
     await loadProfile();
-    updateDefisBadge();
+    updateDefisBadge(); Online.loadPass?.();
     return pulls;
   },
   async reset() {
