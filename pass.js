@@ -267,7 +267,7 @@ const VINYL_PACKS = [
   { id: "v80", n: 80, eur: 0.99 }, { id: "v170", n: 170, eur: 1.99 }, { id: "v360", n: 360, eur: 3.99 },
   { id: "v950", n: 950, eur: 9.99, tag: "Populaire" }, { id: "v2000", n: 2000, eur: 19.99 }, { id: "v5500", n: 5500, eur: 49.99, tag: "Meilleure offre" },
 ];
-// what the shop knows of this player (my_shop): one-time offers bought, any purchase yet (the first is doubled),
+// what the shop knows of this player (my_shop): one-time offers bought, any purchase yet,
 // the offer of the day, until when "Tu es en feu !" is open, boosters left before the guaranteed Mythique
 const SHOP = { used: [], bought: true, daily: null, fire_until: null, pity_left: null };
 async function loadShop() {
@@ -407,13 +407,12 @@ function renderVinylShop() {
       <div class="vs-dl"><span class="vs-badge">🔥 Tu es en feu ! · encore <span class="ps-count" data-end="${esc(SHOP.fire_until)}"></span></span>
         <b>50 boosters</b><small>Pour enchaîner après ton gros tirage</small></div>
       <button class="vs-buy" data-pack="fire">2,99 €</button></div>` : ""}
-    ${me && !SHOP.bought ? `<p class="vs-first">Premier achat : <b>tes Vinyles sont doublés</b> sur le pack de ton choix !</p>` : ""}
     <div class="vs-grid">${VINYL_PACKS.map((p, i) => {
       const bonus = Math.round((p.n / p.eur / base - 1) * 100);
       return `<div class="vs-pack${p.tag ? " hot" : ""}">
         ${p.tag ? `<span class="vs-tag">${p.tag}</span>` : ""}
         <div class="vs-stack s${i + 1}" aria-hidden="true">${"<i></i>".repeat(i + 1)}</div>
-        ${me && !SHOP.bought ? `<span class="vs-x2">×2</span><b class="vs-n">${fmt(p.n * 2)}</b><small><s>${fmt(p.n)}</s> Vinyles</small>` : `<b class="vs-n">${fmt(p.n)}</b><small>Vinyles</small>`}
+        <b class="vs-n">${fmt(p.n)}</b><small>Vinyles</small>
         ${bonus > 0 ? `<span class="vs-bonus">+${bonus} % offerts</span>` : `<span class="vs-bonus none">&nbsp;</span>`}
         <button class="vs-buy" data-pack="${p.id}">${euro(p.eur)}</button>
       </div>`;
