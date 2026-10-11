@@ -2,7 +2,7 @@
 /* Zik Hunter — the season pass. 30 tiers a season, a free reward and a Premium one per tier. XP comes from playing
    (boosters, daily bonus, challenges, albums…), counted by the server; this file shows the pass and claims rewards. */
 
-const PASS = { data: null, busy: false };
+const PASS = { data: null, busy: false, got: {} };
 const PASS_PRICE = "4,99 €";
 
 const passCardName = c => (c.kind === "artist" ? (c.tier === 5 ? "Artiste Diamant" : "Artiste Platine") : (c.tier === 5 ? "Légendaire" : "Mythique"))
@@ -39,8 +39,8 @@ function passPool(kind, tier) {
   const own = owned().filter(c => c.tier === tier && isArtist(c) === (kind === "artist") && c.cov && !c.collector).sort((a, b) => b.rank - a.rank).slice(0, 8);
   return own;
 }
-function passArt(c, big = false) {
-  return `<span class="ps-real${big ? " big" : ""}" data-kind="${c.kind}" data-tier="${c.tier}" data-shiny="${c.shiny ? 1 : 0}" aria-hidden="true"></span>`;
+function passArt(c, big = false, got = "") {
+  return `<span class="ps-real${big ? " big" : ""}"${got ? ` data-got="${got}"` : ""} data-kind="${c.kind}" data-tier="${c.tier}" data-shiny="${c.shiny ? 1 : 0}" aria-hidden="true"></span>`;
 }
 function passIcon(r) {
   if (r.kind === "streams") return `<i class="coin ps-coin" aria-hidden="true"></i>`;
@@ -54,12 +54,13 @@ function passTick(now) {
   const root = views.pass;
   if (!root || root.hidden) return;
   root.querySelectorAll(".ps-real").forEach((el, i) => {
-    const pool = passPool(el.dataset.kind, +el.dataset.tier);
+    const mine = el.dataset.got && PASS.got[el.dataset.got];         // a reward already received: the player's own card, fixed
+    const pool = mine ? [mine] : passPool(el.dataset.kind, +el.dataset.tier);
     const c = pool.length ? pool[(psStep + i) % pool.length] : null, id = c ? String(c.id) : "back";
     if (el.dataset.cur === id) return;
     el.dataset.cur = id;
     let card;
-    try { card = c ? cardEl(c, el.dataset.shiny === "1") : backEl(); } catch (e) { card = backEl(); }
+    try { card = c ? cardEl(c, mine ? !!mine.shinyCopy : el.dataset.shiny === "1") : backEl(); } catch (e) { card = backEl(); }
     const old = el.firstElementChild;
     card.classList.add("ps-in");
     el.appendChild(card);
@@ -106,6 +107,13 @@ async function renderPass() {
   if (!d) { box.innerHTML = `<h2>Pass saisonnier</h2><p class="empty-line">Pas de saison en cours. La prochaine arrive bientôt !</p>`; return; }
   const tier = passTier(d), into = d.xp - tier * d.xp_per_tier, max = tier >= d.tiers, pct = max ? 100 : Math.round(100 * into / d.xp_per_tier);
   const ready = passReady(d);
+  PASS.got = {};
+  for (const g of d.got || []) {
+    const k = g.card, c = cardFromRow({ kind: k.kind, track_id: k.track_id, artist_id: k.artist_id, tier: k.tier, rank: k.rank },
+      { title: k.title, artist: k.artist, album: k.album, cover: k.cover, duration: k.duration, bpm: k.bpm, year: k.year, explicit: k.explicit, genre: k.genre,
+        name: k.name, picture: k.picture, fans: k.fans, nb_album: k.nb_album });
+    PASS.got[g.tier + (g.premium ? "p" : "f")] = { ...c, shinyCopy: k.holo };
+  }
   const [season, title] = d.name.includes("·") ? d.name.split("·").map(x => x.trim()) : ["", d.name];
   const prem = d.rewards.map(r => ({ tier: r.tier, ...r.premium }));
   const premCards = prem.filter(r => r.kind === "card");
@@ -166,9 +174,10 @@ async function renderPass() {
           const can = reached && !claimed && (!isPrem || d.premium);
           const state = claimed ? "claimed" : can ? "ready" : (isPrem && !d.premium) ? "lock" : "wait";
           const star = rw.kind === "card" ? ` star r${rw.card.tier}${rw.card.shiny ? " shiny" : ""}` : "";
-          return `<button class="ps-cell ${isPrem ? "prem" : "free"} ${state}${star}" data-t="${r.tier}" data-p="${isPrem ? 1 : 0}" ${can ? "" : 'tabindex="-1"'}
+          const gk = r.tier + (isPrem ? "p" : "f"), mine = claimed && rw.kind === "card" ? PASS.got[gk] : null;
+          return `<button class="ps-cell ${isPrem ? "prem" : "free"} ${state}${star}${mine ? " mine" : ""}" data-t="${r.tier}" data-p="${isPrem ? 1 : 0}" ${can ? "" : 'tabindex="-1"'}
             aria-label="Palier ${r.tier}, ${isPrem ? "Premium" : "gratuit"} : ${esc(passName(rw))}${claimed ? ", récupéré" : can ? ", à récupérer" : ""}">
-            ${passIcon(rw)}<span class="ps-lbl">${esc(passName(rw))}</span>
+            ${rw.kind === "card" ? passArt(rw.card, false, claimed ? gk : "") : passIcon(rw)}<span class="ps-lbl">${mine ? `Ta carte : <b>${esc(mine.t)}</b>` : esc(passName(rw))}</span>
             ${claimed ? `<span class="ps-ok" aria-hidden="true">✓</span>` : state === "lock" ? `<span class="ps-lock" aria-hidden="true"></span>` : can ? `<span class="ps-go">Récupérer</span>` : ""}</button>`;
         };
         return `<div class="ps-tier${reached ? " reached" : ""}${r.tier === tier + 1 ? " next" : ""}">
