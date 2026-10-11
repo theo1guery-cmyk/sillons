@@ -8,35 +8,65 @@ const PASS_PRICE = "4,99 €";
 const passCardName = c => (c.kind === "artist" ? (c.tier === 5 ? "Artiste Diamant" : "Artiste Platine") : (c.tier === 5 ? "Légendaire" : "Mythique"))
   + (c.shiny ? " Shiny" : "");
 const passName = r => r.kind === "streams" ? `${fmt(r.amount)} Streams` : r.kind === "boosters" ? `${r.amount} boosters` : passCardName(r.card);
-// the reward pictures are the game's own: a real booster, and a real card of the right rarity. The card shown is an
-// example taken from the player's collection (the best known one of that kind and rarity), or a card back.
-const PS_EX = new Map();
-function passExample(k) {
-  const key = k.kind + k.tier;
-  if (!PS_EX.has(key)) {
-    let best = null;
-    for (const c of owned()) if (c.tier === k.tier && isArtist(c) === (k.kind === "artist") && c.cov && !c.collector && (!best || c.rank > best.rank)) best = c;
-    PS_EX.set(key, best);
-  }
-  return PS_EX.get(key);
+// the reward pictures are the game's own: the 3D booster of the shop, and real cards of the right rarity. The cards are
+// examples (Deezer's chart and famous artists, Travis Scott first), changing every 2 seconds: a reward is a card of
+// that rarity, not that one. Until the examples are loaded, the player's own cards stand in, or a card back.
+const PS_POOL = { track4: [], track5: [], artist4: [], artist5: [] };
+let psLoading = null;
+const PS_STARS = [4495513, 246791, 4050205, 12246, 13, 564, 5313805, 27];   // Travis Scott, Drake, The Weeknd, Taylor Swift, Eminem, Rihanna…
+function passLoadExamples() {
+  if (psLoading) return psLoading;
+  const add = (key, c) => { if (c.cov && PS_POOL[key].length < 14 && !PS_POOL[key].some(x => x.id === c.id)) PS_POOL[key].push(c); };
+  const artist = a => {
+    const tier = certOf(a.nb_fan || 0, a.id);
+    if (tier >= 4) add("artist" + tier, cardFromRow({ kind: "artist", artist_id: a.id, tier, rank: a.nb_fan, holo: false },
+      { name: a.name, picture: (a.picture_xl || a.picture_big || "").replace(/^http:/, "https:"), fans: a.nb_fan, nb_album: a.nb_album }));
+  };
+  psLoading = (async () => {
+    const [chart, ...stars] = await Promise.all([dz("chart/0/tracks", { limit: 100 }).catch(() => ({})),
+      ...PS_STARS.map(id => dz("artist/" + id).catch(() => ({})))]);
+    for (const t of chart.data || []) { const tier = tierOf(t.rank || 0); if (tier >= 4) add("track" + tier, { ...quickCard(t), g: AUTRE }); }
+    for (const a of stars) if (a && a.id) artist(a);
+    const rel = await Promise.all([4495513, 246791, 9635624].map(id => dz(`artist/${id}/related`, { limit: 50 }).catch(() => ({}))));
+    for (const r of rel) for (const a of r.data || []) artist(a);
+    passTick(true);
+  })();
+  return psLoading;
+}
+function passPool(kind, tier) {
+  const pool = PS_POOL[kind + tier];
+  if (pool.length) return pool;
+  const own = owned().filter(c => c.tier === tier && isArtist(c) === (kind === "artist") && c.cov && !c.collector).sort((a, b) => b.rank - a.rank).slice(0, 8);
+  return own;
 }
 function passArt(c, big = false) {
-  return `<span class="ps-real${big ? " big" : ""}${c.kind === "artist" ? " art" : ""}" data-kind="${c.kind}" data-tier="${c.tier}" data-shiny="${c.shiny ? 1 : 0}" aria-hidden="true"></span>`;
+  return `<span class="ps-real${big ? " big" : ""}" data-kind="${c.kind}" data-tier="${c.tier}" data-shiny="${c.shiny ? 1 : 0}" aria-hidden="true"></span>`;
 }
 function passIcon(r) {
   if (r.kind === "streams") return `<i class="coin ps-coin" aria-hidden="true"></i>`;
-  if (r.kind === "boosters") return `<span class="ps-pk-wrap" aria-hidden="true"><span class="pack mix ps-pk"><img class="pack-logo" src="brand/zikhunter-icon.svg" alt=""><span class="lbl"><b>Booster</b></span></span><b class="ps-x">×${r.amount}</b></span>`;
+  if (r.kind === "boosters") return `<span class="ps-pk-wrap" aria-hidden="true"><span class="pack mix ps-pk"><span class="pack-shine"></span><canvas class="pack-gl"></canvas><img class="pack-logo" src="brand/zikhunter-icon.svg" alt=""></span><b class="ps-x">×${r.amount}</b></span>`;
   return passArt(r.card);
 }
-// puts the real cards in their places
-function passFill(root) {
-  root.querySelectorAll(".ps-real:not(.done)").forEach(el => {
-    const k = { kind: el.dataset.kind, tier: +el.dataset.tier }, ex = passExample(k);
-    el.classList.add("done");
-    try { el.appendChild(ex ? cardEl(ex, el.dataset.shiny === "1") : backEl()); }
-    catch (e) { el.appendChild(backEl()); }
+// shows the next example in every card slot (each slot starts at a different one)
+let psStep = 0;
+function passTick(now) {
+  if (!now) psStep++;
+  const root = views.pass;
+  if (!root || root.hidden) return;
+  root.querySelectorAll(".ps-real").forEach((el, i) => {
+    const pool = passPool(el.dataset.kind, +el.dataset.tier);
+    const c = pool.length ? pool[(psStep + i) % pool.length] : null, id = c ? String(c.id) : "back";
+    if (el.dataset.cur === id) return;
+    el.dataset.cur = id;
+    let card;
+    try { card = c ? cardEl(c, el.dataset.shiny === "1") : backEl(); } catch (e) { card = backEl(); }
+    const old = el.firstElementChild;
+    card.classList.add("ps-in");
+    el.appendChild(card);
+    if (old) { old.classList.add("ps-out"); setTimeout(() => old.remove(), 450); }
   });
 }
+setInterval(() => { if (!document.hidden) passTick(); }, 2000);
 
 const passTier = d => Math.min(d.tiers, Math.floor(d.xp / d.xp_per_tier));
 const passReady = d => {
@@ -98,7 +128,7 @@ async function renderPass() {
       </div>
       <div class="ps-hero-r">
         <div class="ps-show">${passArt(final.card, true)}<span class="ps-spark s1"></span><span class="ps-spark s2"></span><span class="ps-spark s3"></span></div>
-        <p class="ps-show-lbl"><small>Récompense finale · palier ${d.tiers}</small><b>${esc(passCardName(final.card))}</b></p>
+        <p class="ps-show-lbl"><small>Récompense finale · palier ${d.tiers}</small><b>${esc(passCardName(final.card))}</b><em>Exemples : la carte gagnée est tirée au hasard</em></p>
       </div>
     </div>
 
@@ -146,7 +176,8 @@ async function renderPass() {
       }).join("")}
     </div>`;
 
-  PS_EX.clear(); passFill(box);
+  passTick(true); passLoadExamples();
+  box.querySelectorAll(".ps-pk").forEach(pk => skin(pk, classicName, {}));   // the shop's 3D booster
   const buy = $("#psBuy");
   if (buy) buy.onclick = () => toast("Le paiement arrive très bientôt ! En attendant, demande le Pass Premium à l'équipe sur Discord.");
   box.querySelectorAll(".ps-cell.ready").forEach(b => b.onclick = () => claimPass([[+b.dataset.t, b.dataset.p === "1"]]));

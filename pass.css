@@ -167,3 +167,14 @@
 .ps-cell{gap:8px}
 .ps-cell.star .ps-real{width:84px}
 @media (max-width:900px){.ps-real.big{width:150px}}
+/* the examples change every 2 seconds: the new card fades in over the old one */
+.ps-real{display:grid}
+.ps-real>.cq{grid-area:1/1}
+.ps-real>.ps-in{animation:psIn .45s ease both}
+.ps-real>.ps-out{animation:psOut .45s ease both}
+@keyframes psIn{from{opacity:0;transform:translateY(6px) scale(.97)}}
+@keyframes psOut{to{opacity:0;transform:translateY(-6px) scale(.97)}}
+@media (prefers-reduced-motion:reduce){.ps-real>.ps-in,.ps-real>.ps-out{animation-duration:.01s}}
+.ps-show-lbl em{font-style:normal;font-size:.72rem;color:#9d92b3}
+.ps-pk.gl .pack-logo,.ps-pk.gl .pack-shine{opacity:0}
+.ps-pk{width:64px}
