@@ -97,6 +97,12 @@ async function loadPass() {
   return PASS.data;
 }
 
+// Season 1, "Tournée Mondiale": every tier is a date of the tour, from Paris to the final show in Los Angeles
+const TOUR = ["Paris", "Bruxelles", "Genève", "Lyon", "Marseille", "Montréal", "New York", "Atlanta", "Chicago", "Houston",
+  "Miami", "Mexico", "Rio", "Buenos Aires", "Lagos", "Abidjan", "Dakar", "Casablanca", "Madrid", "Lisbonne",
+  "Londres", "Berlin", "Amsterdam", "Milan", "Stockholm", "Dubaï", "Mumbai", "Séoul", "Tokyo", "Los Angeles"];
+const city = t => TOUR[t - 1] || "";
+
 function daysLeft(t) {
   const s = (Date.parse(t) - Date.now()) / 1000;
   if (s <= 0) return "Saison terminée : récupère ce qu'il te reste";
@@ -107,9 +113,9 @@ function daysLeft(t) {
 async function renderPass() {
   const box = views.pass;
   if (!me) return;
-  if (!PASS.data) box.innerHTML = `<h2>Pass saisonnier</h2><p class="empty-line">Chargement du pass…</p>`;
+  if (!PASS.data) box.innerHTML = `<h2>Pass Tournée</h2><p class="empty-line">Chargement du pass…</p>`;
   const d = await loadPass();
-  if (!d) { box.innerHTML = `<h2>Pass saisonnier</h2><p class="empty-line">Pas de saison en cours. La prochaine arrive bientôt !</p>`; return; }
+  if (!d) { box.innerHTML = `<h2>Pass Tournée</h2><p class="empty-line">Pas de saison en cours. La prochaine arrive bientôt !</p>`; return; }
   const tier = passTier(d), into = d.xp - tier * d.xp_per_tier, max = tier >= d.tiers, pct = max ? 100 : Math.round(100 * into / d.xp_per_tier);
   const ready = passReady(d);
   PASS.got = {};
@@ -131,46 +137,48 @@ async function renderPass() {
   box.innerHTML = `
     ${lastDays ? `<div class="ps-last">
       <div><b>Plus que <span class="ps-count" data-end="${esc(d.ends_at)}"></span> !</b>
-        <small>Il te manque ${rest} palier${rest > 1 ? "s" : ""} jusqu'à ${esc(passCardName(d.rewards[d.tiers - 1].premium.card))}${d.premium ? "" : " (avec le Premium)"}.</small></div>
+        <small>Il te manque ${rest} palier${rest > 1 ? "s" : ""} jusqu'à ${esc(passCardName(d.rewards[d.tiers - 1].premium.card))}${d.premium ? "" : " (avec le VIP)"}.</small></div>
       <button class="ps-buytier" id="psAllTiers">Tout débloquer ${tiersPrice(rest) < TIER_VINYLS * rest ? `<s>${TIER_VINYLS * rest}</s>` : ""}<span>${tiersPrice(rest)} <i class="vin" aria-hidden="true"></i></span></button>
     </div>` : ""}
     <div class="ps-hero${d.premium ? " prem" : ""}">
       <div class="ps-hero-l">
-        <p class="ps-kicker">Pass saisonnier${season ? ` · ${esc(season)}` : ""}${d.premium ? ` <span class="ps-tag">Premium</span>` : ""}</p>
+        <p class="ps-kicker">Pass Tournée${season ? ` · ${esc(season)}` : ""}${d.premium ? ` <span class="ps-tag">VIP</span>` : ""}</p>
         <h2 class="ps-name">${esc(title)}</h2>
-        <div class="ps-chips"><span>⏳ ${esc(daysLeft(d.ends_at))}</span><span>${d.tiers} paliers</span><span>${premCards.length + d.rewards.filter(r => r.free.kind === "card").length} cartes rares à gagner</span></div>
+        <div class="ps-chips"><span>⏳ ${esc(daysLeft(d.ends_at))}</span><span>🌍 ${d.tiers} dates</span><span>${premCards.length + d.rewards.filter(r => r.free.kind === "card").length} cartes rares à gagner</span></div>
         <div class="ps-level">
           <div class="ps-ring" style="--p:${pct}"><b>${tier}</b><small>/ ${d.tiers}</small></div>
-          <div class="ps-xp"><span>Palier ${tier}${max ? "" : ` <small>→ ${tier + 1}</small>`}</span>
+          <div class="ps-xp"><span>Palier ${tier}${max ? "" : ` <small>→ ${tier + 1} · ${esc(city(tier + 1))}</small>`}</span>
             <div class="ps-meter"><s style="width:${pct}%"></s></div>
-            <small>${max ? "Pass terminé, bravo !" : `${fmt(into)} / ${fmt(d.xp_per_tier)} XP`}</small></div>
+            <small>${max ? "Tournée terminée, bravo !" : `${fmt(into)} / ${fmt(d.xp_per_tier)} XP`}</small></div>
         </div>
         ${max ? "" : `<div class="ps-skip"><button class="ps-buytier" id="psTier">Acheter le palier ${tier + 1} <span>${TIER_VINYLS} <i class="vin" aria-hidden="true"></i></span></button>
           <small>Tu as <b>${fmt(S.vinyls || 0)}</b> Vinyles</small></div>`}
       </div>
       <div class="ps-hero-r">
+        <p class="ps-stub"><span>Admit one</span><span>${d.premium ? "Backstage · VIP" : "Fosse"}</span></p>
         <div class="ps-show">${passArt(final.card, true)}<span class="ps-spark s1"></span><span class="ps-spark s2"></span><span class="ps-spark s3"></span></div>
-        <p class="ps-show-lbl"><small>Récompense finale · palier ${d.tiers}</small><b>${esc(passCardName(final.card))}</b><em>Exemples : la carte gagnée est tirée au hasard</em></p>
+        <p class="ps-show-lbl"><small>Dernière date · ${esc(city(d.tiers))}</small><b>${esc(passCardName(final.card))}</b><em>Exemples : la carte gagnée est tirée au hasard</em></p>
+        <span class="ps-barcode" aria-hidden="true"></span>
       </div>
     </div>
 
     ${d.premium ? "" : `
     <div class="ps-offer">
       <div class="ps-offer-l">
-        <p class="ps-kicker gold">Pass Premium</p>
-        <h3>Double toutes tes récompenses</h3>
-        ${lockedNow ? `<p class="ps-miss"><b>${lockedNow} récompense${lockedNow > 1 ? "s" : ""} Premium</b> déjà débloquée${lockedNow > 1 ? "s" : ""} t'attend${lockedNow > 1 ? "ent" : ""}. Elle${lockedNow > 1 ? "s" : ""} arrive${lockedNow > 1 ? "nt" : ""} dès que tu passes Premium.</p>` : ""}
+        <p class="ps-kicker gold">Pass VIP · Backstage</p>
+        <h3>Passe en coulisses : double toutes tes récompenses</h3>
+        ${lockedNow ? `<p class="ps-miss"><b>${lockedNow} récompense${lockedNow > 1 ? "s" : ""} VIP</b> déjà débloquée${lockedNow > 1 ? "s" : ""} t'attend${lockedNow > 1 ? "ent" : ""}. Elle${lockedNow > 1 ? "s" : ""} arrive${lockedNow > 1 ? "nt" : ""} dès que tu passes VIP.</p>` : ""}
         <ul class="ps-perks">
           <li><b>${premCards.length} cartes rares garanties</b> : Légendaire dès le palier 5, Shiny, artistes Platine et Diamant</li>
           <li><b>${fmt(prem.filter(r => r.kind === "boosters").reduce((a, r) => a + r.amount, 0))} boosters</b> et <b>${fmt(prem.filter(r => r.kind === "streams").reduce((a, r) => a + r.amount, 0))} Streams</b> en plus</li>
-          <li>Ton <b>badge Premium</b> sur la saison</li>
+          <li>Ton <b>badge VIP</b> sur toute la tournée</li>
         </ul>
         <div class="ps-offer-cards">${premCards.map(r => `<span class="ps-oc" title="Palier ${r.tier} : ${esc(passCardName(r.card))}">${passArt(r.card)}<small>${r.tier}</small></span>`).join("")}</div>
       </div>
       <div class="ps-offer-r">
         <p class="ps-worth">Plus de <b>${fmt(Math.floor(worth / 1000) * 1000)} Streams</b> de valeur</p>
-        <p class="ps-price"><b>${PASS_PRICE}</b><small>pour toute la saison</small></p>
-        <button class="btn ps-buy" id="psBuy">Débloquer le Premium</button>
+        <p class="ps-price"><b>${PASS_PRICE}</b><small>pour toute la tournée</small></p>
+        <button class="btn ps-buy" id="psBuy">Passer VIP</button>
         <button class="ps-buy-v" id="psBuyV">ou avec ${PREMIUM_VINYLS} <i class="vin" aria-hidden="true"></i> Vinyles</button>
       </div>
     </div>`}
@@ -181,7 +189,7 @@ async function renderPass() {
       ${d.gift_pending ? `<small class="ps-note">Une carte t'attend dans ton prochain booster : ouvre-le pour récupérer les autres.</small>` : ""}
     </div>
     <div class="ps-track" id="psTrack">
-      <div class="ps-labels"><span></span><span>Gratuit</span><span class="gold">Premium</span></div>
+      <div class="ps-labels"><span></span><span>Gratuit</span><span class="gold">VIP</span></div>
       ${d.rewards.map(r => {
         const reached = r.tier <= tier;
         const cell = (rw, isPrem) => {
@@ -191,12 +199,12 @@ async function renderPass() {
           const star = rw.kind === "card" ? ` star r${rw.card.tier}${rw.card.shiny ? " shiny" : ""}` : "";
           const gk = r.tier + (isPrem ? "p" : "f"), mine = claimed && rw.kind === "card" ? PASS.got[gk] : null;
           return `<button class="ps-cell ${isPrem ? "prem" : "free"} ${state}${star}${mine ? " mine" : ""}" data-t="${r.tier}" data-p="${isPrem ? 1 : 0}" ${can ? "" : 'tabindex="-1"'}
-            aria-label="Palier ${r.tier}, ${isPrem ? "Premium" : "gratuit"} : ${esc(passName(rw))}${claimed ? ", récupéré" : can ? ", à récupérer" : ""}">
+            aria-label="Palier ${r.tier} (${esc(city(r.tier))}), ${isPrem ? "VIP" : "gratuit"} : ${esc(passName(rw))}${claimed ? ", récupéré" : can ? ", à récupérer" : ""}">
             ${rw.kind === "card" ? passArt(rw.card, false, claimed ? gk : "") : passIcon(rw)}<span class="ps-lbl">${mine ? `Ta carte : <b>${esc(mine.t)}</b>` : esc(passName(rw))}</span>
             ${claimed ? `<span class="ps-ok" aria-hidden="true">✓</span>` : state === "lock" ? `<span class="ps-lock" aria-hidden="true"></span>` : can ? `<span class="ps-go">Récupérer</span>` : ""}</button>`;
         };
         return `<div class="ps-tier${reached ? " reached" : ""}${r.tier === tier + 1 ? " next" : ""}">
-          <span class="ps-n"><i style="width:${reached ? 100 : r.tier === tier + 1 ? pct : 0}%"></i><b>${r.tier}</b></span>${cell(r.free, false)}${cell(r.premium, true)}</div>`;
+          <span class="ps-n"><i style="width:${reached ? 100 : r.tier === tier + 1 ? pct : 0}%"></i><b>${r.tier}</b><em>${esc(city(r.tier))}</em></span>${cell(r.free, false)}${cell(r.premium, true)}</div>`;
       }).join("")}
     </div>`;
 
@@ -205,8 +213,8 @@ async function renderPass() {
   const buyV = $("#psBuyV");
   if (buyV) buyV.onclick = async () => {
     if ((S.vinyls || 0) < PREMIUM_VINYLS) return toast(`Il te faut ${PREMIUM_VINYLS} Vinyles, tu en as ${fmt(S.vinyls || 0)}.`);
-    if (!confirm(`Débloquer le Pass Premium pour ${PREMIUM_VINYLS} Vinyles ?`)) return;
-    try { await rpc("buy_season_premium"); toast("Pass Premium débloqué ! Toutes les récompenses dorées sont à toi."); }
+    if (!confirm(`Passer VIP pour ${PREMIUM_VINYLS} Vinyles ?`)) return;
+    try { await rpc("buy_season_premium"); toast("Bienvenue en backstage ! Toutes les récompenses VIP sont à toi."); }
     catch (e) { return toast(message(e)); }
     try { await loadProfile(); } catch (e) {}
     refreshViews(); renderPass();
@@ -393,7 +401,7 @@ function renderVinylShop() {
   box.innerHTML = `
     <div class="vs-head">
       <div><p class="ps-kicker">Monnaie rare</p><h3>Vinyles</h3>
-        <p>Achète des paliers du pass saisonnier (${TIER_VINYLS} Vinyles) ou le Pass Premium (${PREMIUM_VINYLS} Vinyles).</p></div>
+        <p>Achète des paliers du Pass Tournée (${TIER_VINYLS} Vinyles) ou le Pass VIP (${PREMIUM_VINYLS} Vinyles).</p></div>
       ${me ? `<div class="vs-bal"><i class="vin" aria-hidden="true"></i><b>${fmt(S.vinyls || 0)}</b><small>Ton solde</small></div>` : ""}
     </div>
     ${SHOP.used.includes("welcome") ? "" : `<div class="vs-welcome">
