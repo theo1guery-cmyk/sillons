@@ -114,6 +114,7 @@
 .card.legend .lst b{color:#fff3d6;font-weight:500}
 .card.legend:not(.shiny) .foil{display:none}
 .card.legend.shiny .lhead{right:17cqw}
+.card.legend.shiny .shade{background:linear-gradient(180deg,rgba(0,0,0,.55),transparent 17%),linear-gradient(0deg,#000 0%,rgba(0,0,0,.88) 18%,rgba(0,0,0,.45) 38%,transparent 55%)}   /* Shiny: a black fade rising from the bottom */
 @media (prefers-reduced-motion:reduce){.card.legend .sig{animation:none}}
 
 /* Artiste Disque de diamant: the Icône. Platinum frame, photo in colour, the name down the side in chrome with depth, a silver signature */
