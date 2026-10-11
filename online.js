@@ -204,7 +204,7 @@ function leaveAccount() {
 Object.assign(Online, {
   message,
   async startPack(p) {
-    const d = await rpc("start_pack", { p_kind: p.g >= 0 ? "genre" : "booster", p_genre: p.g >= 0 ? p.g : null });
+    const d = await rpc("start_pack", { p_kind: p.g >= 0 ? "genre" : "booster", p_genre: p.g >= 0 ? p.g : null, p_pay: p.pay === "vinyls" ? "vinyls" : "streams" });
     return d;
   },
   async abandon(pk) { try { await rpc("abandon_pack", { p_pack: pk.id }); await loadProfile(); } catch (e) {} },

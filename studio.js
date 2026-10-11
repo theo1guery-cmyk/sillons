@@ -154,7 +154,7 @@ const mats = new Map();
 function material(name) {
   if (mats.has(name)) return mats.get(name);
   const base = "brand/demo/" + name;
-  const p = Promise.all([texture(base + "-a.webp", true), texture(base + "-m.webp", false), texture(base + "-n.webp", false),
+  const p = Promise.all([texture(base + "-a.webp?v=2", true), texture(base + "-m.webp", false), texture(base + "-n.webp", false),
     BACK[name]?.glow ? texture(base + "-e.webp", true) : null]).then(([a, m, n, e]) => {
     if (!a || !m || !n) return null;
     if (BACK[name]) return {

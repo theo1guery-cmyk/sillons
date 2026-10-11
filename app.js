@@ -654,7 +654,7 @@ const classicName = () => "pack-wall";
 let tornCut = null;                       // the shape of the last tear, so the pack in the opening is torn the same way
 skin(packBtn, classicName, { sway: true, canTear: () => !busy && !packBtn.disabled, tear: cut => { tornCut = cut; openPack(BOOSTER); } });
 document.documentElement.dataset.back = "plain";
-const studioScript = document.createElement("script"); studioScript.type = "module"; studioScript.src = "studio.js?v=16"; document.head.appendChild(studioScript);
+const studioScript = document.createElement("script"); studioScript.type = "module"; studioScript.src = "studio.js?v=17"; document.head.appendChild(studioScript);
 function renderStock() {
   if (TEST_MODE) {
     stockEl.innerHTML = `<b>Boosters illimités</b><span class="test-badge">Mode test</span>
@@ -679,27 +679,34 @@ setInterval(() => { renderStock(); save(); }, 30000);
 
 /* ---------- boutique: one-genre boosters (free while testing, paid later) ---------- */
 const STORE_PACKS = TYPES.slice(0, AUTRE).map((t, g) => ({ g, n: t.n }));
-const STORE_PRICE = 100;                 // Streams, charged by the server
+const STORE_PRICE = 400, STORE_VINYLS = 15;   // a genre pack: Streams or Vinyles, charged by the server
+const canPay = p => p.pay === "vinyls" ? (S.vinyls || 0) >= STORE_VINYLS : (S.streams || 0) >= STORE_PRICE;
 for (const p of STORE_PACKS) {
   const offer = document.createElement("div"); offer.className = "offer";
   const b = document.createElement("button"); b.className = "pack"; b.style.setProperty("--h", TYPES[p.g].h);
   b.innerHTML = `<span class="pack-shine" aria-hidden="true"></span><canvas class="pack-gl" aria-hidden="true"></canvas><img class="pack-logo" src="brand/zikhunter-icon.svg" alt=""><span class="lbl"><b>${p.n}</b><span>5 cartes ${p.n}</span></span>`;
   skin(b, "pack-" + TYPES[p.g].k);
   b.setAttribute("aria-label", "Ouvrir un booster " + p.n);
-  b.onclick = () => buyPack(p);
+  b.onclick = () => buyPack(p, (S.streams || 0) < STORE_PRICE && (S.vinyls || 0) >= STORE_VINYLS ? "vinyls" : "streams");
   p.el = b;
   const price = document.createElement("div"); price.className = "price";
-  price.innerHTML = `<b><i class="coin" aria-hidden="true"></i>${STORE_PRICE} Streams</b><small>5 cartes ${p.n}</small>`;
-  const buy = document.createElement("button"); buy.className = "btn primary"; buy.textContent = "Acheter";
+  price.innerHTML = `<small>5 cartes ${p.n}</small>`;
+  const buy = document.createElement("button"); buy.className = "btn primary pay-s";
+  buy.innerHTML = `<i class="coin" aria-hidden="true"></i>${STORE_PRICE} Streams`;
   buy.setAttribute("aria-label", "Acheter un booster " + p.n + " pour " + STORE_PRICE + " Streams");
-  buy.onclick = () => buyPack(p);
-  offer.append(b, price, buy); $("#store").appendChild(offer);
+  buy.onclick = () => buyPack(p, "streams");
+  const buyV = document.createElement("button"); buyV.className = "btn pay-v";
+  buyV.innerHTML = `<i class="vin" aria-hidden="true"></i>${STORE_VINYLS} Vinyles`;
+  buyV.setAttribute("aria-label", "Acheter un booster " + p.n + " pour " + STORE_VINYLS + " Vinyles");
+  buyV.onclick = () => buyPack(p, "vinyls");
+  const pays = document.createElement("div"); pays.className = "pay-row"; pays.append(buy, buyV);
+  offer.append(b, price, pays); $("#store").appendChild(offer);
 }
 
 // buying a genre booster brings it up big, centre screen: it is torn open there (nothing is paid until then)
 const tearStage = document.createElement("div"); tearStage.className = "tear-stage"; tearStage.hidden = true;
 tearStage.setAttribute("role", "dialog"); tearStage.setAttribute("aria-modal", "true"); tearStage.setAttribute("aria-label", "Ouvrir le booster");
-tearStage.innerHTML = `<div class="ts-head"><b></b><small>${STORE_PRICE} Streams · 5 cartes</small></div>
+tearStage.innerHTML = `<div class="ts-head"><b></b><small></small></div>
   <div class="pack stage-pack"><canvas class="pack-gl" aria-hidden="true"></canvas></div>
   <p class="ts-hint">Déchire le haut du sachet pour l'ouvrir</p>
   <button class="btn" type="button">Annuler</button>`;
@@ -711,11 +718,13 @@ const stageKeys = e => { if (e.key === "Escape") closeStage(); };
 tearStage.querySelector("button").onclick = closeStage;
 tearStage.addEventListener("click", e => { if (e.target === tearStage) closeStage(); });
 let stageReady = false;
-function buyPack(p) {
-  // the checks of the opening come first (account, Streams), so a pack you can't open is never shown torn
-  if (busy || !Online.active || (S.streams || 0) < STORE_PRICE || !window.Studio) return openPack(p);
+function buyPack(p, pay = "streams") {
+  p.pay = pay;
+  // the checks of the opening come first (account, Streams or Vinyles), so a pack you can't open is never shown torn
+  if (busy || !Online.active || !canPay(p) || !window.Studio) return openPack(p);
   stagePack = p;
   tearStage.querySelector(".ts-head b").textContent = "Booster " + p.n;
+  tearStage.querySelector(".ts-head small").textContent = (pay === "vinyls" ? STORE_VINYLS + " Vinyles" : STORE_PRICE + " Streams") + " · 5 cartes";
   if (!stageReady) {
     stageReady = true;
     skin(stageHost, () => "pack-" + TYPES[stagePack.g].k, { sway: true, canTear: () => !busy && !tearStage.hidden,
@@ -765,7 +774,11 @@ const LOADING_LINES = ["On fouille Deezer…", "On feuillette les bacs…", "On 
 async function openPack(p, opts = {}) {
   if (busy) return;
   if (p.g >= 0 && !Online.active) { toast("Les packs de la Boutique s'achètent en Streams : connecte-toi ou crée un compte."); Online.askSignIn?.(); return; }
-  if (p.g >= 0 && (S.streams || 0) < STORE_PRICE) { toast(`Il te faut ${STORE_PRICE} Streams pour ce pack. Tu en as ${fmt(S.streams || 0)} : va voir les Défis.`); return; }
+  if (p.g >= 0 && !canPay(p)) {
+    toast(p.pay === "vinyls" ? `Il te faut ${STORE_VINYLS} Vinyles pour ce pack. Tu en as ${fmt(S.vinyls || 0)}.`
+      : `Il te faut ${STORE_PRICE} Streams pour ce pack. Tu en as ${fmt(S.streams || 0)} : va voir les Défis, ou paie en Vinyles.`);
+    return;
+  }
   refill();
   if (!Online.active && !TEST_MODE && S.stock <= 0) { renderStock(); toast("Plus de booster pour l'instant. Le prochain arrive dans " + Math.ceil(nextRefillMs() / 60000) + " min."); return; }
   busy = true; lastPack = p;
