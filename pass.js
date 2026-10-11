@@ -399,7 +399,7 @@ function renderVinylShop() {
     ${SHOP.used.includes("welcome") ? "" : `<div class="vs-welcome">
       <span class="vs-badge">Offre de bienvenue · une seule fois</span>
       <div class="vs-stack s3" aria-hidden="true"><i></i><i></i><i></i></div>
-      <div class="vs-wtxt"><b>300 Vinyles</b><small>au lieu de 3,99 €</small></div>
+      <div class="vs-wtxt"><b>200 Vinyles</b><small>au lieu de 2,49 €</small></div>
       <button class="vs-buy" data-pack="welcome">0,99 €</button>
     </div>`}
     ${dailyCard()}
