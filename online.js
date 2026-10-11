@@ -999,12 +999,13 @@ async function renderAlbums() {
   albumsBusy = true;
   $("#aStatus").textContent = "Chargement de tes albums…";
   try {
-    AL.list = await rpc("my_albums");
-    const pending = await sb.from("cards").select("id,tracks!inner(album_id)", { count: "exact", head: true })
-      .eq("owner", me.id).is("tracks.album_id", null);
+    const r = await rpc("my_albums_fast");        // each album as a short array, to keep big collections fast
+    AL.list = r.albums.map(([id, title, artist, artist_id, cover, year, type, total, complete, owned, claimed]) => ({
+      id, title, artist, artist_id, cover, year, type, total, complete, owned, claimed,
+      pct: Math.round(100 * owned / Math.max(1, total)), reward: Math.min(500, Math.max(50, total * 10)) }));
     const sync = $("#albumsSync");
-    sync.hidden = !pending.count;
-    if (pending.count) sync.innerHTML = `<p>On retrouve encore l'album de <b>${fmt(pending.count)}</b> de tes cartes : certains albums n'apparaissent pas encore. Repasse dans quelques minutes.</p>`;
+    sync.hidden = !r.pending;
+    if (r.pending) sync.innerHTML = `<p>On retrouve encore l'album de <b>${fmt(r.pending)}</b> de tes cartes : certains albums n'apparaissent pas encore. Repasse dans quelques minutes.</p>`;
   } catch (e) { $("#aStatus").textContent = message(e); albumsBusy = false; return; }
   albumsBusy = false;
   bindAlbumControls();
