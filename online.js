@@ -419,24 +419,8 @@ function renderAuth(mode, note = "") {
 }
 $("#privacyLink").onclick = () => openAuth("privacy");
 
-/* ---------- import of the guest collection (once, cards stay untradeable) ---------- */
-function renderImport() {
-  const box = $("#importBox");
-  const local = (() => { try { return JSON.parse(localStorage.getItem(LS)); } catch (e) { return null; } })();
-  const cards = local && local.c ? Object.values(local.c) : [];
-  if (!me || me.imported || !cards.length) { box.hidden = true; return; }
-  const copies = cards.reduce((a, c) => a + (c.n || 1), 0);
-  box.hidden = false;
-  box.innerHTML = `<p><b>Tu as ${fmt(copies)} cartes jouées sans compte sur cet appareil.</b> Tu peux les ajouter à ton compte pour les retrouver partout et les échanger.</p>
-    <div class="btns"><button class="btn primary" id="doImport">Ajouter à mon compte</button></div>`;
-  $("#doImport").onclick = async () => {
-    $("#doImport").disabled = true; $("#doImport").textContent = "Import…";
-    try {
-      const n = await rpc("import_collection", { p_cards: cards, p_opened: local.opened || 0 });
-      await loadAll(); refreshViews(); toast(fmt(n) + " cartes ajoutées à ton compte.");
-    } catch (e) { toast(message(e)); $("#doImport").disabled = false; $("#doImport").textContent = "Ajouter à mon compte"; }
-  };
-}
+/* ---------- import of the guest collection: closed (the server trusted the cards sent by the browser) ---------- */
+function renderImport() { $("#importBox").hidden = true; }
 
 /* ---------- trades ---------- */
 const OFFER_SELECT = "id,status,created_at,decided_at,from_user,to_user,from:profiles!offers_from_user_fkey(pseudo),to:profiles!offers_to_user_fkey(pseudo)," +
