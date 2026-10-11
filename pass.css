@@ -178,3 +178,7 @@
 .ps-show-lbl em{font-style:normal;font-size:.72rem;color:#9d92b3}
 .ps-pk.gl .pack-logo,.ps-pk.gl .pack-shine{opacity:0}
 .ps-pk{width:64px}
+/* a reward already received shows the player's own card, at full brightness */
+.ps-cell.claimed.mine{opacity:1}
+.ps-cell.mine .ps-lbl{font-family:var(--body);font-size:.72rem;color:#cfc4e2}
+.ps-cell.mine .ps-lbl b{display:block;font-family:var(--display);font-size:.76rem;color:#fff}
