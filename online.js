@@ -200,6 +200,17 @@ function leaveAccount() {
   refreshViews();
 }
 
+/* ---------- the server's pool: what this browser found on Deezer (checked by the server when drawn) ---------- */
+let pooling = false;
+async function flushPool() {
+  if (!me || pooling || (!POOL_Q.tracks.length && !POOL_Q.artists.length)) return;
+  pooling = true;
+  const tracks = POOL_Q.tracks.splice(0, 250), artists = POOL_Q.artists.splice(0, 300 - tracks.length);
+  try { await rpc("pool_offer", { p_tracks: tracks, p_artists: artists }); } catch (e) {}
+  pooling = false;
+}
+setInterval(flushPool, 20000);
+
 /* ---------- boosters with an account ---------- */
 Object.assign(Online, {
   message,
@@ -208,7 +219,8 @@ Object.assign(Online, {
     return d;
   },
   async abandon(pk) { try { await rpc("abandon_pack", { p_pack: pk.id }); await loadProfile(); } catch (e) {} },
-  // the browser finds tracks for the rarities the server rolled; the server checks them on Deezer
+  // the browser proposes tracks for the rarities the server rolled; the server draws the cards from its pool (the
+  // proposals are only used when the pool has nothing for a slot) and checks them on Deezer
   async drawPack(p, pk) {
     const used = new Set(), usedArtists = new Set(), raws = [];
     for (const [i, tier] of pk.slots.entries()) {
@@ -239,6 +251,7 @@ Object.assign(Online, {
       return { c: cardFromRow(row, meta), holo: r.holo, isNew: r.new, wanted: r.wanted };
     }).sort((a, b) => a.c.tier - b.c.tier || a.c.rank - b.c.rank);
     await loadProfile();
+    flushPool();
     updateDefisBadge(); Online.loadPass?.(); Online.afterPack?.(pulls, pk.god);
     return pulls;
   },
