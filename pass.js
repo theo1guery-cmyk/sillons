@@ -4,7 +4,9 @@
 
 const PASS = { data: null, busy: false, got: {} };
 const PASS_PRICE = "4,99 €";
-const TIER_VINYLS = 30, PREMIUM_VINYLS = 450;   // the prices in Vinyles (checked by the server)
+const TIER_VINYLS = 40, PREMIUM_VINYLS = 450;   // the prices in Vinyles (checked by the server)
+// several tiers at once: -20 % from 5, -30 % from 10, -40 % from 20 (tiers_price on the server)
+const tiersPrice = n => Math.round(TIER_VINYLS * n * (n >= 20 ? .6 : n >= 10 ? .7 : n >= 5 ? .8 : 1));
 
 const passCardName = c => (c.kind === "artist" ? (c.tier === 5 ? "Artiste Diamant" : "Artiste Platine") : (c.tier === 5 ? "Légendaire" : "Mythique"))
   + (c.shiny ? " Shiny" : "");
@@ -53,9 +55,10 @@ function passIcon(r) {
 let psStep = 0;
 function passTick(now) {
   if (!now) psStep++;
-  const root = views.pass;
-  if (!root || root.hidden) return;
-  root.querySelectorAll(".ps-real").forEach((el, i) => {
+  // the pass, and the offer of the day in the Boutique
+  const els = [views.pass, views.store].filter(v => v && !v.hidden).flatMap(v => [...v.querySelectorAll(".ps-real")]);
+  if (els.length && !psLoading) passLoadExamples();
+  els.forEach((el, i) => {
     const mine = el.dataset.got && PASS.got[el.dataset.got];         // a reward already received: the player's own card, fixed
     const pool = mine ? [mine] : passPool(el.dataset.kind, +el.dataset.tier);
     const c = pool.length ? pool[(psStep + i) % pool.length] : null, id = c ? String(c.id) : "back";
@@ -90,7 +93,7 @@ function passBadge() {
 async function loadPass() {
   if (!me) return null;
   try { PASS.data = await rpc("my_season"); } catch (e) { PASS.data = null; }
-  passBadge(); renderVinylShop(); if (!SHOP.loaded) { SHOP.loaded = true; loadOffersUsed(); }
+  passBadge(); renderVinylShop(); if (!SHOP.loaded) { SHOP.loaded = true; loadShop(); }
   return PASS.data;
 }
 
@@ -123,7 +126,14 @@ async function renderPass() {
   const lockedNow = d.premium ? 0 : prem.filter(r => r.tier <= tier).length;   // Premium rewards already reached, waiting for the pass
   const final = d.rewards[d.rewards.length - 1].premium;
 
+  const left = Date.parse(d.ends_at) - Date.now(), rest = d.tiers - tier;
+  const lastDays = !max && left > 0 && left < 3 * 864e5;            // the last 3 days: all the tiers left at a discount
   box.innerHTML = `
+    ${lastDays ? `<div class="ps-last">
+      <div><b>Plus que <span class="ps-count" data-end="${esc(d.ends_at)}"></span> !</b>
+        <small>Il te manque ${rest} palier${rest > 1 ? "s" : ""} jusqu'à ${esc(passCardName(d.rewards[d.tiers - 1].premium.card))}${d.premium ? "" : " (avec le Premium)"}.</small></div>
+      <button class="ps-buytier" id="psAllTiers">Tout débloquer ${tiersPrice(rest) < TIER_VINYLS * rest ? `<s>${TIER_VINYLS * rest}</s>` : ""}<span>${tiersPrice(rest)} <i class="vin" aria-hidden="true"></i></span></button>
+    </div>` : ""}
     <div class="ps-hero${d.premium ? " prem" : ""}">
       <div class="ps-hero-l">
         <p class="ps-kicker">Pass saisonnier${season ? ` · ${esc(season)}` : ""}${d.premium ? ` <span class="ps-tag">Premium</span>` : ""}</p>
@@ -201,15 +211,11 @@ async function renderPass() {
     try { await loadProfile(); } catch (e) {}
     refreshViews(); renderPass();
   };
+  const allBtn = $("#psAllTiers");
+  if (allBtn) allBtn.onclick = () => buyTiers(rest, allBtn);
+  tickCounts();
   const tierBtn = $("#psTier");
-  if (tierBtn) tierBtn.onclick = async () => {
-    if ((S.vinyls || 0) < TIER_VINYLS) return toast(`Il te faut ${TIER_VINYLS} Vinyles, tu en as ${fmt(S.vinyls || 0)}.`);
-    tierBtn.disabled = true;
-    try { const t = await rpc("buy_season_tier"); toast(`Palier ${t} débloqué !`); }
-    catch (e) { toast(message(e)); }
-    try { await loadProfile(); } catch (e) {}
-    refreshViews(); renderPass();
-  };
+  if (tierBtn) tierBtn.onclick = () => buyTiers(1, tierBtn);
   const buy = $("#psBuy");
   if (buy) buy.onclick = () => checkout("pass", buy);
   box.querySelectorAll(".ps-cell.ready").forEach(b => b.onclick = () => claimPass([[+b.dataset.t, b.dataset.p === "1"]]));
@@ -261,7 +267,88 @@ const VINYL_PACKS = [
   { id: "v80", n: 80, eur: 0.99 }, { id: "v170", n: 170, eur: 1.99 }, { id: "v360", n: 360, eur: 3.99 },
   { id: "v950", n: 950, eur: 9.99, tag: "Populaire" }, { id: "v2000", n: 2000, eur: 19.99 }, { id: "v5500", n: 5500, eur: 49.99, tag: "Meilleure offre" },
 ];
-const SHOP = { used: [] };     // the one-time offers already bought
+// what the shop knows of this player (my_shop): one-time offers bought, any purchase yet (the first is doubled),
+// the offer of the day, until when "Tu es en feu !" is open, boosters left before the guaranteed Mythique
+const SHOP = { used: [], bought: true, daily: null, fire_until: null, pity_left: null };
+async function loadShop() {
+  if (!me) return;
+  try { Object.assign(SHOP, await rpc("my_shop")); } catch (e) {}
+  renderVinylShop(); fireBar();
+  if (typeof renderStock === "function") renderStock();
+}
+// "2 j 14 h", "3 h 05 min", "12:04" — for the countdowns
+function countdown(ms) {
+  if (ms <= 0) return "0 min";
+  const s = Math.floor(ms / 1000), d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60), sec = s % 60;
+  if (d) return `${d} j ${h} h`;
+  if (h) return `${h} h ${String(m).padStart(2, "0")} min`;
+  return `${m}:${String(sec).padStart(2, "0")}`;
+}
+function tickCounts() {
+  document.querySelectorAll(".ps-count[data-end]").forEach(el => { el.textContent = countdown(Date.parse(el.dataset.end) - Date.now()); });
+}
+setInterval(tickCounts, 1000);
+
+async function buyTiers(n, btn) {
+  const price = tiersPrice(n);
+  if ((S.vinyls || 0) < price) return toast(`Il te faut ${price} Vinyles, tu en as ${fmt(S.vinyls || 0)}.`);
+  if (n > 1 && !confirm(`Débloquer ${n} paliers pour ${price} Vinyles ?`)) return;
+  btn.disabled = true;
+  try { const t = await rpc("buy_season_tiers", { p_count: n }); toast(n > 1 ? `${n} paliers débloqués : tu es au palier ${t} !` : `Palier ${t} débloqué !`); }
+  catch (e) { toast(message(e)); }
+  try { await loadProfile(); } catch (e) {}
+  refreshViews(); renderPass();
+}
+
+/* ---------- stock empty: recharge, or the guaranteed Mythique now ---------- */
+const PITY_PRICE = { 1: 40, 2: 55, 3: 70, 4: 85, 5: 100 };   // pity_price on the server
+function stockOffers(el, on) {
+  document.getElementById("stockOffers")?.remove();
+  if (!on) return;
+  const left = SHOP.pity_left ?? (PITY - S.dry), pity = PITY_PRICE[left];
+  const box = document.createElement("div"); box.className = "stock-offers"; box.id = "stockOffers";
+  box.innerHTML = `<p>Plus de boosters ? Continue tout de suite :</p>
+    <div class="so-row">
+      <button class="so-btn" data-n="10"><b>10 boosters</b><span>80 <i class="vin" aria-hidden="true"></i></span></button>
+      <button class="so-btn best" data-n="25"><b>25 boosters</b><small>−10 %</small><span>180 <i class="vin" aria-hidden="true"></i></span></button>
+      ${pity ? `<button class="so-btn pity" id="soPity"><b>Ta Mythique garantie, maintenant</b><small>Plus que ${left} booster${left > 1 ? "s" : ""} avant la garantie</small><span>${pity} <i class="vin" aria-hidden="true"></i></span></button>` : ""}
+    </div>
+    <small class="so-bal">Tu as ${fmt(S.vinyls || 0)} Vinyles · <a href="#" class="so-shop">En obtenir</a></small>`;
+  box.querySelectorAll("[data-n]").forEach(b => b.onclick = () => buyStock(b, () => rpc("buy_boosters", { p_count: +b.dataset.n }), +b.dataset.n === 10 ? 80 : 180,
+    () => `${b.dataset.n} boosters ajoutés !`));
+  const pb = box.querySelector("#soPity");
+  if (pb) pb.onclick = () => buyStock(pb, () => rpc("buy_pity"), pity, () => "Ton prochain booster contient ta Mythique garantie !");
+  box.querySelector(".so-shop").onclick = e => { e.preventDefault(); show("store"); renderVinylShop(); };
+  el.after(box);
+}
+async function buyStock(btn, call, price, done) {
+  if ((S.vinyls || 0) < price) { toast(`Il te faut ${price} Vinyles, tu en as ${fmt(S.vinyls || 0)}.`); show("store"); renderVinylShop(); return; }
+  btn.disabled = true;
+  try { await call(); toast(done()); } catch (e) { toast(message(e)); btn.disabled = false; return; }
+  try { await loadProfile(); } catch (e) {}
+  refreshViews(); loadShop();
+}
+
+/* ---------- "Tu es en feu !": for one hour after a GOD pack or a Légendaire ---------- */
+function afterPack(pulls, god) {
+  if (!god && !pulls.some(pl => !isArtist(pl.c) && pl.c.tier === LEG)) return;
+  setTimeout(loadShop, 2500);             // the server opens the offer; the bar shows once the cards are revealed
+}
+function fireBar() {
+  document.getElementById("fireBar")?.remove();
+  const until = SHOP.fire_until && Date.parse(SHOP.fire_until);
+  if (!me || !until || until < Date.now()) return;
+  let seen = null; try { seen = localStorage.getItem("zh-fire-closed"); } catch (e) {}
+  if (seen === SHOP.fire_until) return;
+  const bar = document.createElement("div"); bar.id = "fireBar"; bar.className = "fire-bar"; bar.setAttribute("role", "status");
+  bar.innerHTML = `<span class="fire-ico" aria-hidden="true">🔥</span>
+    <div><b>Tu es en feu !</b><small>50 boosters pour 2,99 € · encore <span class="ps-count" data-end="${esc(SHOP.fire_until)}"></span></small></div>
+    <button class="vs-buy" id="fireBuy">2,99 €</button><button class="fire-x" aria-label="Fermer">×</button>`;
+  document.body.appendChild(bar); tickCounts();
+  bar.querySelector("#fireBuy").onclick = e => checkout("fire", e.currentTarget);
+  bar.querySelector(".fire-x").onclick = () => { try { localStorage.setItem("zh-fire-closed", SHOP.fire_until); } catch (e) {} bar.remove(); };
+  setTimeout(() => { if (Date.parse(SHOP.fire_until) < Date.now()) bar.remove(); }, until - Date.now() + 500);
+}
 
 // a Stripe Checkout page for a pack (Edge Function create-checkout), then back to the site with ?achat=ok
 async function checkout(pack, btn) {
@@ -292,6 +379,7 @@ async function checkout(pack, btn) {
     if (!me) return;
     const before = S.vinyls, prem = PASS.data?.premium;
     try { await loadProfile(); await loadPass(); } catch (e) { return; }
+    loadShop();
     refreshViews();
     if (!views.pass.hidden) renderPass();
     if (S.vinyls !== before || PASS.data?.premium !== prem) { clearInterval(poll); toast("C'est arrivé : ton achat est sur ton compte."); }
@@ -314,27 +402,42 @@ function renderVinylShop() {
       <div class="vs-wtxt"><b>300 Vinyles</b><small>au lieu de 3,99 €</small></div>
       <button class="vs-buy" data-pack="welcome">0,99 €</button>
     </div>`}
+    ${dailyCard()}
+    ${me && SHOP.fire_until && Date.parse(SHOP.fire_until) > Date.now() ? `<div class="vs-daily fire">
+      <div class="vs-dl"><span class="vs-badge">🔥 Tu es en feu ! · encore <span class="ps-count" data-end="${esc(SHOP.fire_until)}"></span></span>
+        <b>50 boosters</b><small>Pour enchaîner après ton gros tirage</small></div>
+      <button class="vs-buy" data-pack="fire">2,99 €</button></div>` : ""}
+    ${me && !SHOP.bought ? `<p class="vs-first">Premier achat : <b>tes Vinyles sont doublés</b> sur le pack de ton choix !</p>` : ""}
     <div class="vs-grid">${VINYL_PACKS.map((p, i) => {
       const bonus = Math.round((p.n / p.eur / base - 1) * 100);
       return `<div class="vs-pack${p.tag ? " hot" : ""}">
         ${p.tag ? `<span class="vs-tag">${p.tag}</span>` : ""}
         <div class="vs-stack s${i + 1}" aria-hidden="true">${"<i></i>".repeat(i + 1)}</div>
-        <b class="vs-n">${fmt(p.n)}</b><small>Vinyles</small>
+        ${me && !SHOP.bought ? `<span class="vs-x2">×2</span><b class="vs-n">${fmt(p.n * 2)}</b><small><s>${fmt(p.n)}</s> Vinyles</small>` : `<b class="vs-n">${fmt(p.n)}</b><small>Vinyles</small>`}
         ${bonus > 0 ? `<span class="vs-bonus">+${bonus} % offerts</span>` : `<span class="vs-bonus none">&nbsp;</span>`}
         <button class="vs-buy" data-pack="${p.id}">${euro(p.eur)}</button>
       </div>`;
     }).join("")}</div>`;
   box.querySelectorAll(".vs-buy").forEach(b => b.onclick = () => checkout(b.dataset.pack, b));
+  tickCounts(); passTick(true);
 }
-async function loadOffersUsed() {
-  if (!me) return;
-  try { SHOP.used = await rpc("my_offers_used") || []; } catch (e) { SHOP.used = []; }
-  renderVinylShop();
+// the offer of the day: a new one at midnight (Paris time), one purchase a day
+function dailyCard() {
+  const d = SHOP.daily;
+  if (!me || !d) return "";
+  const parts = [d.vinyls && `${fmt(d.vinyls)} Vinyles`, d.boosters && `${d.boosters} boosters`, d.card && `1 ${passCardName(d.card)} garanti${d.card.kind === "artist" ? "" : "e"}`].filter(Boolean);
+  return `<div class="vs-daily${d.taken ? " taken" : ""}">
+    ${d.card ? `<div class="vs-dcard">${passArt(d.card)}</div>` : `<div class="vs-stack s4" aria-hidden="true"><i></i><i></i><i></i><i></i></div>`}
+    <div class="vs-dl"><span class="vs-badge">Offre du jour · ${d.taken ? "nouvelle offre dans" : "encore"} <span class="ps-count" data-end="${esc(d.ends_at)}"></span></span>
+      <b>${esc(parts.join(" + "))}</b><small>${d.taken ? "Déjà prise aujourd'hui : reviens demain !" : "Une seule fois aujourd'hui"}</small></div>
+    ${d.taken ? "" : `<button class="vs-buy" data-pack="${esc(d.id)}">${euro(d.cents / 100)}</button>`}
+  </div>`;
 }
+
 renderVinylShop();
 addEventListener("click", e => { if (e.target.closest?.("#tab-store")) renderVinylShop(); }, true);
 
 // the badge on the tab: refreshed at sign-in and after each booster
 const passWatch = () => { if (me) loadPass(); };
 setInterval(passWatch, 120000);
-Object.assign(Online, { renderPass, loadPass });
+Object.assign(Online, { renderPass, loadPass, stockOffers, afterPack, loadShop });

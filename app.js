@@ -661,6 +661,7 @@ function renderStock() {
       <small>Le stock de 10 boosters (un nouveau toutes les 10 min) sera activé à la sortie du jeu.</small>
       <small>Mythique garantie dans ${Math.max(1, PITY - S.dry)} booster${PITY - S.dry > 1 ? "s" : ""} si tu n'en tires pas avant</small>`;
     if (!busy) { packBtn.disabled = false; openBig.disabled = false; $("#again").disabled = false; }
+    Online.stockOffers?.(stockEl, false);
     return;
   }
   refill();
@@ -672,6 +673,7 @@ function renderStock() {
     <small>Mythique garantie dans ${Math.max(1, PITY - S.dry)} booster${PITY - S.dry > 1 ? "s" : ""} si tu n'en tires pas avant</small>`;
   const empty = S.stock <= 0;
   if (!busy) { packBtn.disabled = empty; openBig.disabled = empty; $("#again").disabled = empty; }
+  Online.stockOffers?.(stockEl, empty && Online.active);   // stock empty: recharge, or the guaranteed Mythique now
 }
 setInterval(() => { renderStock(); save(); }, 30000);
 
