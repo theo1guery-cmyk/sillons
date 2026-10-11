@@ -256,7 +256,7 @@ async function walkStep() {
   } catch (e) { WALK.off = Date.now() + 60e3; }
   finally { WALK.busy = false; }
 }
-setInterval(walkStep, 2500);
+setInterval(walkStep, 8000);
 
 /* ---------- boosters with an account ---------- */
 Object.assign(Online, {
