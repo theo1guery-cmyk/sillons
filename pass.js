@@ -3,8 +3,8 @@
    (boosters, daily bonus, challenges, albums…), counted by the server; this file shows the pass and claims rewards. */
 
 const PASS = { data: null, busy: false, got: {} };
-const PASS_PRICE = "4,99 €";
-const TIER_VINYLS = 40, PREMIUM_VINYLS = 450;   // the prices in Vinyles (checked by the server)
+const PASS_PRICE = "7,99 €";
+const TIER_VINYLS = 40, PREMIUM_VINYLS = 700;   // the prices in Vinyles (checked by the server)
 // several tiers at once: -20 % from 5, -30 % from 10, -40 % from 20 (tiers_price on the server)
 const tiersPrice = n => Math.round(TIER_VINYLS * n * (n >= 20 ? .6 : n >= 10 ? .7 : n >= 5 ? .8 : 1));
 
@@ -169,7 +169,7 @@ async function renderPass() {
         <h3>Passe en coulisses : double toutes tes récompenses</h3>
         ${lockedNow ? `<p class="ps-miss"><b>${lockedNow} récompense${lockedNow > 1 ? "s" : ""} VIP</b> déjà débloquée${lockedNow > 1 ? "s" : ""} t'attend${lockedNow > 1 ? "ent" : ""}. Elle${lockedNow > 1 ? "s" : ""} arrive${lockedNow > 1 ? "nt" : ""} dès que tu passes VIP.</p>` : ""}
         <ul class="ps-perks">
-          <li><b>${premCards.length} cartes rares garanties</b> : Légendaire dès le palier 5, Shiny, artistes Platine et Diamant</li>
+          <li><b>${premCards.length} cartes rares garanties</b> : Légendaire dès le palier 5, artistes Platine et Diamant, et un <b>artiste Diamant Shiny</b> à la dernière date</li>
           <li><b>${fmt(prem.filter(r => r.kind === "boosters").reduce((a, r) => a + r.amount, 0))} boosters</b> et <b>${fmt(prem.filter(r => r.kind === "streams").reduce((a, r) => a + r.amount, 0))} Streams</b> en plus</li>
           <li>Ton <b>badge VIP</b> sur toute la tournée</li>
         </ul>
