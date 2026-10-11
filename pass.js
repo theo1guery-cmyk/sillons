@@ -8,7 +8,8 @@ const TIER_VINYLS = 40, PREMIUM_VINYLS = 700;   // the prices in Vinyles (checke
 // several tiers at once: -20 % from 5, -30 % from 10, -40 % from 20 (tiers_price on the server)
 const tiersPrice = n => Math.round(TIER_VINYLS * n * (n >= 20 ? .6 : n >= 10 ? .7 : n >= 5 ? .8 : 1));
 
-const passCardName = c => (c.kind === "artist" ? (c.tier === 5 ? "Artiste Diamant" : "Artiste Platine") : (c.tier === 5 ? "Légendaire" : "Mythique"))
+// kind "any": the Shiny surprise of the last VIP tier (Mythique, Légendaire, artist Platine or Diamant, drawn by the server)
+const passCardName = c => c.kind === "any" ? "Shiny surprise" : (c.kind === "artist" ? (c.tier === 5 ? "Artiste Diamant" : "Artiste Platine") : (c.tier === 5 ? "Légendaire" : "Mythique"))
   + (c.shiny ? " Shiny" : "");
 const passName = r => r.kind === "streams" ? `${fmt(r.amount)} Streams` : r.kind === "vinyls" ? `${r.amount} Vinyles` : r.kind === "boosters" ? `${r.amount} boosters` : passCardName(r.card);
 // the reward pictures are the game's own: the 3D booster of the shop, and real cards of the right rarity. The cards are
@@ -37,6 +38,12 @@ function passLoadExamples() {
   return psLoading;
 }
 function passPool(kind, tier) {
+  if (kind === "any") {                                             // the four rarities in turn
+    const ps = [["track", 4], ["artist", 4], ["track", 5], ["artist", 5]].map(([k, t]) => passPool(k, t)).filter(x => x.length);
+    const out = [];
+    for (let i = 0; ps.some(x => i < x.length); i++) for (const x of ps) if (i < x.length) out.push(x[i]);
+    return out;
+  }
   const pool = PS_POOL[kind + tier];
   if (pool.length) return pool;
   const own = owned().filter(c => c.tier === tier && isArtist(c) === (kind === "artist") && c.cov && !c.collector).sort((a, b) => b.rank - a.rank).slice(0, 8);
@@ -157,7 +164,7 @@ async function renderPass() {
       <div class="ps-hero-r">
         <p class="ps-stub"><span>Admit one</span><span>${d.premium ? "Backstage · VIP" : "Fosse"}</span></p>
         <div class="ps-show">${passArt(final.card, true)}<span class="ps-spark s1"></span><span class="ps-spark s2"></span><span class="ps-spark s3"></span></div>
-        <p class="ps-show-lbl"><small>Dernière date · ${esc(city(d.tiers))}</small><b>${esc(passCardName(final.card))}</b><em>Exemples : la carte gagnée est tirée au hasard</em></p>
+        <p class="ps-show-lbl"><small>Dernière date · ${esc(city(d.tiers))}</small><b>${esc(passCardName(final.card))}</b><em>${final.card.kind === "any" ? "Mythique, Légendaire, Platine ou Diamant : la surprise est tirée au hasard" : "Exemples : la carte gagnée est tirée au hasard"}</em></p>
         <span class="ps-barcode" aria-hidden="true"></span>
       </div>
     </div>
@@ -169,7 +176,7 @@ async function renderPass() {
         <h3>Passe en coulisses : double toutes tes récompenses</h3>
         ${lockedNow ? `<p class="ps-miss"><b>${lockedNow} récompense${lockedNow > 1 ? "s" : ""} VIP</b> déjà débloquée${lockedNow > 1 ? "s" : ""} t'attend${lockedNow > 1 ? "ent" : ""}. Elle${lockedNow > 1 ? "s" : ""} arrive${lockedNow > 1 ? "nt" : ""} dès que tu passes VIP.</p>` : ""}
         <ul class="ps-perks">
-          <li><b>${premCards.length} cartes rares garanties</b> : Légendaire dès le palier 5, artistes Platine et Diamant, et un <b>artiste Diamant Shiny</b> à la dernière date</li>
+          <li><b>${premCards.length} cartes rares garanties</b> : Légendaire dès le palier 5, artistes Platine et Diamant, et une <b>Shiny surprise</b> à la dernière date (Mythique, Légendaire, Platine ou Diamant)</li>
           <li><b>${fmt(prem.filter(r => r.kind === "boosters").reduce((a, r) => a + r.amount, 0))} boosters</b> et <b>${fmt(prem.filter(r => r.kind === "streams").reduce((a, r) => a + r.amount, 0))} Streams</b> en plus</li>
           <li>Ton <b>badge VIP</b> sur toute la tournée</li>
         </ul>
