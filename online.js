@@ -210,6 +210,29 @@ async function flushPool() {
   pooling = false;
 }
 setInterval(flushPool, 20000);
+// the random track numbers drawn by the server (Communes and Peu communes come from them): looked up here, reported back
+const PROBE = { ids: [], loading: null, done: [], off: false };
+Online.probeId = async () => {
+  if (!me || PROBE.off) return null;
+  if (!PROBE.ids.length) {
+    PROBE.loading ||= rpc("pool_probe_ids", { p_n: 40 }).then(ids => {
+      PROBE.ids.push(...(ids || []));
+      if (!ids?.length) { PROBE.off = true; setTimeout(() => { PROBE.off = false; }, 3600e3); }   // enough for today
+    }).catch(() => { PROBE.off = true; setTimeout(() => { PROBE.off = false; }, 600e3); }).finally(() => { PROBE.loading = null; });
+    await PROBE.loading;
+  }
+  return PROBE.ids.shift() || null;
+};
+Online.probeDone = (id, t) => {
+  PROBE.done.push(t ? { id, rank: t.rank || 0 } : { id });
+  if (PROBE.done.length >= 40) flushProbes();
+};
+async function flushProbes() {
+  if (!me || !PROBE.done.length) return;
+  const batch = PROBE.done.splice(0, 100);
+  try { await rpc("pool_probe_report", { p: batch }); } catch (e) {}
+}
+setInterval(flushProbes, 30000);
 
 /* ---------- boosters with an account ---------- */
 Object.assign(Online, {
