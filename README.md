@@ -29,7 +29,7 @@ Puis ouvrir http://localhost:8765.
   | Mythique | 850 000 et plus | 0,28 % |
   | Légendaire | 950 000 et plus | 0,02 % |
 
-- **Tirage** : les 5 cartes ont les mêmes chances (pas de carte garantie) et sont révélées de la moins rare à la plus rare. En moyenne, une Légendaire tous les 1 000 boosters.
+- **Tirage** : les 5 cartes ont les mêmes chances, sauf la dernière qui est au moins Rare (une Commune ou Peu commune tirée devient Rare ; les chances d'Épique et au-dessus ne changent pas, migration `20261011001700_rare_guaranteed.sql`). Elles sont révélées de la moins rare à la plus rare. En moyenne, une Légendaire tous les 1 000 boosters.
 - **Doublons** : jamais de doublon de la Commune à l'Épique (si aucune nouveauté de la rareté voulue n'est trouvée, on prend une nouveauté de la rareté la plus proche). Mythiques et Légendaires peuvent revenir.
 - **Test** : 500 boosters puis 100 packs de genre d'affilée sur une collection vierge, soit 3 000 cartes et 0 doublon.
 - **Shiny** (plus de Holo) : une Mythique ou Légendaire (ou un artiste Platine ou Diamant) a 1 chance sur 100 (`shiny_chance`) d'être Shiny : carte noire laquée, lettres dorées, reflet de lumière, pochette en couleur. Seules les Mythiques, Légendaires et Diamant ont une animation de reflet (performances).
