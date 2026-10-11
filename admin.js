@@ -233,7 +233,8 @@ async function showUser(u) {
           : `<div class="adm-gifts">${GIFTS.map((g, k) => `<button class="btn${g.shiny ? " shiny" : ""}" data-gift="${k}">${esc(giftName(g))}</button>`).join("")}</div>`}</div>
       ${pass?.name ? `<div class="adm-act"><h4>Pass saisonnier</h4>
         <p class="adm-small">${esc(pass.name)} · palier ${pass.tier} / ${pass.tiers} (${fmt(pass.xp)} XP) · ${pass.premium ? "<b>Premium</b>" : "gratuit"}</p>
-        <button class="btn${pass.premium ? "" : " primary"}" id="aPass">${pass.premium ? "Retirer le Pass Premium" : "Activer le Pass Premium"}</button></div>` : ""}
+        <button class="btn${pass.premium ? "" : " primary"}" id="aPass">${pass.premium ? "Retirer le Pass Premium" : "Activer le Pass Premium"}</button>
+        <button class="btn danger" id="aPassReset">Remettre le pass à zéro</button></div>` : ""}
       <form class="adm-act" id="aBoost"><h4>Boosters</h4>
         <div class="adm-row"><input type="number" step="1" min="-100" max="100" placeholder="+5" aria-label="Nombre de boosters" required></div>
         <button class="btn">Appliquer</button></form>
@@ -284,6 +285,12 @@ async function showUser(u) {
   const ps = $("#aPass");
   if (ps) ps.onclick = () => act("admin_season_premium", { p_user: u.id, p_on: !pass.premium },
     () => pass.premium ? `Pass Premium retiré à ${u.pseudo}.` : `${u.pseudo} a maintenant le Pass Premium.`);
+  const pr = $("#aPassReset");
+  if (pr) pr.onclick = () => {
+    if (!confirm(`Remettre le pass de ${u.pseudo} à zéro ? Son XP et ses récompenses récupérées repartent de 0 (les cartes déjà reçues restent dans sa collection).`)) return;
+    const prem = pass.premium && confirm(`Retirer aussi son Pass Premium ?\nOK : retirer · Annuler : garder le Premium`);
+    act("admin_season_reset", { p_user: u.id, p_premium_too: prem }, () => `Pass de ${u.pseudo} remis à zéro${prem ? ", Premium retiré" : ""}.`);
+  };
   $("#aBoost").onsubmit = e => {
     e.preventDefault(); const v = Math.trunc(+e.target.querySelector("input").value);
     if (v) act("admin_boosters", { p_user: u.id, p_count: v }, s => `${u.pseudo} a maintenant ${fmt(s)} booster${s > 1 ? "s" : ""} en stock.`);
