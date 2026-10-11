@@ -1,4 +1,5 @@
 // Zik Hunter — Stripe tells us a payment went through: deliver the pack (credit_purchase, once per Checkout session).
+// A full refund (charge.refunded) or a bank dispute (charge.dispute.created) takes the purchase back (revoke_purchase).
 // Secrets: STRIPE_WEBHOOK_SECRET (the "whsec_…" of the webhook endpoint). Deploy with "Verify JWT" off: Stripe signs
 // its calls instead, and the signature is checked here.
 const SB = Deno.env.get("SUPABASE_URL")!;
@@ -17,6 +18,10 @@ async function signed(body: string, header: string) {
   return sigs.some((s) => s.length === hex.length && [...s].reduce((d, c, i) => d | (c.charCodeAt(0) ^ hex.charCodeAt(i)), 0) === 0);
 }
 
+const headers: Record<string, string> = { apikey: SECRET_KEY, "Content-Type": "application/json" };
+if (!SECRET_KEY.startsWith("sb_")) headers.Authorization = `Bearer ${SECRET_KEY}`;   // a legacy service_role JWT
+const rpc = (fn: string, args: unknown) => fetch(`${SB}/rest/v1/rpc/${fn}`, { method: "POST", headers, body: JSON.stringify(args) });
+
 Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("method", { status: 405 });
   const body = await req.text();
@@ -25,14 +30,18 @@ Deno.serve(async (req) => {
   if (ev.type === "checkout.session.completed" || ev.type === "checkout.session.async_payment_succeeded") {
     const s = ev.data.object;
     if (s.payment_status === "paid" && s.metadata?.user && s.metadata?.pack) {
-      const headers: Record<string, string> = { apikey: SECRET_KEY, "Content-Type": "application/json" };
-      if (!SECRET_KEY.startsWith("sb_")) headers.Authorization = `Bearer ${SECRET_KEY}`;   // a legacy service_role JWT
-      const r = await fetch(`${SB}/rest/v1/rpc/credit_purchase`, {
-        method: "POST", headers,
-        body: JSON.stringify({ p_session: s.id, p_user: s.metadata.user, p_pack: s.metadata.pack, p_cents: s.amount_total }),
-      });
+      const r = await rpc("credit_purchase", { p_session: s.id, p_user: s.metadata.user, p_pack: s.metadata.pack, p_cents: s.amount_total });
       if (!r.ok) return new Response(await r.text(), { status: 500 });   // Stripe will try again
+      if (s.payment_intent) await rpc("purchase_intent", { p_session: s.id, p_intent: s.payment_intent });   // to find it on a refund
     }
+  }
+  // refunded in full, or contested at the bank: the purchase is taken back
+  const o = ev.data?.object;
+  const taken = ev.type === "charge.refunded" ? (o?.refunded ? "remboursement" : null)
+    : ev.type === "charge.dispute.created" ? "opposition bancaire" : null;
+  if (taken && o?.payment_intent) {
+    const r = await rpc("revoke_purchase", { p_intent: o.payment_intent, p_reason: taken });
+    if (!r.ok) return new Response(await r.text(), { status: 500 });
   }
   return new Response("ok");
 });

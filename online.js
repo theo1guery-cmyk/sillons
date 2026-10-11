@@ -72,6 +72,7 @@ const MESSAGES = {
   listing_closed: "Cette carte n'est plus en vente.",
   own_listing: "C'est ta propre annonce.",
   album_incomplete: "Il te manque encore des titres de cet album.",
+  album_cards_used: "Ces cartes ont déjà servi à compléter cet album pour un autre joueur : il te faut tes propres exemplaires.",
   collector_card: "Une carte Collector ne se défausse pas.",
   wishlist_full: "Ta liste de souhaits est pleine (300 cartes).",
   deck_needs_five: "Il faut 5 morceaux dans ton deck de clash.",
