@@ -244,14 +244,18 @@ function poolFor(tier) {
   return r < .5 ? searchPool(tier) : playlistPool();
 }
 
+// with an account the server draws the cards itself, so the browser only proposes a fallback: a few tries are enough
+// (a big collection made the search run 25 tries a card before a booster could open)
+let QUICK_FIND = false;
 async function findTrack(typeIdx, tier, used) {
   if (typeIdx >= 0) return findGenreTrack(typeIdx, tier, used);
   const ready = takeReserve(tier, used);
   if (ready) return ready;
-  let best = null, ownedHit = null;
-  const attempts = tier >= MYTH ? 10 : 25;
+  let best = null, ownedHit = null, any = null;
+  const attempts = QUICK_FIND ? 3 : tier >= MYTH ? 10 : 25;
   for (let attempt = 0; attempt < attempts; attempt++) {
     const pool = (await poolFor(tier).catch(() => [])).filter(t => isPlayable(t) && !used.has(t.id));
+    if (!any) any = pool[0] || null;
     if (pool[0]?._src === "playlist") noteArtists(pool, "all");
     const fresh = pool.filter(t => !ownsTrack(t.id));
     const hits = fresh.filter(t => inTier(t.rank, tier));
@@ -261,7 +265,8 @@ async function findTrack(typeIdx, tier, used) {
     for (const t of fresh) { const d = tierDistance(t.rank, tier); if (!best || d < best.d) best = { t, d }; }
   }
   // Commune → Épique never repeat: a new track of the nearest rarity beats a duplicate
-  return tier <= 3 ? (best && best.t) || ownedHit : ownedHit || (best && best.t);
+  const found = tier <= 3 ? (best && best.t) || ownedHit : ownedHit || (best && best.t);
+  return found || (QUICK_FIND ? any : null);
 }
 
 /* ---------- artists for the artist slots ----------
@@ -289,7 +294,7 @@ async function certArtistPool(tier) {
 }
 async function findArtist(tier, used, owned = false) {   // owned: local previews may give an artist already in the collection
   let best = null;
-  for (let attempt = 0; attempt < 12; attempt++) {
+  for (let attempt = 0; attempt < (QUICK_FIND ? 3 : 12); attempt++) {
     const pool = (await certArtistPool(tier).catch(() => [])).filter(a => a.id && a.nb_fan != null && !used.has(a.id) && (owned || !ownsTrack("a" + a.id)));
     const hits = pool.filter(a => inCert(a.nb_fan, tier, a.id));
     if (hits.length) return pick(hits);
@@ -345,7 +350,7 @@ async function firstOfType(cands, typeIdx) {   // checks each album's real genre
 }
 async function findGenreTrack(typeIdx, tier, used) {
   let near = [];
-  const attempts = tier >= MYTH ? 10 : 18;
+  const attempts = QUICK_FIND ? 4 : tier >= MYTH ? 10 : 18;
   for (let attempt = 0; attempt < attempts; attempt++) {
     const fresh = (await genreSource(typeIdx, tier).catch(() => [])).filter(t => isPlayable(t) && !used.has(t.id) && !ownsTrack(t.id));
     const ok = await firstOfType(fresh.filter(t => inTier(t.rank, tier)), typeIdx);
