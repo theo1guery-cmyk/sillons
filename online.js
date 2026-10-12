@@ -270,15 +270,18 @@ Object.assign(Online, {
   // proposals are only used when the pool has nothing for a slot) and checks them on Deezer
   async drawPack(p, pk) {
     const used = new Set(), usedArtists = new Set(), raws = [];
-    for (const [i, tier] of pk.slots.entries()) {
-      if (pk.artists?.[i]) {                     // an artist card: the server checks its fans on Deezer
-        const a = await findArtist(tier, usedArtists);
-        if (a) { usedArtists.add(a.id); raws.push({ id: a.id }); }
-      } else {
-        const t = await findTrack(p.g, tier, used);
-        if (t) { used.add(t.id); raws.push(t); }
+    QUICK_FIND = true;                           // only fallback proposals: the server draws the cards
+    try {
+      for (const [i, tier] of pk.slots.entries()) {
+        if (pk.artists?.[i]) {                   // an artist card: the server checks its fans on Deezer
+          const a = await findArtist(tier, usedArtists);
+          if (a) { usedArtists.add(a.id); raws.push({ id: a.id }); }
+        } else {
+          const t = await findTrack(p.g, tier, used);
+          if (t) { used.add(t.id); raws.push(t); }
+        }
       }
-    }
+    } finally { QUICK_FIND = false; }
     if (raws.length < 5) throw { code: "short" };
     const res = await rpc("finish_pack", { p_pack: pk.id, p_tracks: raws.map(t => t.id) });
     const trackIds = res.filter(r => r.kind !== "artist").map(r => r.track);
