@@ -129,15 +129,24 @@ function addCopy(map, r, t) {
   return c;
 }
 async function fetchCards(owner, onlyTradeable) {
-  const rows = [];
-  for (let from = 0; ; from += 1000) {
-    let q = sb.from("cards").select("id,kind,track_id,artist_id,collector,tier,rank,holo,tradeable,pulled_at,tracks(title,artist,album,cover,duration,bpm,year,explicit,genre),artists(name,picture,fans,nb_album)")
+  const page = async (from, count) => {
+    let q = sb.from("cards").select("id,kind,track_id,artist_id,collector,tier,rank,holo,tradeable,pulled_at,tracks(title,artist,album,cover,duration,bpm,year,explicit,genre),artists(name,picture,fans,nb_album)", count ? { count: "exact" } : undefined)
       .eq("owner", owner).order("pulled_at").order("id").range(from, from + 999);   // id breaks ties: an import pulls thousands of cards at the same instant, and without it pages skipped or repeated cards
     if (onlyTradeable) q = q.eq("tradeable", true);
-    const { data, error } = await q;
-    if (error) throw error;
-    rows.push(...data);
-    if (data.length < 1000) break;
+    const r = await q;
+    if (r.error) throw r.error;
+    return r;
+  };
+  // the first page gives the total; the others load 6 at a time (a 90 000-card collection took 90 trips in a row)
+  const first = await page(0, true), rows = [...first.data];
+  const total = first.count ?? 0, froms = [];
+  for (let from = 1000; from < total; from += 1000) froms.push(from);
+  for (let i = 0; i < froms.length; i += 6) {
+    const got = await Promise.all(froms.slice(i, i + 6).map(f => page(f)));
+    for (const g of got) rows.push(...g.data);
+  }
+  if (first.data.length === 1000 && total <= rows.length) {      // cards pulled meanwhile: finish page by page
+    for (let from = rows.length; ; from += 1000) { const g = await page(from); rows.push(...g.data); if (g.data.length < 1000) break; }
   }
   const map = {};
   for (const r of rows) { const t = r.kind === "artist" ? r.artists : r.tracks; if (t) addCopy(map, r, t); }
@@ -259,6 +268,23 @@ async function walkStep() {
 setInterval(walkStep, 2500);
 
 /* ---------- boosters with an account ---------- */
+async function proposals(p, pk) {
+  const used = new Set(), usedArtists = new Set(), raws = [];
+  QUICK_FIND = true;                             // only fallback proposals: the server draws the cards
+  try {
+    for (const [i, tier] of pk.slots.entries()) {
+      if (pk.artists?.[i]) {                     // an artist card: the server checks its fans on Deezer
+        const a = await findArtist(tier, usedArtists);
+        if (a) { usedArtists.add(a.id); raws.push({ id: a.id }); }
+      } else {
+        const t = await findTrack(p.g, tier, used);
+        if (t) { used.add(t.id); raws.push(t); }
+      }
+    }
+  } finally { QUICK_FIND = false; }
+  if (raws.length < 5) throw { code: "short" };
+  return raws.map(t => t.id);
+}
 Object.assign(Online, {
   message,
   async startPack(p) {
@@ -269,21 +295,14 @@ Object.assign(Online, {
   // the browser proposes tracks for the rarities the server rolled; the server draws the cards from its pool (the
   // proposals are only used when the pool has nothing for a slot) and checks them on Deezer
   async drawPack(p, pk) {
-    const used = new Set(), usedArtists = new Set(), raws = [];
-    QUICK_FIND = true;                           // only fallback proposals: the server draws the cards
-    try {
-      for (const [i, tier] of pk.slots.entries()) {
-        if (pk.artists?.[i]) {                   // an artist card: the server checks its fans on Deezer
-          const a = await findArtist(tier, usedArtists);
-          if (a) { usedArtists.add(a.id); raws.push({ id: a.id }); }
-        } else {
-          const t = await findTrack(p.g, tier, used);
-          if (t) { used.add(t.id); raws.push(t); }
-        }
-      }
-    } finally { QUICK_FIND = false; }
-    if (raws.length < 5) throw { code: "short" };
-    const res = await rpc("finish_pack", { p_pack: pk.id, p_tracks: raws.map(t => t.id) });
+    // the server draws first; the browser searches Deezer only when the pool had nothing for a slot (a big
+    // collection made those searches run every try, since most found tracks were already owned)
+    let res;
+    try { res = await rpc("finish_pack", { p_pack: pk.id, p_tracks: [0, 0, 0, 0, 0] }); }
+    catch (e) {
+      if (!/need_proposals|_not_found 0\b/.test(e?.message || "")) throw e;
+      res = await rpc("finish_pack", { p_pack: pk.id, p_tracks: await proposals(p, pk) });
+    }
     const trackIds = res.filter(r => r.kind !== "artist").map(r => r.track);
     const artistIds = res.filter(r => r.kind === "artist").map(r => r.track);
     const [tq, aq] = await Promise.all([
