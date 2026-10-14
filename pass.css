@@ -96,10 +96,10 @@
 .ps-bar h3{margin:0;margin-right:auto;font-size:1.2rem}
 .ps-note{flex-basis:100%;color:#ffc56b;font-size:.82rem}
 .ps-track{display:flex;gap:10px;overflow-x:auto;padding:10px 12px 18px;margin:0 -12px;scroll-behavior:smooth;scrollbar-width:thin}
-.ps-labels{flex:none;display:grid;grid-template-rows:30px 196px 196px;gap:10px;width:26px}
+.ps-labels{flex:none;display:grid;grid-template-rows:30px 196px 196px 30px;gap:10px;width:26px}
 .ps-labels span{display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:.64rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);writing-mode:vertical-rl;transform:rotate(180deg)}
 .ps-labels .gold{color:var(--gold2)}
-.ps-tier{flex:none;display:grid;grid-template-rows:30px 196px 196px;gap:10px;width:140px}
+.ps-tier{flex:none;display:grid;grid-template-rows:30px 196px 196px 30px;gap:10px;width:140px}
 .ps-n{position:relative;overflow:hidden;display:grid;place-items:center;border-radius:99px;background:rgba(255,255,255,.05);border:1px solid var(--edge)}
 .ps-n i{position:absolute;left:0;top:0;bottom:0;background:var(--goldg)}
 .ps-n{display:flex;justify-content:center;align-items:center;gap:6px}
@@ -382,3 +382,9 @@
 .ps-upsell.hl{animation:psHl 1.2s ease}
 @keyframes psHl{0%,100%{box-shadow:0 0 0 0 rgba(245,194,77,0)}30%{box-shadow:0 0 0 4px rgba(245,194,77,.45)}}
 @media (prefers-reduced-motion:reduce){.ps-upsell.hl{animation:none}}
+
+/* under the next tier: unlock it for Vinyles */
+.ps-unlock{justify-self:center;display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:99px;cursor:pointer;
+  border:1px solid rgba(190,140,255,.45);background:rgba(150,90,255,.14);color:#e6d8ff;font:600 .78rem var(--body);white-space:nowrap}
+.ps-unlock:hover{background:rgba(150,90,255,.26);color:#fff}
+.ps-unlock:disabled{opacity:.6;cursor:default}
