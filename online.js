@@ -44,7 +44,7 @@ const MESSAGES = {
   no_season: "Pas de saison en cours.",
   not_enough_vinyls: "Pas assez de Vinyles.",
   no_big_pack: "Tu n'as pas de gros booster à ouvrir : ils se gagnent aux paliers 5, 15 et 25 du Pass VIP.",
-  tiers_closed: "Les paliers du pass ne s'achètent plus : ils se gagnent en jouant.",
+  album_buy_closed: "Les titres d'un album ne s'achètent plus : tire-les, échange-les ou trouve-les au marché.",
   payments_off: "Le paiement n'est pas encore disponible. Réessaie un peu plus tard.",
   bad_pack: "Cette offre n'existe plus.",
   stock_not_empty: "Tu as encore des boosters : ouvre-les d'abord.",
@@ -1251,43 +1251,10 @@ async function openAlbum(a) {
     };
     $("#alTracks").appendChild(li);
   }
-  // 1 or 2 tracks missing: each can be bought for Vinyles (the card cannot be traded)
-  const missing = tracks.filter(t => !bestOwned(t.id));
-  if (a.complete && !a.claimed && missing.length >= 1 && missing.length <= 2) {
-    [...$("#alTracks").children].forEach((li, i) => {
-      const t = tracks[i];
-      if (!t || bestOwned(t.id)) return;
-      const price = ALBUM_TRACK_PRICE[tierOf(t.rank || 0)];
-      const b = document.createElement("button"); b.className = "al-buy"; b.innerHTML = `Obtenir · ${price} <i class="vin" aria-hidden="true"></i>`;
-      b.onclick = () => buyAlbumTrack(a, t, price, b);
-      li.appendChild(b);
-    });
-    const note = document.createElement("li"); note.className = "al-buy-note";
-    note.innerHTML = `Plus que ${missing.length} titre${missing.length > 1 ? "s" : ""} ! Complète l'album tout de suite avec des Vinyles (+${a.reward} Streams une fois complet).`;
-    $("#alTracks").prepend(note);
-  }
   if (albumReady(a)) {
     const b = document.createElement("button"); b.className = "btn primary"; b.textContent = `Récupérer +${a.reward} Streams`;
     b.onclick = () => claimAlbum(a, b); $("#alBtns").appendChild(b);
   }
-}
-
-// the price of the missing track of an album, by its rarity (album_track_price on the server)
-const ALBUM_TRACK_PRICE = [30, 45, 70, 110, 400, 1500];
-async function buyAlbumTrack(a, t, price, b) {
-  if ((S.vinyls || 0) < price) return toast(`Il te faut ${price} Vinyles, tu en as ${fmt(S.vinyls || 0)}.`);
-  if (!confirm(`Obtenir « ${t.title} » pour ${price} Vinyles ? La carte ne pourra pas être échangée.`)) return;
-  b.disabled = true;
-  try {
-    const r = await rpc("buy_album_track", { p_album: a.id, p_track: t.id });
-    const { data } = await sb.from("cards").select("id,kind,track_id,artist_id,collector,tier,rank,holo,tradeable,pulled_at,tracks(title,artist,album,cover,duration,bpm,year,explicit,genre)").eq("id", r.card).single();
-    if (data) addCopy(S.c, data, data.tracks);
-    toast(`« ${t.title} » ajoutée à ta collection !`);
-    await loadProfile(); refreshViews();
-    await renderAlbums();
-    const fresh = AL.list.find(x => x.id === a.id);
-    openAlbum(fresh || a);
-  } catch (e) { toast(message(e)); b.disabled = false; }
 }
 
 async function updateAlbumsBadge() {
