@@ -17,6 +17,7 @@ const backHere = () => location.origin + location.pathname;
 
 const MESSAGES = {
   account_banned: "Ton compte est suspendu.",
+  maintenance: "Le jeu est en maintenance. On revient très vite !",
   not_admin: "Réservé aux admins.",
   cannot_ban_admin: "Impossible de bannir un admin.",
   user_not_found: "Joueur introuvable.",

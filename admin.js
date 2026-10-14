@@ -18,7 +18,30 @@ async function beat() {
   ADM.admin = !!r.admin;
   $("#tab-admin").hidden = !ADM.admin;
   if (r.ban) showBan(r.ban); else $("#banScreen")?.remove();
+  showMaintenance(r.maintenance);
 }
+
+/* ---------- maintenance: the whole game behind one screen (admins excepted, the server says who) ---------- */
+function showMaintenance(m) {
+  let el = $("#maintScreen");
+  if (!m) { el?.remove(); return; }
+  if (!el) {
+    el = document.createElement("div"); el.id = "maintScreen"; el.className = "adm-screen";
+    el.setAttribute("role", "alertdialog"); el.setAttribute("aria-modal", "true"); el.setAttribute("aria-labelledby", "maintTitle");
+    document.body.appendChild(el);
+  }
+  el.innerHTML = `<div class="adm-box">
+      <div class="adm-ico" aria-hidden="true"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/></svg></div>
+      <h2 id="maintTitle">Maintenance en cours</h2>
+      <p>${esc(m.msg)}</p>
+      <p class="adm-small">Ta collection ne risque rien. La page se rouvre toute seule dès que c'est fini.</p></div>`;
+}
+// signed out too: asked on load, then every minute while the screen is up
+async function checkMaintenance() {
+  try { showMaintenance(await rpc("maintenance")); } catch (e) {}
+  if ($("#maintScreen") && !me) setTimeout(checkMaintenance, 60000);
+}
+checkMaintenance();
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") beat(); });
 
 function adminOff() {
@@ -94,7 +117,11 @@ function buildAdmin() {
     </div>
     <div class="adm-grid">
       <div class="adm-panel" role="region" aria-labelledby="admBcT">
-        <h3 id="admBcT">Message à tous les joueurs</h3>
+        <h3>Maintenance</h3>
+        <p class="adm-small" id="admMtState">…</p>
+        <textarea id="admMt" maxlength="300" rows="2" placeholder="Message affiché (facultatif). Ex. : on corrige l'ouverture des boosters, retour vers 18 h."></textarea>
+        <div class="adm-row"><button class="btn" id="admMtToggle">…</button></div>
+        <h3 class="adm-sep" id="admBcT">Message à tous les joueurs</h3>
         <p class="adm-small">Chaque joueur le verra une fois, dans une fenêtre, à sa prochaine connexion (ou dans les 30 secondes s'il joue).</p>
         <textarea id="admBc" maxlength="500" rows="3" placeholder="Ex. : maintenance ce soir à 22 h, le jeu sera coupé 10 minutes."></textarea>
         <div class="adm-row"><button class="btn primary" id="admBcSend">Envoyer à tout le monde</button></div>
@@ -126,12 +153,25 @@ function buildAdmin() {
     try { await rpc("admin_discord_set", { p_url: u, p_enabled: null }); $("#admDcUrl").value = ""; toast(u ? "Webhook Discord enregistré." : "Webhook Discord retiré."); loadDiscord(); loadLog(); }
     catch (e) { toast(message(e)); }
   };
+  $("#admMtToggle").onclick = async () => {
+    const on = !ADM.maint?.on;
+    if (on && !confirm("Couper le jeu pour tous les joueurs (sauf les admins) ?")) return;
+    try { await rpc("admin_maintenance_set", { p_on: on, p_msg: $("#admMt").value }); toast(on ? "Maintenance activée : le jeu est coupé pour les joueurs." : "Maintenance terminée : le jeu est rouvert."); loadMaint(); loadLog(); }
+    catch (e) { toast(message(e)); }
+  };
   $("#admDcTest").onclick = async () => { try { await rpc("admin_discord_test"); toast("Message de test envoyé : regarde le salon Discord."); } catch (e) { toast(message(e)); } };
   $("#admDcToggle").onclick = async () => {
     try { await rpc("admin_discord_set", { p_url: null, p_enabled: !ADM.discord?.enabled }); loadDiscord(); loadLog(); } catch (e) { toast(message(e)); }
   };
 }
 
+async function loadMaint() {
+  try { ADM.maint = await rpc("admin_maintenance_get"); } catch (e) { $("#admMtState").textContent = message(e); return; }
+  const on = !!ADM.maint?.on;
+  $("#admMtState").innerHTML = on ? "<b>Activée</b> : les joueurs voient l'écran de maintenance et ne peuvent plus rien faire. Toi, tu joues normalement." : "Coupée : le jeu est ouvert à tous.";
+  if (ADM.maint?.msg && !$("#admMt").value) $("#admMt").value = ADM.maint.msg;
+  const b = $("#admMtToggle"); b.textContent = on ? "Terminer la maintenance" : "Activer la maintenance"; b.className = on ? "btn primary" : "btn danger";
+}
 async function loadDiscord() {
   try { ADM.discord = await rpc("admin_discord_get"); } catch (e) { $("#admDcState").textContent = message(e); return; }
   const d = ADM.discord;
@@ -144,7 +184,7 @@ async function loadDiscord() {
 async function renderAdmin() {
   if (!me || !ADM.admin) return show("shop");
   buildAdmin();
-  await Promise.all([loadStats(), loadUsers(), loadLog(), loadDiscord()]);
+  await Promise.all([loadStats(), loadUsers(), loadLog(), loadDiscord(), loadMaint()]);
   clearInterval(ADM.timer);
   ADM.timer = setInterval(() => {
     if (views.admin.hidden || !ADM.admin) return clearInterval(ADM.timer);
@@ -301,7 +341,7 @@ async function showUser(u) {
 const GIFTS = [["track", 4], ["track", 5], ["track", 4, true], ["track", 5, true], ["artist", 4], ["artist", 5], ["artist", 4, true], ["artist", 5, true]]
   .map(([kind, tier, shiny = false]) => ({ kind, tier, shiny }));
 const giftName = g => (g.kind === "artist" ? (g.tier === 5 ? "Artiste Diamant" : "Artiste Platine") : (g.tier === 5 ? "Légendaire" : "Mythique")) + (g.shiny ? " Shiny" : "");
-const ACTIONS = { vinyls: "Vinyles", pass: "Pass Tournée", ban: "Banni", unban: "Débanni", warn: "Averti", broadcast: "Message à tous", streams: "Streams", boosters: "Boosters", discord: "Discord", god: "GOD pack", gift: "Cadeau" };
+const ACTIONS = { vinyls: "Vinyles", pass: "Pass Tournée", ban: "Banni", unban: "Débanni", warn: "Averti", broadcast: "Message à tous", maintenance: "Maintenance", streams: "Streams", boosters: "Boosters", discord: "Discord", god: "GOD pack", gift: "Cadeau" };
 const actionTxt = a => ACTIONS[a] || a;
 async function loadLog() {
   let l;
