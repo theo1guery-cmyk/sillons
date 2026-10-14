@@ -341,3 +341,19 @@
 .big-pack small{font-weight:500;opacity:.8;font-size:.8em}
 .big-pack[hidden]{display:none}
 .ps-title-ic{font-size:28px;line-height:1}
+
+/* the VIP pass: one quiet line, opened on demand */
+.ps-vip{margin:0 0 18px;border-radius:14px;border:1px solid rgba(245,194,77,.25);background:rgba(245,194,77,.05)}
+.ps-vip summary{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;cursor:pointer;list-style:none;font-size:.9rem;color:#d9cde8}
+.ps-vip summary::-webkit-details-marker{display:none}
+.ps-vip summary b{color:#f5d27a}
+.ps-vip summary em{font-style:normal;color:#bfb3d3}
+.ps-vip-p{flex:none;font-weight:700;color:#f5d27a}
+.ps-vip summary::after{content:"▾";margin-left:6px;color:#bfb3d3}
+.ps-vip[open] summary::after{content:"▴"}
+.ps-vip-in{padding:0 16px 16px}
+.ps-vip-in .ps-perks{margin:0 0 12px}
+.ps-vip-buy{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px}
+.ps-vip .btn.ps-buy{animation:none;padding:9px 16px;font-size:.9rem}
+.ps-link{background:none;border:0;padding:0;color:#bfb3d3;font:500 .85rem var(--body);cursor:pointer;text-decoration:underline;text-underline-offset:3px;display:inline-flex;align-items:center;gap:4px}
+.ps-link:hover{color:#fff}
