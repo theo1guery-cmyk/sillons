@@ -269,6 +269,7 @@ async function claimPass(list) {
     toast("Récupéré : " + parts.join(" · ") + (skippedCard ? ". Les autres cartes viendront une à une, après ton prochain booster." : "."));
     try { await loadProfile(); } catch (e) {}
     refreshViews();
+    if (g && typeof bigStage === "function") { renderPass(); return setTimeout(bigStage, 400); }   // the big booster comes up at once
   }
   if (stop) toast(message(stop));
   renderPass();
