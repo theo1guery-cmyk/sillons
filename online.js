@@ -43,6 +43,8 @@ const MESSAGES = {
   already_claimed: "Déjà récupéré.",
   no_season: "Pas de saison en cours.",
   not_enough_vinyls: "Pas assez de Vinyles.",
+  no_big_pack: "Tu n'as pas de gros booster à ouvrir : ils se gagnent aux paliers 5, 15 et 25 du Pass VIP.",
+  tiers_closed: "Les paliers du pass ne s'achètent plus : ils se gagnent en jouant.",
   payments_off: "Le paiement n'est pas encore disponible. Réessaie un peu plus tard.",
   bad_pack: "Cette offre n'existe plus.",
   stock_not_empty: "Tu as encore des boosters : ouvre-les d'abord.",
@@ -210,7 +212,7 @@ async function loadProfile() {
   S.opened = data.opened; S.dry = data.dry; S.gods = data.gods;
   S.stock = data.stock; S.stockAt = Date.parse(data.stock_at);
   const before = S.streams;
-  S.streams = data.streams; S.vinyls = data.vinyls || 0;
+  S.streams = data.streams; S.vinyls = data.vinyls || 0; S.big = data.big_packs || 0;
   if (before != null && data.streams > before) coinRain(data.streams - before, before);   // Streams won: coins fall in the counter
 }
 async function loadAll() {
@@ -346,7 +348,7 @@ async function proposals(p, pk) {
 Object.assign(Online, {
   message,
   async startPack(p) {
-    const d = await rpc("start_pack", { p_kind: p.g >= 0 ? "genre" : "booster", p_genre: p.g >= 0 ? p.g : null, p_pay: p.pay === "vinyls" ? "vinyls" : "streams" });
+    const d = await rpc("start_pack", { p_kind: p.big ? "big" : p.g >= 0 ? "genre" : "booster", p_genre: p.g >= 0 ? p.g : null, p_pay: p.pay === "vinyls" ? "vinyls" : "streams" });
     return d;
   },
   async abandon(pk) { try { await rpc("abandon_pack", { p_pack: pk.id }); await loadProfile(); } catch (e) {} },
@@ -356,7 +358,7 @@ Object.assign(Online, {
     // the server draws first; the browser searches Deezer only when the pool had nothing for a slot (a big
     // collection made those searches run every try, since most found tracks were already owned)
     let res;
-    try { res = await rpc("finish_pack", { p_pack: pk.id, p_tracks: [0, 0, 0, 0, 0] }); }
+    try { res = await rpc("finish_pack", { p_pack: pk.id, p_tracks: pk.slots.map(() => 0) }); }
     catch (e) {
       if (!/need_proposals|_not_found 0\b/.test(e?.message || "")) throw e;
       res = await rpc("finish_pack", { p_pack: pk.id, p_tracks: await proposals(p, pk) });
@@ -902,7 +904,8 @@ async function renderDefis() {
     grid.appendChild(el);
   }
 
-  // title under the pseudo
+  // title under the pseudo (achievements, and the titles of the pass)
+  try { const { data } = await sb.from("player_titles").select("title"); for (const r of data || []) if (!earnedTitles.includes(r.title)) earnedTitles.push(r.title); } catch (e) {}
   const tp = $("#titlePick");
   tp.innerHTML = earnedTitles.length
     ? `<label for="titleSel">Titre affiché sous ton pseudo</label> <select id="titleSel"><option value="">Aucun</option>${earnedTitles.map(t => `<option ${t === me.title ? "selected" : ""}>${esc(t)}</option>`).join("")}</select>`

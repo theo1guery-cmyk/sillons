@@ -3,15 +3,14 @@
    (boosters, daily bonus, challenges, albums…), counted by the server; this file shows the pass and claims rewards. */
 
 const PASS = { data: null, busy: false, got: {} };
-const PASS_PRICE = "7,99 €";
-const TIER_VINYLS = 40, PREMIUM_VINYLS = 700;   // the prices in Vinyles (checked by the server)
-// several tiers at once: -20 % from 5, -30 % from 10, -40 % from 20 (tiers_price on the server)
-const tiersPrice = n => Math.round(TIER_VINYLS * n * (n >= 20 ? .6 : n >= 10 ? .7 : n >= 5 ? .8 : 1));
+const PASS_PRICE = "4,99 €";
+const PREMIUM_VINYLS = 500;   // the price in Vinyles (checked by the server)
 
 // kind "any": the Shiny surprise of the last VIP tier (Mythique, Légendaire, artist Platine or Diamant, drawn by the server)
 const passCardName = c => c.kind === "any" ? "Shiny surprise" : (c.kind === "artist" ? (c.tier === 5 ? "Artiste Diamant" : "Artiste Platine") : (c.tier === 5 ? "Légendaire" : "Mythique"))
   + (c.shiny ? " Shiny" : "");
-const passName = r => r.kind === "streams" ? `${fmt(r.amount)} Streams` : r.kind === "vinyls" ? `${r.amount} Vinyles` : r.kind === "boosters" ? `${r.amount} boosters` : passCardName(r.card);
+const passName = r => r.kind === "streams" ? `${fmt(r.amount)} Streams` : r.kind === "vinyls" ? `${r.amount} Vinyles` : r.kind === "boosters" ? `${r.amount} boosters`
+  : r.kind === "big_booster" ? "Gros booster (15 cartes Rare+)" : r.kind === "title" ? `Titre « ${r.title} »` : passCardName(r.card);
 // the reward pictures are the game's own: the 3D booster of the shop, and real cards of the right rarity. The cards are
 // examples (Deezer's chart and famous artists, Travis Scott first), changing every 2 seconds: a reward is a card of
 // that rarity, not that one. Until the examples are loaded, the player's own cards stand in, or a card back.
@@ -55,6 +54,8 @@ function passArt(c, big = false, got = "") {
 function passIcon(r) {
   if (r.kind === "streams") return `<i class="coin ps-coin" aria-hidden="true"></i>`;
   if (r.kind === "vinyls") return `<i class="vin ps-vin" aria-hidden="true"></i>`;
+  if (r.kind === "title") return `<span class="ps-title-ic" aria-hidden="true">🎟️</span>`;
+  if (r.kind === "big_booster") return `<span class="ps-pk-wrap" aria-hidden="true"><span class="pack mix ps-pk"><span class="pack-shine"></span><canvas class="pack-gl"></canvas><img class="pack-logo" src="brand/zikhunter-icon.svg" alt=""></span><b class="ps-x">15</b></span>`;
   if (r.kind === "boosters") return `<span class="ps-pk-wrap" aria-hidden="true"><span class="pack mix ps-pk"><span class="pack-shine"></span><canvas class="pack-gl"></canvas><img class="pack-logo" src="brand/zikhunter-icon.svg" alt=""></span><b class="ps-x">×${r.amount}</b></span>`;
   return passArt(r.card);
 }
@@ -93,7 +94,7 @@ const passReady = d => {
   return n;
 };
 // the Pass and the Vinyles shop are closed while their economy is being reworked (false = open again)
-const MAINTENANCE = true;
+const MAINTENANCE = false;
 const maintenanceCard = (title, text) => `<div class="maint"><span class="maint-ic" aria-hidden="true">🛠️</span>
   <div><p class="ps-kicker">En maintenance</p><h3>${title}</h3><p>${text}</p></div></div>`;
 
@@ -105,6 +106,10 @@ function passBadge() {
 async function loadPass() {
   if (!me) return null;
   try { PASS.data = await rpc("my_season"); } catch (e) { PASS.data = null; }
+  // the VIP of the season running now: a booster every 3 minutes (the server counts the same)
+  const d = PASS.data, vip = d && d.premium && Date.now() < Date.parse(d.ends_at) && Date.now() >= Date.parse(d.starts_at);
+  const ms = (vip ? 3 : 10) * 60 * 1000;
+  if (REFILL_MS !== ms) { REFILL_MS = ms; if (typeof renderStock === "function") renderStock(); }
   passBadge(); renderVinylShop(); if (!SHOP.loaded) { SHOP.loaded = true; loadShop(); }
   return PASS.data;
 }
@@ -144,18 +149,15 @@ async function renderPass() {
   const [season, title] = d.name.includes("·") ? d.name.split("·").map(x => x.trim()) : ["", d.name];
   const prem = d.rewards.map(r => ({ tier: r.tier, ...r.premium }));
   const premCards = prem.filter(r => r.kind === "card");
-  const worth = prem.reduce((a, r) => a + (r.kind === "streams" ? r.amount : r.kind === "boosters" ? r.amount * 100 : 0), 0);
+  const premV = prem.filter(r => r.kind === "vinyls").reduce((a, r) => a + r.amount, 0);
+  const premS = prem.filter(r => r.kind === "streams").reduce((a, r) => a + r.amount, 0);
+  const premBig = prem.filter(r => r.kind === "big_booster").reduce((a, r) => a + r.amount, 0);
+  const premTitles = prem.filter(r => r.kind === "title").map(r => r.title);
   const lockedNow = d.premium ? 0 : prem.filter(r => r.tier <= tier).length;   // Premium rewards already reached, waiting for the pass
   const final = d.rewards[d.rewards.length - 1].premium;
 
-  const left = Date.parse(d.ends_at) - Date.now(), rest = d.tiers - tier;
-  const lastDays = !max && left > 0 && left < 3 * 864e5;            // the last 3 days: all the tiers left at a discount
   box.innerHTML = `
-    ${lastDays ? `<div class="ps-last">
-      <div><b>Plus que <span class="ps-count" data-end="${esc(d.ends_at)}"></span> !</b>
-        <small>Il te manque ${rest} palier${rest > 1 ? "s" : ""} jusqu'à ${esc(passCardName(d.rewards[d.tiers - 1].premium.card))}${d.premium ? "" : " (avec le VIP)"}.</small></div>
-      <button class="ps-buytier" id="psAllTiers">Tout débloquer ${tiersPrice(rest) < TIER_VINYLS * rest ? `<s>${TIER_VINYLS * rest}</s>` : ""}<span>${tiersPrice(rest)} <i class="vin" aria-hidden="true"></i></span></button>
-    </div>` : ""}
+
     <div class="ps-hero${d.premium ? " prem" : ""}">
       <div class="ps-hero-l">
         <p class="ps-kicker">Pass Tournée${season ? ` · ${esc(season)}` : ""}${d.premium ? ` <span class="ps-tag">VIP</span>` : ""}</p>
@@ -167,8 +169,7 @@ async function renderPass() {
             <div class="ps-meter"><s style="width:${pct}%"></s></div>
             <small>${max ? "Tournée terminée, bravo !" : `${fmt(into)} / ${fmt(d.xp_per_tier)} XP`}</small></div>
         </div>
-        ${max ? "" : `<div class="ps-skip"><button class="ps-buytier" id="psTier">Acheter le palier ${tier + 1} <span>${TIER_VINYLS} <i class="vin" aria-hidden="true"></i></span></button>
-          <small>Tu as <b>${fmt(S.vinyls || 0)}</b> Vinyles</small></div>`}
+        ${max ? "" : `<p class="ps-skip"><small>Les paliers se gagnent en jouant : boosters, défis du jour et duels (300 XP par jour au plus).</small></p>`}
       </div>
       <div class="ps-hero-r">
         <p class="ps-stub"><span>Admit one</span><span>${d.premium ? "Backstage · VIP" : "Fosse"}</span></p>
@@ -182,17 +183,19 @@ async function renderPass() {
     <div class="ps-offer">
       <div class="ps-offer-l">
         <p class="ps-kicker gold">Pass VIP · Backstage</p>
-        <h3>Passe en coulisses : double toutes tes récompenses</h3>
+        <h3>Passe en coulisses : un booster toutes les 3 minutes</h3>
         ${lockedNow ? `<p class="ps-miss"><b>${lockedNow} récompense${lockedNow > 1 ? "s" : ""} VIP</b> déjà débloquée${lockedNow > 1 ? "s" : ""} t'attend${lockedNow > 1 ? "ent" : ""}. Elle${lockedNow > 1 ? "s" : ""} arrive${lockedNow > 1 ? "nt" : ""} dès que tu passes VIP.</p>` : ""}
         <ul class="ps-perks">
-          <li><b>${premCards.length} cartes rares garanties</b> : Légendaire dès le palier 5, artistes Platine et Diamant, et une <b>Shiny surprise</b> à la dernière date (Mythique, Légendaire, Platine ou Diamant)</li>
-          <li><b>${fmt(prem.filter(r => r.kind === "boosters").reduce((a, r) => a + r.amount, 0))} boosters</b> et <b>${fmt(prem.filter(r => r.kind === "streams").reduce((a, r) => a + r.amount, 0))} Streams</b> en plus</li>
-          <li>Ton <b>badge VIP</b> sur toute la tournée</li>
+          <li><b>Un booster toutes les 3 minutes</b> dans ton stock pendant toute la saison (au lieu de 10)</li>
+          <li><b>${premBig} gros boosters de 15 cartes</b>, toutes <b>Rare ou mieux</b> (paliers 5, 15 et 25)</li>
+          <li>Une <b>Shiny surprise</b> à la dernière date : Mythique, Légendaire, Platine ou Diamant</li>
+          <li><b>${fmt(premV)} Vinyles</b> et <b>${fmt(premS)} Streams</b> en plus</li>
+          <li>${premTitles.length} <b>titres exclusifs</b> à afficher sous ton pseudo (${premTitles.map(t => "« " + esc(t) + " »").join(", ")}) et ton <b>badge VIP</b></li>
         </ul>
         <div class="ps-offer-cards">${premCards.map(r => `<span class="ps-oc" title="Palier ${r.tier} : ${esc(passCardName(r.card))}">${passArt(r.card)}<small>${r.tier}</small></span>`).join("")}</div>
       </div>
       <div class="ps-offer-r">
-        <p class="ps-worth">Plus de <b>${fmt(Math.floor(worth / 1000) * 1000)} Streams</b> de valeur</p>
+        <p class="ps-worth">Les cartes rares restent à gagner en jouant : le VIP te fait <b>ouvrir plus</b>, pas tricher.</p>
         <p class="ps-price"><b>${PASS_PRICE}</b><small>pour toute la tournée</small></p>
         <button class="btn ps-buy" id="psBuy">Passer VIP</button>
         <button class="ps-buy-v" id="psBuyV">ou avec ${PREMIUM_VINYLS} <i class="vin" aria-hidden="true"></i> Vinyles</button>
@@ -235,11 +238,7 @@ async function renderPass() {
     try { await loadProfile(); } catch (e) {}
     refreshViews(); renderPass();
   };
-  const allBtn = $("#psAllTiers");
-  if (allBtn) allBtn.onclick = () => buyTiers(rest, allBtn);
   tickCounts();
-  const tierBtn = $("#psTier");
-  if (tierBtn) tierBtn.onclick = () => buyTiers(1, tierBtn);
   const buy = $("#psBuy");
   if (buy) buy.onclick = () => checkout("pass", buy);
   box.querySelectorAll(".ps-cell.ready").forEach(b => b.onclick = () => claimPass([[+b.dataset.t, b.dataset.p === "1"]]));
@@ -276,7 +275,10 @@ async function claimPass(list) {
     const b = got.filter(r => r.kind === "boosters").reduce((a, r) => a + r.amount, 0);
     const v = got.filter(r => r.kind === "vinyls").reduce((a, r) => a + r.amount, 0);
     const c = got.filter(r => r.kind === "card").map(r => passCardName(r.card));
-    const parts = [s && `${fmt(s)} Streams`, v && `${v} Vinyles`, b && `${b} booster${b > 1 ? "s" : ""}`, c.length && `${c.join(", ")} (dans ton prochain booster)`].filter(Boolean);
+    const g = got.filter(r => r.kind === "big_booster").reduce((a, r) => a + r.amount, 0);
+    const ti = got.filter(r => r.kind === "title").map(r => `titre « ${r.title} »`);
+    const parts = [s && `${fmt(s)} Streams`, v && `${v} Vinyles`, b && `${b} booster${b > 1 ? "s" : ""}`, g && `${g} gros booster${g > 1 ? "s" : ""} (à ouvrir sur l'accueil)`, ...ti,
+      c.length && `${c.join(", ")} (dans ton prochain booster)`].filter(Boolean);
     toast("Récupéré : " + parts.join(" · ") + (skippedCard ? ". Les autres cartes viendront une à une, après ton prochain booster." : "."));
     try { await loadProfile(); } catch (e) {}
     refreshViews();
@@ -313,16 +315,6 @@ function tickCounts() {
 }
 setInterval(tickCounts, 1000);
 
-async function buyTiers(n, btn) {
-  const price = tiersPrice(n);
-  if ((S.vinyls || 0) < price) return toast(`Il te faut ${price} Vinyles, tu en as ${fmt(S.vinyls || 0)}.`);
-  if (n > 1 && !confirm(`Débloquer ${n} paliers pour ${price} Vinyles ?`)) return;
-  btn.disabled = true;
-  try { const t = await rpc("buy_season_tiers", { p_count: n }); toast(n > 1 ? `${n} paliers débloqués : tu es au palier ${t} !` : `Palier ${t} débloqué !`); }
-  catch (e) { toast(message(e)); }
-  try { await loadProfile(); } catch (e) {}
-  refreshViews(); renderPass();
-}
 
 /* ---------- stock empty: recharge, or the guaranteed Mythique now ---------- */
 const PITY_PRICE = { 1: 40, 2: 55, 3: 70, 4: 85, 5: 100 };   // pity_price on the server
@@ -421,7 +413,7 @@ function renderVinylShop() {
   box.innerHTML = `
     <div class="vs-head">
       <div><p class="ps-kicker">Monnaie rare</p><h3>Vinyles</h3>
-        <p>Achète des paliers du Pass Tournée (${TIER_VINYLS} Vinyles) ou le Pass VIP (${PREMIUM_VINYLS} Vinyles).</p></div>
+        <p>Le Pass VIP (${PREMIUM_VINYLS} Vinyles), les boosters en plus, les packs de la Boutique.</p></div>
       ${me ? `<div class="vs-bal"><i class="vin" aria-hidden="true"></i><b>${fmt(S.vinyls || 0)}</b><small>Ton solde</small></div>` : ""}
     </div>
     ${SHOP.used.includes("welcome") ? "" : `<div class="vs-welcome">
