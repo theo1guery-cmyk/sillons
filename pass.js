@@ -12,7 +12,7 @@ const tiersPrice = n => Math.round(TIER_VINYLS * n * (n >= 20 ? .6 : n >= 10 ? .
 const passCardName = c => c.kind === "any" ? "Shiny surprise" : (c.kind === "artist" ? (c.tier === 5 ? "Artiste Diamant" : "Artiste Platine") : (c.tier === 5 ? "Légendaire" : "Mythique"))
   + (c.shiny ? " Shiny" : "");
 const passName = r => r.kind === "streams" ? `${fmt(r.amount)} Streams` : r.kind === "vinyls" ? `${r.amount} Vinyles` : r.kind === "boosters" ? `${r.amount} boosters`
-  : r.kind === "big_booster" ? "Édition Deluxe (15 cartes Rare+)" : r.kind === "title" ? `Titre « ${r.title} »` : passCardName(r.card);
+  : r.kind === "big_booster" ? "Édition Deluxe (15 cartes Rare+)" : r.kind === "title" ? `Titre « ${r.title} »` : r.kind === "cosmetic" ? r.name : passCardName(r.card);
 // the reward pictures are the game's own: the 3D booster of the shop, and real cards of the right rarity. The cards are
 // examples (Deezer's chart and famous artists, Travis Scott first), changing every 2 seconds: a reward is a card of
 // that rarity, not that one. Until the examples are loaded, the player's own cards stand in, or a card back.
@@ -54,6 +54,7 @@ function passArt(c, big = false, got = "") {
   return `<span class="ps-real${big ? " big" : ""}"${got ? ` data-got="${got}"` : ""} data-kind="${c.kind}" data-tier="${c.tier}" data-shiny="${c.shiny ? 1 : 0}" aria-hidden="true"></span>`;
 }
 function passIcon(r) {
+  if (r.kind === "cosmetic") return `<span class="ps-cos ps-cos-${r.slot}" aria-hidden="true">${r.slot === "name" ? "Aa" : r.slot === "avatar" ? "Z" : ""}</span>`;
   if (r.kind === "streams") return `<i class="coin ps-coin" aria-hidden="true"></i>`;
   if (r.kind === "vinyls") return `<i class="vin ps-vin" aria-hidden="true"></i>`;
   if (r.kind === "title") return `<span class="ps-title-ic" aria-hidden="true">🎟️</span>`;
@@ -155,6 +156,7 @@ async function renderPass() {
   const premS = prem.filter(r => r.kind === "streams").reduce((a, r) => a + r.amount, 0);
   const premBig = prem.filter(r => r.kind === "big_booster").reduce((a, r) => a + r.amount, 0);
   const premTitles = prem.filter(r => r.kind === "title").map(r => r.title);
+  const premCos = prem.filter(r => r.kind === "cosmetic");
   const lockedNow = d.premium ? 0 : prem.filter(r => r.tier <= tier).length;   // Premium rewards already reached, waiting for the pass
   const final = d.rewards[d.rewards.length - 1].premium;
 
@@ -174,7 +176,7 @@ async function renderPass() {
         ${d.premium ? "" : `<div class="ps-upsell" id="psUpsell">
           <div class="ps-up-t"><span class="ps-up-k">Billet Fosse → <b>Backstage VIP</b></span>
             <b>Un booster toutes les 3 min</b>
-            <small>+ ${premBig} Éditions Deluxe de 15 cartes Rare+, une Shiny surprise, ${fmt(premV)} Vinyles, ${fmt(premS)} Streams et ${premTitles.length} titres${lockedNow ? ` · <em>${lockedNow} récompense${lockedNow > 1 ? "s" : ""} VIP t'attend${lockedNow > 1 ? "ent" : ""} déjà</em>` : ""}</small></div>
+            <small>+ ${premBig} Éditions Deluxe de 15 cartes Rare+, une Shiny surprise, ${fmt(premV)} Vinyles, ${fmt(premS)} Streams et ${premCos.length} objets de la saison (${premCos.map(r => esc(r.name)).join(", ")})${lockedNow ? ` · <em>${lockedNow} récompense${lockedNow > 1 ? "s" : ""} VIP t'attend${lockedNow > 1 ? "ent" : ""} déjà</em>` : ""}</small></div>
           <div class="ps-up-buy"><button class="btn ps-buy" id="psBuy">Surclasser · ${PASS_PRICE}</button>
             <button class="ps-link" id="psBuyV">ou ${PREMIUM_VINYLS} <i class="vin" aria-hidden="true"></i></button></div>
         </div>`}
@@ -216,6 +218,7 @@ async function renderPass() {
     </div>`;
 
   passTick(true); passLoadExamples();
+  renderCosmetics(d);
   box.querySelectorAll(".ps-pk").forEach(pk => skin(pk, classicName, {}));   // the shop's 3D booster
   const buyV = $("#psBuyV");
   if (buyV) buyV.onclick = async () => { await buyVipVinyls(); renderPass(); };
@@ -244,6 +247,29 @@ async function renderPass() {
   if (next && track) track.scrollLeft = Math.max(0, next.offsetLeft - track.clientWidth / 2 + next.clientWidth / 2);
 }
 
+// "Tes objets de saison": the items received, worn or not
+async function renderCosmetics(d) {
+  document.getElementById("psCos")?.remove();
+  let owned = [];
+  try { const { data } = await sb.from("player_cosmetics").select("item"); owned = (data || []).map(r => r.item); } catch (e) {}
+  const all = d.rewards.map(r => r.premium).filter(r => r.kind === "cosmetic");
+  if (!all.length) return;
+  const worn = me.cosmetics || {};
+  const box = document.createElement("section"); box.className = "ps-cos-box"; box.id = "psCos";
+  box.innerHTML = `<h3>Tes objets de saison</h3><div class="ps-cos-grid">${all.map(r => {
+    const has = owned.includes(r.item), on = worn[r.slot] === r.item;
+    return `<div class="ps-cos-it${has ? "" : " locked"}">${passIcon(r)}<b>${esc(r.name)}</b>
+      ${has ? `<button class="ps-link" data-slot="${r.slot}" data-item="${on ? "" : r.item}">${on ? "Retirer" : "Porter"}</button>` : `<small>Pass VIP</small>`}</div>`;
+  }).join("")}</div>`;
+  views.pass.appendChild(box);
+  box.querySelectorAll("[data-slot]").forEach(b => b.onclick = async () => {
+    try { me.cosmetics = await rpc("set_cosmetic", { p_slot: b.dataset.slot, p_item: b.dataset.item || null }); }
+    catch (e) { return toast(message(e)); }
+    renderAccount(); renderStock?.(); renderCosmetics(d);
+    toast(b.dataset.item ? "C'est porté !" : "Retiré.");
+  });
+}
+
 async function claimPass(list) {
   if (PASS.busy || !list.length) return;
   PASS.busy = true;
@@ -263,7 +289,8 @@ async function claimPass(list) {
     const v = got.filter(r => r.kind === "vinyls").reduce((a, r) => a + r.amount, 0);
     const c = got.filter(r => r.kind === "card").map(r => passCardName(r.card));
     const g = got.filter(r => r.kind === "big_booster").reduce((a, r) => a + r.amount, 0);
-    const ti = got.filter(r => r.kind === "title").map(r => `titre « ${r.title} »`);
+    const ti = got.filter(r => r.kind === "title").map(r => `titre « ${r.title} »`)
+      .concat(got.filter(r => r.kind === "cosmetic").map(r => `${r.name} (porté)`));
     const parts = [s && `${fmt(s)} Streams`, v && `${v} Vinyles`, b && `${b} booster${b > 1 ? "s" : ""}`, g && `${g} Édition${g > 1 ? "s" : ""} Deluxe (à ouvrir sur l'accueil)`, ...ti,
       c.length && `${c.join(", ")} (dans ton prochain booster)`].filter(Boolean);
     toast("Récupéré : " + parts.join(" · ") + (skippedCard ? ". Les autres cartes viendront une à une, après ton prochain booster." : "."));
