@@ -169,9 +169,26 @@ async function probeRandomTrack() {
   if (Online.active) Online.probeDone?.(id, ok ? t : null);
   if (ok && reserve[0].length < RESERVE_MAX) stash(tag([t], "id"));
 }
+// the bots (random numbers, the walk through Deezer) run in a single tab per browser: the visible one holding the lock
+// (several open tabs used to run them each, multiplying the calls and the Deezer blocks; same pace for the player)
+let BOT_TAB = !("locks" in navigator);
+if (!BOT_TAB) {
+  let release = null, waiting = false;
+  const claim = () => {
+    if (document.hidden || release || waiting) return;
+    waiting = true;
+    navigator.locks.request("zikhunter-bots", () => {
+      waiting = false;
+      if (document.hidden) return;               // hidden while waiting: another tab can have it
+      return new Promise(done => { BOT_TAB = true; release = () => { BOT_TAB = false; release = null; done(); }; });
+    });
+  };
+  document.addEventListener("visibilitychange", () => { if (document.hidden) release?.(); else claim(); });
+  claim();
+}
 let slowProbe = 0;
 setInterval(() => {                      // only when Deezer isn't busy with a booster
-  if (probing >= 2 || queue.length) return;
+  if (!BOT_TAB || probing >= 2 || queue.length) return;
   // reserve full: with an account, keep looking up the server's random numbers (one every 0.5 s at most)
   if (reserve[0].length >= RESERVE_MAX && (!Online.active || ++slowProbe % 2)) return;
   probing++; probeRandomTrack().finally(() => probing--);
