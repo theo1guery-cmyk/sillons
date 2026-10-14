@@ -299,7 +299,7 @@ setInterval(flushProbes, 30000);
 // server hands it (top tracks, related artists) and reports them
 const WALK = { ids: [], busy: false, off: 0 };
 async function walkStep() {
-  if (!me || WALK.busy || document.hidden || busy || queue.length || Date.now() < WALK.off) return;
+  if (!BOT_TAB || !me || WALK.busy || document.hidden || busy || queue.length || Date.now() < WALK.off) return;
   WALK.busy = true;
   try {
     if (!WALK.ids.length) {
