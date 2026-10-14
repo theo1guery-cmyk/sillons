@@ -82,7 +82,8 @@ const PITY = 70;                         // boosters without a Mythique or bette
 let devShiny = false;                  // local preview (#shiny): every Mythique / Légendaire comes out Shiny
 const SHINY_CHANCE = 0.01;               // a Mythique or Légendaire has 1 chance in 100 to be Shiny
 const GOD_CHANCE = 1 / 3000;             // a booster turns into a GOD pack: 1 Légendaire + 4 cards that are Mythique or Légendaire (50/50)
-const STOCK_MAX = 10, REFILL_MS = 10 * 60 * 1000;
+const STOCK_MAX = 10;
+let REFILL_MS = 10 * 60 * 1000;          // 3 min for the VIP of the season (set by pass.js)
 let TEST_MODE = true;                   // unlimited free boosters while the game is being tested (read from the server when signed in)
 // signed-in play lives in online.js; this flag switches the game between the guest (this browser) and account modes
 const Online = { active: false };
@@ -689,6 +690,11 @@ const openBig = document.createElement("button"); openBig.className = "btn prima
 openBig.onclick = () => openPack(BOOSTER);
 const tearHint = document.createElement("p"); tearHint.className = "tear-hint"; tearHint.textContent = "Déchire le haut du sachet pour l'ouvrir";
 packStage.append(packBtn, tearHint, openBig);
+// the big boosters of the VIP pass: 15 cards, all Rare or better
+const BIG = { g: -1, n: "Gros booster", big: true, el: packBtn };
+const bigBtn = document.createElement("button"); bigBtn.className = "btn big-pack"; bigBtn.id = "openBigPack"; bigBtn.hidden = true;
+bigBtn.onclick = () => openPack(BIG);
+packStage.append(bigBtn);
 shelf.append(packStage, stockEl);
 // boosters and card backs printed in 3D by studio.js
 const studioQueue = [];
@@ -708,6 +714,8 @@ skin(packBtn, classicName, { sway: true, canTear: () => !busy && !packBtn.disabl
 document.documentElement.dataset.back = "plain";
 const studioScript = document.createElement("script"); studioScript.type = "module"; studioScript.src = "studio.js?v=17"; document.head.appendChild(studioScript);
 function renderStock() {
+  bigBtn.hidden = !S.big;                // the big boosters won with the VIP pass
+  bigBtn.innerHTML = `<b>Ouvrir un gros booster</b><small>15 cartes, toutes Rare ou mieux · ${S.big || 0} à ouvrir</small>`;
   if (TEST_MODE) {
     stockEl.innerHTML = `<b>Boosters illimités</b><span class="test-badge">Mode test</span>
       <small>Le stock de 10 boosters (un nouveau toutes les 10 min) sera activé à la sortie du jeu.</small>
@@ -722,10 +730,10 @@ function renderStock() {
   stockEl.innerHTML = `<b>${S.stock} / ${STOCK_MAX}</b> booster${S.stock > 1 ? "s" : ""} disponible${S.stock > 1 ? "s" : ""}
     ${S.stock < STOCK_MAX ? `<span class="stock-timer" role="timer"><span class="st-ic" aria-hidden="true"></span>Prochain dans <time>${clock(left)}</time><em> · plein dans ${clockFull()}</em></span>` : `<span class="stock-timer full">Stock plein</span>`}
     <span class="pips" aria-hidden="true">${pips}</span>
-    <small>${S.stock >= STOCK_MAX ? "Stock plein. Un nouveau booster arrive toutes les 10 min quand le stock n'est pas plein." : `Prochain booster dans ${min >= 60 ? "1 h" : min + " min"}`}</small>
+    <small>${S.stock >= STOCK_MAX ? "Stock plein. Un nouveau booster arrive toutes les ${REFILL_MS / 60000} min quand le stock n'est pas plein." : `Prochain booster dans ${min >= 60 ? "1 h" : min + " min"}`}</small>
     <small>Mythique garantie dans ${Math.max(1, PITY - S.dry)} booster${PITY - S.dry > 1 ? "s" : ""} si tu n'en tires pas avant</small>`;
   const empty = S.stock <= 0;
-  if (!busy) { packBtn.disabled = empty; openBig.disabled = empty; $("#again").disabled = empty; }
+  if (!busy) { packBtn.disabled = empty; openBig.disabled = empty; $("#again").disabled = empty && lastPack !== BIG; }
   Online.stockOffers?.(stockEl, empty && Online.active);   // stock empty: recharge, or the guaranteed Mythique now
 }
 setInterval(() => { renderStock(); save(); }, 30000);
@@ -872,14 +880,15 @@ async function openPack(p, opts = {}) {
   const god = serverPack ? serverPack.god : opts.god ?? (devHash === "#god" || (p === BOOSTER && Math.random() < GOD_CHANCE));
 
   const table = $("#table"), deal = $("#deal");
-  seatTable(p === BOOSTER ? $("#shelf") : $("#store"));
+  const plain = p === BOOSTER || p === BIG;
+  seatTable(plain ? $("#shelf") : $("#store"));
   table.classList.toggle("god", god);
-  $("#tableTitle").textContent = god ? "GOD PACK" : p === BOOSTER ? "Booster" : "Booster " + p.n;
+  $("#tableTitle").textContent = god ? "GOD PACK" : p === BOOSTER ? "Booster" : p === BIG ? "Gros booster · 15 cartes" : "Booster " + p.n;
   deal.innerHTML = "";
   const rip = document.createElement("div"); rip.className = "rip loading" + (god ? " god" : "");
   const pk = p.el.cloneNode(true); pk.tabIndex = -1; pk.disabled = true; pk.removeAttribute("id");
-  document.documentElement.dataset.back = p === BOOSTER ? "plain" : "eq";
-  skin(pk, p === BOOSTER ? classicName() : "pack-" + TYPES[p.g].k, { live: true, cut: tornCut });   // the copy in the opening
+  document.documentElement.dataset.back = plain ? "plain" : "eq";
+  skin(pk, plain ? classicName() : "pack-" + TYPES[p.g].k, { live: true, cut: tornCut });   // the copy in the opening
   tornCut = null;
   if (god) pk.classList.add("god");
   const line = document.createElement("p"); line.textContent = god ? "GOD PACK ! 1 chance sur 3 000…" : pick(LOADING_LINES);
