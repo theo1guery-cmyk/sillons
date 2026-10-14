@@ -402,6 +402,16 @@
 .ps-cos-it b{font-size:.85rem}
 .ps-cos-it small{color:var(--muted);font-size:.75rem}
 .ps-cos-it.locked{opacity:.55}
-/* worn: the Backstage ring around the avatar, the gold pseudo */
-.avatar.av-avatar-tour{box-shadow:0 0 0 2px #f5d27a,0 0 0 4px rgba(245,210,122,.3),0 0 14px rgba(245,190,90,.45)}
-.name-gold{background-image:linear-gradient(180deg,#ffe9a8,#e7a63c);-webkit-background-clip:text;background-clip:text;color:transparent !important}
+/* worn: the Médaillon Tournée (the midnight and gold of the card back), the pseudo engraved in gold */
+.avatar.av-avatar-tour{position:relative;overflow:visible;background:radial-gradient(circle at 50% 35%,#1d2558,#0f1430 70%);box-shadow:0 0 0 1.5px #f3d58c,0 0 0 3.5px #0b0e22,0 0 0 4.5px rgba(232,191,98,.75),0 0 16px rgba(240,190,90,.45)}
+.avatar.av-avatar-tour span{background:linear-gradient(180deg,#fff2c6,#e8bf62 55%,#c9952f);-webkit-background-clip:text;background-clip:text;color:transparent}
+.avatar.av-avatar-tour:before{content:"";position:absolute;inset:3px;border-radius:50%;border:1px dashed rgba(240,200,120,.55);pointer-events:none}
+.avatar.av-avatar-tour i{position:absolute;width:7px;height:7px;background:radial-gradient(#fff6d6,#e8b552 45%,transparent 70%);clip-path:polygon(50% 0,60% 40%,100% 50%,60% 60%,50% 100%,40% 60%,0 50%,40% 40%)}
+.avatar.av-avatar-tour i:nth-of-type(1){top:-6px;left:calc(50% - 3.5px)}
+.avatar.av-avatar-tour i:nth-of-type(2){bottom:-6px;left:calc(50% - 3.5px)}
+.avatar.av-avatar-tour i:nth-of-type(3){left:-6px;top:calc(50% - 3.5px)}
+.avatar.av-avatar-tour i:nth-of-type(4){right:-6px;top:calc(50% - 3.5px)}
+.name-gold{background-image:linear-gradient(100deg,#c9952f 0%,#fff2c6 22%,#e8bf62 40%,#c9952f 60%,#f6dd95 80%,#c9952f 100%);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent !important;filter:drop-shadow(0 1px 0 rgba(40,20,0,.8));animation:nameGold 6s linear infinite}
+.name-gold:before{content:"✦ ";font-size:.7em;vertical-align:.12em}
+@keyframes nameGold{to{background-position:-220% 0}}
+@media (prefers-reduced-motion:reduce){.name-gold{animation:none}}

@@ -407,7 +407,7 @@ function renderAccount() {
     $("#signIn").onclick = () => openAuth("in");
   } else {
     const cos = me.cosmetics || {};
-    box.innerHTML = `<button class="player" id="myAccount" aria-label="Mon compte"><span class="avatar${cos.avatar ? " av-" + esc(cos.avatar) : ""}" aria-hidden="true">${esc((me.pseudo || "?").slice(0, 1).toUpperCase())}</span><span class="who"><b${cos.name ? ` class="${esc(cos.name)}"` : ""}>${esc(me.pseudo || "Mon compte")}</b>${me.title ? `<small>${esc(me.title)}</small>` : `<small>Joueur</small>`}</span></button>`;
+    box.innerHTML = `<button class="player" id="myAccount" aria-label="Mon compte"><span class="avatar${cos.avatar ? " av-" + esc(cos.avatar) : ""}" aria-hidden="true">${cos.avatar ? `<span>${esc((me.pseudo || "?").slice(0, 1).toUpperCase())}</span><i></i><i></i><i></i><i></i>` : esc((me.pseudo || "?").slice(0, 1).toUpperCase())}</span><span class="who"><b${cos.name ? ` class="${esc(cos.name)}"` : ""}>${esc(me.pseudo || "Mon compte")}</b>${me.title ? `<small>${esc(me.title)}</small>` : `<small>Joueur</small>`}</span></button>`;
     $("#myAccount").onclick = () => openAuth("account");
   }
 }

@@ -1,8 +1,8 @@
 -- The VIP titles of the pass become items of the season, seen in the game (a theme per season, here the tour):
---   tier 3  · Bracelet Backstage: a gold ticket ring around the avatar
---   tier 9  · Sachet Tournée: the booster's sachet dressed for the tour (night, stage lights, "Tournée Mondiale")
---   tier 21 · Dos de carte Tournée: the back of the cards in the openings
---   tier 27 · Pseudo doré: the pseudo written in gold
+--   tier 3  · Médaillon Tournée: the avatar becomes a midnight medallion rimmed with gold (as on the card back)
+--   tier 9  · Sachet Tournée: the spiral of covers of the booster, titled "Tournée Mondiale"
+--   tier 21 · Dos de carte Tournée: the "Pressage limité" back in midnight blue, "Tournée Mondiale" around the medallion
+--   tier 27 · Pseudo gravé à l'or: the pseudo in the gold of the logo, a star before it
 -- An item is kept for good (player_cosmetics) and put on when received; profiles.cosmetics holds what is worn, by
 -- slot. The players who already took those tiers (titles) receive the items too.
 
@@ -20,10 +20,10 @@ alter table public.profiles add column if not exists cosmetics jsonb not null de
 -- the items of the season, by tier: {kind, item, slot, name}
 create or replace function public.season_cosmetic(p_tier int) returns jsonb language sql immutable as $$
   select case p_tier
-    when 3 then '{"kind": "cosmetic", "item": "avatar-tour", "slot": "avatar", "name": "Bracelet Backstage"}'
+    when 3 then '{"kind": "cosmetic", "item": "avatar-tour", "slot": "avatar", "name": "Médaillon Tournée"}'
     when 9 then '{"kind": "cosmetic", "item": "pack-tour", "slot": "pack", "name": "Sachet Tournée"}'
     when 21 then '{"kind": "cosmetic", "item": "back-tour", "slot": "back", "name": "Dos de carte Tournée"}'
-    when 27 then '{"kind": "cosmetic", "item": "name-gold", "slot": "name", "name": "Pseudo doré"}' end::jsonb
+    when 27 then '{"kind": "cosmetic", "item": "name-gold", "slot": "name", "name": "Pseudo gravé à l''or"}' end::jsonb
 $$;
 
 create or replace function public.season_reward(p_tier int, p_premium boolean) returns jsonb language sql immutable as $$
