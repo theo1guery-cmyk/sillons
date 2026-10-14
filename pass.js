@@ -171,7 +171,6 @@ async function renderPass() {
             <div class="ps-meter"><s style="width:${pct}%"></s></div>
             <small>${max ? "Tournée terminée, bravo !" : `${fmt(into)} / ${fmt(d.xp_per_tier)} XP`}</small></div>
         </div>
-        ${max ? "" : `<p class="ps-skip"><button class="ps-link" id="psTier">Passer au palier ${tier + 1} · ${TIER_VINYLS} <i class="vin" aria-hidden="true"></i></button></p>`}
         ${d.premium ? "" : `<div class="ps-upsell" id="psUpsell">
           <div class="ps-up-t"><span class="ps-up-k">Billet Fosse → <b>Backstage VIP</b></span>
             <b>Un booster toutes les 3 min</b>
@@ -196,7 +195,7 @@ async function renderPass() {
       ${d.gift_pending ? `<small class="ps-note">Une carte t'attend dans ton prochain booster : ouvre-le pour récupérer les autres.</small>` : ""}
     </div>
     <div class="ps-track" id="psTrack">
-      <div class="ps-labels"><span></span><span class="gold">VIP</span><span>Gratuit</span></div>
+      <div class="ps-labels"><span></span><span class="gold">VIP</span><span>Gratuit</span><span></span></div>
       ${d.rewards.map(r => {
         const reached = r.tier <= tier;
         const cell = (rw, isPrem) => {
@@ -211,7 +210,8 @@ async function renderPass() {
             ${claimed ? `<span class="ps-ok" aria-hidden="true">✓</span>` : state === "lock" ? `<span class="ps-lock" aria-hidden="true"></span>` : can ? `<span class="ps-go">Récupérer</span>` : ""}</button>`;
         };
         return `<div class="ps-tier${reached ? " reached" : ""}${r.tier === tier + 1 ? " next" : ""}">
-          <span class="ps-n"><i style="width:${reached ? 100 : r.tier === tier + 1 ? pct : 0}%"></i><b>${r.tier}</b><em>${esc(city(r.tier))}</em></span>${cell(r.premium, true)}${cell(r.free, false)}</div>`;
+          <span class="ps-n"><i style="width:${reached ? 100 : r.tier === tier + 1 ? pct : 0}%"></i><b>${r.tier}</b><em>${esc(city(r.tier))}</em></span>${cell(r.premium, true)}${cell(r.free, false)}${r.tier === tier + 1 && !max
+            ? `<button class="ps-unlock" id="psTier" aria-label="Débloquer le palier ${r.tier} pour ${TIER_VINYLS} Vinyles">Débloquer · ${TIER_VINYLS} <i class="vin" aria-hidden="true"></i></button>` : "<span></span>"}</div>`;
       }).join("")}
     </div>`;
 
