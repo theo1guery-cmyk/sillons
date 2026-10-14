@@ -12,7 +12,7 @@ const tiersPrice = n => Math.round(TIER_VINYLS * n * (n >= 20 ? .6 : n >= 10 ? .
 const passCardName = c => c.kind === "any" ? "Shiny surprise" : (c.kind === "artist" ? (c.tier === 5 ? "Artiste Diamant" : "Artiste Platine") : (c.tier === 5 ? "Légendaire" : "Mythique"))
   + (c.shiny ? " Shiny" : "");
 const passName = r => r.kind === "streams" ? `${fmt(r.amount)} Streams` : r.kind === "vinyls" ? `${r.amount} Vinyles` : r.kind === "boosters" ? `${r.amount} boosters`
-  : r.kind === "big_booster" ? "Gros booster (15 cartes Rare+)" : r.kind === "title" ? `Titre « ${r.title} »` : passCardName(r.card);
+  : r.kind === "big_booster" ? "Édition Deluxe (15 cartes Rare+)" : r.kind === "title" ? `Titre « ${r.title} »` : passCardName(r.card);
 // the reward pictures are the game's own: the 3D booster of the shop, and real cards of the right rarity. The cards are
 // examples (Deezer's chart and famous artists, Travis Scott first), changing every 2 seconds: a reward is a card of
 // that rarity, not that one. Until the examples are loaded, the player's own cards stand in, or a card back.
@@ -174,7 +174,7 @@ async function renderPass() {
         ${d.premium ? "" : `<div class="ps-upsell" id="psUpsell">
           <div class="ps-up-t"><span class="ps-up-k">Billet Fosse → <b>Backstage VIP</b></span>
             <b>Un booster toutes les 3 min</b>
-            <small>+ ${premBig} gros boosters de 15 cartes Rare+, une Shiny surprise, ${fmt(premV)} Vinyles, ${fmt(premS)} Streams et ${premTitles.length} titres${lockedNow ? ` · <em>${lockedNow} récompense${lockedNow > 1 ? "s" : ""} VIP t'attend${lockedNow > 1 ? "ent" : ""} déjà</em>` : ""}</small></div>
+            <small>+ ${premBig} Éditions Deluxe de 15 cartes Rare+, une Shiny surprise, ${fmt(premV)} Vinyles, ${fmt(premS)} Streams et ${premTitles.length} titres${lockedNow ? ` · <em>${lockedNow} récompense${lockedNow > 1 ? "s" : ""} VIP t'attend${lockedNow > 1 ? "ent" : ""} déjà</em>` : ""}</small></div>
           <div class="ps-up-buy"><button class="btn ps-buy" id="psBuy">Surclasser · ${PASS_PRICE}</button>
             <button class="ps-link" id="psBuyV">ou ${PREMIUM_VINYLS} <i class="vin" aria-hidden="true"></i></button></div>
         </div>`}
@@ -264,7 +264,7 @@ async function claimPass(list) {
     const c = got.filter(r => r.kind === "card").map(r => passCardName(r.card));
     const g = got.filter(r => r.kind === "big_booster").reduce((a, r) => a + r.amount, 0);
     const ti = got.filter(r => r.kind === "title").map(r => `titre « ${r.title} »`);
-    const parts = [s && `${fmt(s)} Streams`, v && `${v} Vinyles`, b && `${b} booster${b > 1 ? "s" : ""}`, g && `${g} gros booster${g > 1 ? "s" : ""} (à ouvrir sur l'accueil)`, ...ti,
+    const parts = [s && `${fmt(s)} Streams`, v && `${v} Vinyles`, b && `${b} booster${b > 1 ? "s" : ""}`, g && `${g} Édition${g > 1 ? "s" : ""} Deluxe (à ouvrir sur l'accueil)`, ...ti,
       c.length && `${c.join(", ")} (dans ton prochain booster)`].filter(Boolean);
     toast("Récupéré : " + parts.join(" · ") + (skippedCard ? ". Les autres cartes viendront une à une, après ton prochain booster." : "."));
     try { await loadProfile(); } catch (e) {}
@@ -448,7 +448,7 @@ function vipCard() {
   if (!me || !d || d.premium || Date.parse(d.ends_at) < Date.now()) return "";
   return `<div class="vs-vip">
     <div class="vs-dl"><span class="vs-badge">Pass VIP · ${esc(d.name.split("·").pop().trim())}</span>
-      <b>Un booster toutes les 3 min</b><small>3 gros boosters de 15 cartes Rare+, une Shiny surprise, Vinyles et Streams · <a href="#" id="vsVipSee">voir le pass</a></small></div>
+      <b>Un booster toutes les 3 min</b><small>3 Éditions Deluxe de 15 cartes Rare+, une Shiny surprise, Vinyles et Streams · <a href="#" id="vsVipSee">voir le pass</a></small></div>
     <div class="vs-vip-r"><button class="vs-buy" data-pack="pass">${PASS_PRICE}</button><button class="ps-link" id="vsVipV">ou ${PREMIUM_VINYLS} <i class="vin" aria-hidden="true"></i></button></div>
   </div>`;
 }
