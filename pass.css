@@ -367,3 +367,18 @@
 .vs-vip .vs-dl a{color:#f5d27a}
 .vs-vip-r{display:flex;align-items:center;gap:12px}
 .vs-vip .vs-buy{width:auto;min-width:110px}
+
+/* the VIP upgrade, inside the ticket: a perforated stub "Fosse → Backstage" */
+.ps-upsell{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 18px;margin-top:18px;padding:14px 16px;border-radius:14px;
+  border:1.5px dashed rgba(245,194,77,.5);background:linear-gradient(110deg,rgba(245,194,77,.12),rgba(245,194,77,.03))}
+.ps-up-t{display:grid;gap:2px;min-width:0;flex:1 1 260px}
+.ps-up-k{font-family:var(--mono);font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:#d9c49a}
+.ps-up-k b{color:#f5d27a}
+.ps-up-t>b{font-family:var(--display);font-size:1.05rem;color:#fff}
+.ps-up-t small{color:#cdbfdc;font-size:.82rem;line-height:1.4}
+.ps-up-t em{font-style:normal;color:#f5d27a}
+.ps-up-buy{display:flex;align-items:center;gap:12px;white-space:nowrap}
+.ps-upsell .btn.ps-buy{animation:none;padding:10px 16px;font-size:.9rem;white-space:nowrap}
+.ps-upsell.hl{animation:psHl 1.2s ease}
+@keyframes psHl{0%,100%{box-shadow:0 0 0 0 rgba(245,194,77,0)}30%{box-shadow:0 0 0 4px rgba(245,194,77,.45)}}
+@media (prefers-reduced-motion:reduce){.ps-upsell.hl{animation:none}}
