@@ -807,7 +807,7 @@ function showStage(p, title, sub) {
   tearStage.querySelector(".ts-head small").textContent = sub;
   if (!stageReady) {
     stageReady = true;
-    skin(stageHost, () => stagePack.big ? classicName() : "pack-" + TYPES[stagePack.g].k, { sway: true, canTear: () => !busy && !tearStage.hidden,
+    skin(stageHost, () => stagePack.big ? "pack-big" : "pack-" + TYPES[stagePack.g].k, { sway: true, canTear: () => !busy && !tearStage.hidden,
       tear: cut => { tornCut = cut; closeStage(); openPack(stagePack); } });
   }
   tearStage.hidden = false; document.addEventListener("keydown", stageKeys);
@@ -897,7 +897,7 @@ async function openPack(p, opts = {}) {
   const rip = document.createElement("div"); rip.className = "rip loading" + (god ? " god" : "");
   const pk = p.el.cloneNode(true); pk.tabIndex = -1; pk.disabled = true; pk.removeAttribute("id");
   document.documentElement.dataset.back = plain ? "plain" : "eq";
-  skin(pk, plain ? classicName() : "pack-" + TYPES[p.g].k, { live: true, cut: tornCut });   // the copy in the opening
+  skin(pk, p === BIG ? "pack-big" : plain ? classicName() : "pack-" + TYPES[p.g].k, { live: true, cut: tornCut });   // the copy in the opening
   tornCut = null;
   if (god) pk.classList.add("god");
   const line = document.createElement("p"); line.textContent = god ? "GOD PACK ! 1 chance sur 3 000…" : pick(LOADING_LINES);
