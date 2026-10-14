@@ -202,7 +202,7 @@ async function renderPass() {
       ${d.gift_pending ? `<small class="ps-note">Une carte t'attend dans ton prochain booster : ouvre-le pour récupérer les autres.</small>` : ""}
     </div>
     <div class="ps-track" id="psTrack">
-      <div class="ps-labels"><span></span><span>Gratuit</span><span class="gold">VIP</span></div>
+      <div class="ps-labels"><span></span><span class="gold">VIP</span><span>Gratuit</span></div>
       ${d.rewards.map(r => {
         const reached = r.tier <= tier;
         const cell = (rw, isPrem) => {
@@ -217,7 +217,7 @@ async function renderPass() {
             ${claimed ? `<span class="ps-ok" aria-hidden="true">✓</span>` : state === "lock" ? `<span class="ps-lock" aria-hidden="true"></span>` : can ? `<span class="ps-go">Récupérer</span>` : ""}</button>`;
         };
         return `<div class="ps-tier${reached ? " reached" : ""}${r.tier === tier + 1 ? " next" : ""}">
-          <span class="ps-n"><i style="width:${reached ? 100 : r.tier === tier + 1 ? pct : 0}%"></i><b>${r.tier}</b><em>${esc(city(r.tier))}</em></span>${cell(r.free, false)}${cell(r.premium, true)}</div>`;
+          <span class="ps-n"><i style="width:${reached ? 100 : r.tier === tier + 1 ? pct : 0}%"></i><b>${r.tier}</b><em>${esc(city(r.tier))}</em></span>${cell(r.premium, true)}${cell(r.free, false)}</div>`;
       }).join("")}
     </div>`;
 
