@@ -18,12 +18,32 @@ create sequence if not exists public.track_pool_seq_3;
 create sequence if not exists public.track_pool_seq_4;
 create sequence if not exists public.track_pool_seq_5;
 
-update public.track_pool t set seq = s.n
-from (select id, row_number() over (partition by tier order by id) n from public.track_pool) s
-where t.id = s.id and t.seq is null;
-select setval('public.track_pool_seq_' || t, greatest(coalesce((select max(seq) from public.track_pool where tier = t), 0), 1))
-from generate_series(0, 5) t;
-create unique index if not exists track_pool_tier_seq on public.track_pool (tier, seq);
+-- The numbering of the tracks already in the pool runs in the background, 20 000 a minute (all at once ran past the
+-- SQL editor's time limit). When it is done the job adds the index of the numbers and stops; until then the draws
+-- keep the previous method.
+create or replace function public.pool_number_step(p_n int default 20000) returns int
+language plpgsql security definer set search_path = public as $$
+declare t int; n int := 0; k int;
+begin
+  if to_regclass('public.track_pool_unnumbered') is null then
+    create index track_pool_unnumbered on public.track_pool (tier) where seq is null;
+  end if;
+  for t in 0..5 loop
+    exit when n >= p_n;
+    update track_pool set seq = nextval('public.track_pool_seq_' || t)
+    where id in (select id from track_pool where tier = t and seq is null limit p_n - n);
+    get diagnostics k = row_count;
+    n := n + k;
+  end loop;
+  if n = 0 then
+    create unique index if not exists track_pool_tier_seq on public.track_pool (tier, seq);
+    drop index if exists public.track_pool_unnumbered;
+    perform cron.unschedule('pool-number');
+  end if;
+  return n;
+end $$;
+revoke execute on function public.pool_number_step(int) from public, anon, authenticated;
+select cron.schedule('pool-number', '* * * * *', 'select public.pool_number_step(20000)');
 
 -- a new track, or one that changed rarity, takes the next number of its rarity
 create or replace function public.track_pool_number() returns trigger
@@ -54,7 +74,7 @@ begin
   end if;
   only_random := p_tier <= 1 and p_genre is null
     and exists (select 1 from track_pool where tier = p_tier and src = 'random' offset 299);
-  if not only_random then
+  if not only_random and to_regclass('public.track_pool_tier_seq') is not null then   -- numbering done
     -- a number drawn among the rarity's numbers; a hole, an owned track or another genre: draw again
     execute format('select last_value from public.track_pool_seq_%s', p_tier) into top;
     for k in 1..60 loop
