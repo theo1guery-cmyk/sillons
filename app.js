@@ -693,7 +693,7 @@ packStage.append(packBtn, tearHint, openBig);
 // the big boosters of the VIP pass: 15 cards, all Rare or better
 const BIG = { g: -1, n: "Gros booster", big: true, el: packBtn };
 const bigBtn = document.createElement("button"); bigBtn.className = "btn big-pack"; bigBtn.id = "openBigPack"; bigBtn.hidden = true;
-bigBtn.onclick = () => openPack(BIG);
+bigBtn.onclick = () => bigStage();
 packStage.append(bigBtn);
 shelf.append(packStage, stockEl);
 // boosters and card backs printed in 3D by studio.js
@@ -793,12 +793,21 @@ function buyPack(p, pay = "streams") {
   p.pay = pay;
   // the checks of the opening come first (account, Streams or Vinyles), so a pack you can't open is never shown torn
   if (busy || !Online.active || !canPay(p) || !window.Studio) return openPack(p);
+  showStage(p, "Booster " + p.n, (pay === "vinyls" ? STORE_VINYLS + " Vinyles" : STORE_PRICE + " Streams") + " · 5 cartes");
+}
+// a big booster of the VIP pass comes up the same way, big and centre screen
+function bigStage() {
+  if (busy || !Online.active || !S.big || !window.Studio) return openPack(BIG);
+  if (views.shop.hidden) show("shop");             // it opens on the booster table
+  showStage(BIG, "Gros booster", "15 cartes · toutes Rare ou mieux");
+}
+function showStage(p, title, sub) {
   stagePack = p;
-  tearStage.querySelector(".ts-head b").textContent = "Booster " + p.n;
-  tearStage.querySelector(".ts-head small").textContent = (pay === "vinyls" ? STORE_VINYLS + " Vinyles" : STORE_PRICE + " Streams") + " · 5 cartes";
+  tearStage.querySelector(".ts-head b").textContent = title;
+  tearStage.querySelector(".ts-head small").textContent = sub;
   if (!stageReady) {
     stageReady = true;
-    skin(stageHost, () => "pack-" + TYPES[stagePack.g].k, { sway: true, canTear: () => !busy && !tearStage.hidden,
+    skin(stageHost, () => stagePack.big ? classicName() : "pack-" + TYPES[stagePack.g].k, { sway: true, canTear: () => !busy && !tearStage.hidden,
       tear: cut => { tornCut = cut; closeStage(); openPack(stagePack); } });
   }
   tearStage.hidden = false; document.addEventListener("keydown", stageKeys);
