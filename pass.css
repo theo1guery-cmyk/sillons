@@ -388,3 +388,20 @@
   border:1px solid rgba(190,140,255,.45);background:rgba(150,90,255,.14);color:#e6d8ff;font:600 .78rem var(--body);white-space:nowrap}
 .ps-unlock:hover{background:rgba(150,90,255,.26);color:#fff}
 .ps-unlock:disabled{opacity:.6;cursor:default}
+
+/* the season's items: mini icons, the panel, and what they look like when worn */
+.ps-cos{display:grid;place-items:center;width:56px;height:56px;border-radius:14px;font-family:var(--display);font-weight:900;color:#f5d27a}
+.ps-cos-pack{width:40px;height:62px;border-radius:6px;background:url(brand/demo/pack-tour-a.webp) center/cover;box-shadow:0 4px 14px rgba(0,0,0,.5)}
+.ps-cos-back{width:44px;height:62px;border-radius:6px;background:url(brand/demo/back-tour-a.webp) center/cover;box-shadow:0 4px 14px rgba(0,0,0,.5)}
+.ps-cos-avatar{border-radius:50%;background:#1b1530;box-shadow:0 0 0 3px #f5d27a,0 0 0 6px rgba(245,210,122,.25)}
+.ps-cos-name{background:rgba(245,210,122,.1);font-size:1.3rem;background-image:linear-gradient(180deg,#ffe9a8,#e7a63c);-webkit-background-clip:text;background-clip:text;color:transparent}
+.ps-cos-box{margin:24px 0 8px}
+.ps-cos-box h3{margin:0 0 12px}
+.ps-cos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.ps-cos-it{display:grid;justify-items:center;gap:6px;padding:14px 10px;border-radius:14px;border:1px solid var(--edge);background:rgba(255,255,255,.03);text-align:center}
+.ps-cos-it b{font-size:.85rem}
+.ps-cos-it small{color:var(--muted);font-size:.75rem}
+.ps-cos-it.locked{opacity:.55}
+/* worn: the Backstage ring around the avatar, the gold pseudo */
+.avatar.av-avatar-tour{box-shadow:0 0 0 2px #f5d27a,0 0 0 4px rgba(245,210,122,.3),0 0 14px rgba(245,190,90,.45)}
+.name-gold{background-image:linear-gradient(180deg,#ffe9a8,#e7a63c);-webkit-background-clip:text;background-clip:text;color:transparent !important}
