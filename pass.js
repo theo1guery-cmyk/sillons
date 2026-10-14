@@ -224,14 +224,7 @@ async function renderPass() {
   passTick(true); passLoadExamples();
   box.querySelectorAll(".ps-pk").forEach(pk => skin(pk, classicName, {}));   // the shop's 3D booster
   const buyV = $("#psBuyV");
-  if (buyV) buyV.onclick = async () => {
-    if ((S.vinyls || 0) < PREMIUM_VINYLS) return toast(`Il te faut ${PREMIUM_VINYLS} Vinyles, tu en as ${fmt(S.vinyls || 0)}.`);
-    if (!confirm(`Passer VIP pour ${PREMIUM_VINYLS} Vinyles ?`)) return;
-    try { await rpc("buy_season_premium"); toast("Bienvenue en backstage ! Toutes les récompenses VIP sont à toi."); }
-    catch (e) { return toast(message(e)); }
-    try { await loadProfile(); } catch (e) {}
-    refreshViews(); renderPass();
-  };
+  if (buyV) buyV.onclick = async () => { await buyVipVinyls(); renderPass(); };
   tickCounts();
   const tierBtn = $("#psTier");
   if (tierBtn) tierBtn.onclick = () => buyTiers(1, tierBtn);
@@ -431,6 +424,7 @@ function renderVinylShop() {
       <button class="vs-buy" data-pack="welcome">0,99 €</button>
     </div>`}
     ${dailyCard()}
+    ${vipCard()}
 
     <div class="vs-grid">${VINYL_PACKS.map((p, i) => {
       const bonus = Math.round((p.n / p.eur / base - 1) * 100);
@@ -443,8 +437,31 @@ function renderVinylShop() {
       </div>`;
     }).join("")}</div>`;
   box.querySelectorAll(".vs-buy").forEach(b => b.onclick = () => checkout(b.dataset.pack, b));
+  const vipV = box.querySelector("#vsVipV");
+  if (vipV) vipV.onclick = () => buyVipVinyls();
+  const vipSee = box.querySelector("#vsVipSee");
+  if (vipSee) vipSee.onclick = () => { show("pass"); renderPass(); };
   tickCounts(); passTick(true);
 }
+// the VIP pass, in the Boutique too: a quiet card, gone once VIP
+function vipCard() {
+  const d = PASS.data;
+  if (!me || !d || d.premium || Date.parse(d.ends_at) < Date.now()) return "";
+  return `<div class="vs-vip">
+    <div class="vs-dl"><span class="vs-badge">Pass VIP · ${esc(d.name.split("·").pop().trim())}</span>
+      <b>Un booster toutes les 3 min</b><small>3 gros boosters de 15 cartes Rare+, une Shiny surprise, Vinyles et Streams · <a href="#" id="vsVipSee">voir le pass</a></small></div>
+    <div class="vs-vip-r"><button class="vs-buy" data-pack="pass">${PASS_PRICE}</button><button class="ps-link" id="vsVipV">ou ${PREMIUM_VINYLS} <i class="vin" aria-hidden="true"></i></button></div>
+  </div>`;
+}
+async function buyVipVinyls() {
+  if ((S.vinyls || 0) < PREMIUM_VINYLS) return toast(`Il te faut ${PREMIUM_VINYLS} Vinyles, tu en as ${fmt(S.vinyls || 0)}.`);
+  if (!confirm(`Passer VIP pour ${PREMIUM_VINYLS} Vinyles ?`)) return;
+  try { await rpc("buy_season_premium"); toast("Bienvenue en backstage ! Toutes les récompenses VIP sont à toi."); }
+  catch (e) { return toast(message(e)); }
+  try { await loadProfile(); await loadPass(); } catch (e) {}
+  refreshViews(); renderVinylShop();
+}
+
 // the offer of the day: a new one at midnight (Paris time), one purchase a day
 function dailyCard() {
   const d = SHOP.daily;
