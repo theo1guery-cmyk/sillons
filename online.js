@@ -406,7 +406,8 @@ function renderAccount() {
     box.innerHTML = `<button class="btn primary" id="signIn">Se connecter</button>`;
     $("#signIn").onclick = () => openAuth("in");
   } else {
-    box.innerHTML = `<button class="player" id="myAccount" aria-label="Mon compte"><span class="avatar" aria-hidden="true">${esc((me.pseudo || "?").slice(0, 1).toUpperCase())}</span><span class="who"><b>${esc(me.pseudo || "Mon compte")}</b>${me.title ? `<small>${esc(me.title)}</small>` : `<small>Joueur</small>`}</span></button>`;
+    const cos = me.cosmetics || {};
+    box.innerHTML = `<button class="player" id="myAccount" aria-label="Mon compte"><span class="avatar${cos.avatar ? " av-" + esc(cos.avatar) : ""}" aria-hidden="true">${esc((me.pseudo || "?").slice(0, 1).toUpperCase())}</span><span class="who"><b${cos.name ? ` class="${esc(cos.name)}"` : ""}>${esc(me.pseudo || "Mon compte")}</b>${me.title ? `<small>${esc(me.title)}</small>` : `<small>Joueur</small>`}</span></button>`;
     $("#myAccount").onclick = () => openAuth("account");
   }
 }
@@ -672,11 +673,11 @@ $("#playerForm").onsubmit = e => { e.preventDefault(); clearTimeout(playerTimer)
 async function findPlayers() {
   const q = $("#playerQ").value.trim(), box = $("#players");
   if (q.length < 2) { box.innerHTML = ""; return; }
-  const { data, error } = await sb.from("profiles").select("id,pseudo,title,created_at").ilike("pseudo", q.replace(/[%_]/g, "") + "%").neq("id", me.id).limit(8);
+  const { data, error } = await sb.from("profiles").select("id,pseudo,title,cosmetics,created_at").ilike("pseudo", q.replace(/[%_]/g, "") + "%").neq("id", me.id).limit(8);
   if (error) return toast(message(error));
   box.innerHTML = data.length ? "" : `<p class="empty-line">Aucun joueur avec ce pseudo.</p>`;
   for (const p of data) {
-    const b = document.createElement("button"); b.className = "chip player"; b.textContent = p.pseudo + (p.title ? " · " + p.title : "");
+    const b = document.createElement("button"); b.className = "chip player" + (p.cosmetics?.name ? " " + p.cosmetics.name : ""); b.textContent = p.pseudo + (p.title ? " · " + p.title : "");
     b.onclick = () => openEditor(p);
     box.appendChild(b);
   }
@@ -921,7 +922,7 @@ async function renderDefis() {
 /* ---------- market: La Bourse aux disques ---------- */
 const MK = { q: "", tier: -1, genre: -1, sort: "recent", page: 0, items: [], more: false, seq: 0, sellTrack: null };
 const LISTING_SELECT = "id,seller,card_id,kind,track_id,artist_id,picture,tier,holo,title,artist,genre,price,created_at,expires_at," +
-  "seller_p:profiles!listings_seller_fkey(pseudo,title),tracks(album,cover,duration,bpm,year,explicit),artists(nb_album),cards(rank,collector)";
+  "seller_p:profiles!listings_seller_fkey(pseudo,title,cosmetics),tracks(album,cover,duration,bpm,year,explicit),artists(nb_album),cards(rank,collector)";
 const nowIso = () => new Date().toISOString();
 function listingCard(l) {
   if (l.kind === "artist") return { kind: "artist", id: "a" + l.artist_id, aid: l.artist_id, t: l.title, a: "Artiste", al: "", cov: l.picture,
@@ -988,7 +989,7 @@ function listingEl(l) {
   cardBtn.appendChild(cardEl(c, l.holo)); cardBtn.onclick = () => openModal(c, l.holo);
   const days = Math.max(0, Math.ceil((Date.parse(l.expires_at) - Date.now()) / 86400000));
   const foot = document.createElement("div"); foot.className = "l-foot";
-  foot.innerHTML = `<b class="price"><i class="coin" aria-hidden="true"></i>${streamsTxt(l.price)}</b><small>${mine ? "ta vente" : "par " + esc(l.seller_p?.pseudo || "?")} · ${days} j</small>`;
+  foot.innerHTML = `<b class="price"><i class="coin" aria-hidden="true"></i>${streamsTxt(l.price)}</b><small>${mine ? "ta vente" : "par " + (l.seller_p?.cosmetics?.name ? `<b class="${esc(l.seller_p.cosmetics.name)}">${esc(l.seller_p.pseudo)}</b>` : esc(l.seller_p?.pseudo || "?"))} · ${days} j</small>`;
   const btn = document.createElement("button"); btn.className = "btn " + (mine ? "" : "primary");
   btn.textContent = mine ? "Retirer" : "Acheter";
   btn.onclick = async () => {
