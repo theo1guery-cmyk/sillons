@@ -128,20 +128,22 @@ function addCopy(map, r, t) {
   c.copies.push({ id: r.id, tier: r.tier, holo: r.holo, tradeable: r.tradeable, collector: !!r.collector });
   return c;
 }
-async function fetchCards(owner, onlyTradeable) {
-  // pages follow the last card seen (pulled_at, id) instead of skipping N rows: each page costs the same, even at the
-  // end of a 90 000-card collection, where an offset made the database walk every card before it (and time out
-  // when the disk is slow). A failed page is tried again before giving up.
+const CARD_COLS = "id,kind,track_id,artist_id,collector,tier,rank,holo,tradeable,pulled_at,tracks(title,artist,album,cover,duration,bpm,year,explicit,genre),artists(name,picture,fans,nb_album)";
+// pages follow the last card seen (pulled_at, id) instead of skipping N rows: each page costs the same, even at the
+// end of a 90 000-card collection, where an offset made the database walk every card before it (and time out when
+// the disk is slow). A failed page is tried again before giving up. since: only cards pulled from that instant.
+async function fetchRows(owner, onlyTradeable, since = null) {
   const rows = [];
   let last = null;
   for (;;) {
     let data;
     for (let attempt = 0; ; attempt++) {
-      let q = sb.from("cards").select("id,kind,track_id,artist_id,collector,tier,rank,holo,tradeable,pulled_at,tracks(title,artist,album,cover,duration,bpm,year,explicit,genre),artists(name,picture,fans,nb_album)")
+      let q = sb.from("cards").select(CARD_COLS)
         .eq("owner", owner).order("pulled_at").order("id").limit(1000);   // id breaks ties: an import pulls thousands of cards at the same instant
       if (onlyTradeable) q = q.eq("tradeable", true);
       if (last) q = q.gte("pulled_at", last.pulled_at)   // lets the index start right there; the or only sorts out ties
         .or(`pulled_at.gt."${last.pulled_at}",id.gt.${last.id}`);
+      else if (since) q = q.gte("pulled_at", since);
       const r = await q;
       if (!r.error) { data = r.data; break; }
       if (attempt >= 2) throw r.error;
@@ -151,9 +153,55 @@ async function fetchCards(owner, onlyTradeable) {
     if (data.length < 1000) break;
     last = data[data.length - 1];
   }
+  return rows;
+}
+function rowsToMap(rows) {
   const map = {};
   for (const r of rows) { const t = r.kind === "artist" ? r.artists : r.tracks; if (t) addCopy(map, r, t); }
   return map;
+}
+async function fetchCards(owner, onlyTradeable) { return rowsToMap(await fetchRows(owner, onlyTradeable)); }
+
+// my collection is kept in the browser (IndexedDB): at sign-in only the cards pulled since the last visit come down.
+// profiles.cards_rev moves when a card leaves or changes (trade, sale, discard): then everything is downloaded again,
+// as it is once a week (covers or titles fixed meanwhile).
+const CARDS_CACHE = 1;                           // raise it to drop every browser's copy
+const IDB = {
+  db: null,
+  open() {
+    return this.db || (this.db = new Promise((ok, ko) => {
+      const r = indexedDB.open("zikhunter", 1);
+      r.onupgradeneeded = () => r.result.createObjectStore("kv");
+      r.onsuccess = () => ok(r.result); r.onerror = () => ko(r.error);
+    }));
+  },
+  async get(k) {
+    try { const db = await this.open(); return await new Promise((ok, ko) => { const q = db.transaction("kv").objectStore("kv").get(k); q.onsuccess = () => ok(q.result); q.onerror = () => ko(q.error); }); }
+    catch (e) { return null; }
+  },
+  async set(k, v) {
+    try { const db = await this.open(); await new Promise((ok, ko) => { const t = db.transaction("kv", "readwrite"); t.objectStore("kv").put(v, k); t.oncomplete = ok; t.onerror = () => ko(t.error); }); }
+    catch (e) {}
+  },
+};
+async function loadMyCards() {
+  const p = await sb.from("profiles").select("cards_rev").eq("id", me.id).single();
+  const rev = p.error ? null : p.data.cards_rev;   // no cards_rev yet: no copy kept
+  const key = "cards:" + me.id;
+  const old = rev == null ? null : await IDB.get(key);
+  if (old && old.v === CARDS_CACHE && old.rev === rev && Date.now() - old.at < 7 * 864e5 && old.rows?.length) {
+    // from 10 minutes before the last card: a booster still being opened when the copy was saved gets in too
+    const since = new Date(Date.parse(old.rows[old.rows.length - 1].pulled_at) - 10 * 60e3).toISOString();
+    const known = new Set();
+    for (let i = old.rows.length - 1; i >= 0 && Date.parse(old.rows[i].pulled_at) >= Date.parse(since); i--) known.add(old.rows[i].id);
+    const fresh = (await fetchRows(me.id, false, since)).filter(r => !known.has(r.id));
+    const rows = fresh.length ? old.rows.concat(fresh) : old.rows;
+    if (fresh.length) IDB.set(key, { v: CARDS_CACHE, rev, at: old.at, rows });
+    return rowsToMap(rows);
+  }
+  const rows = await fetchRows(me.id, false);
+  if (rev != null) IDB.set(key, { v: CARDS_CACHE, rev, at: Date.now(), rows });
+  return rowsToMap(rows);
 }
 async function loadProfile() {
   const { data, error } = await sb.from("profiles").select("*").eq("id", me.id).single();
@@ -166,7 +214,7 @@ async function loadProfile() {
   if (before != null && data.streams > before) coinRain(data.streams - before, before);   // Streams won: coins fall in the counter
 }
 async function loadAll() {
-  const [{ data: settings }, cards] = await Promise.all([sb.from("settings").select("*").single(), fetchCards(me.id), loadWishAndTags()]);
+  const [{ data: settings }, cards] = await Promise.all([sb.from("settings").select("*").single(), loadMyCards(), loadWishAndTags()]);
   if (settings) TEST_MODE = settings.test_mode;
   S = { c: cards, opened: 0, dry: 0, stock: STOCK_MAX, stockAt: Date.now() };
   await loadProfile();
