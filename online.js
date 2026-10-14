@@ -307,11 +307,18 @@ async function walkStep() {
       if (!WALK.ids.length) { WALK.off = Date.now() + 600e3; return; }   // nothing to visit, or enough for today
     }
     const id = WALK.ids.shift();
-    const [top, rel] = await Promise.all([dz(`artist/${id}/top`, { limit: 100 }).catch(() => ({})), dz(`artist/${id}/related`, { limit: 50 }).catch(() => ({}))]);
+    const rel = await dz(`artist/${id}/related`, { limit: 50 }).catch(() => ({}));
+    const tracks = [];                           // every track down to Peu commune, up to 5 pages of 100
+    for (let index = 0; index < 500; index += 100) {
+      const page = (await dz(`artist/${id}/top`, { limit: 100, index }).catch(() => ({}))).data || [];
+      const good = page.filter(t => t.id && t.rank >= 250000);
+      tracks.push(...good.map(t => ({ id: t.id, rank: t.rank })));
+      if (page.length < 100 || good.length < page.length) break;
+    }
     await rpc("harvest_report", {
       p_artist: id,
-      p_tracks: (top.data || []).filter(t => t.id && t.rank >= 250000).map(t => ({ id: t.id, rank: t.rank })),
-      p_related: (rel.data || []).filter(a => a.id && a.nb_fan >= 10000).map(a => ({ id: a.id, fans: a.nb_fan })),
+      p_tracks: tracks,
+      p_related: (rel.data || []).filter(a => a.id && a.nb_fan >= 1000).map(a => ({ id: a.id, fans: a.nb_fan })),
     });
   } catch (e) { WALK.off = Date.now() + 60e3; }
   finally { WALK.busy = false; }
