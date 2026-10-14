@@ -172,6 +172,13 @@ async function renderPass() {
             <small>${max ? "Tournée terminée, bravo !" : `${fmt(into)} / ${fmt(d.xp_per_tier)} XP`}</small></div>
         </div>
         ${max ? "" : `<p class="ps-skip"><button class="ps-link" id="psTier">Passer au palier ${tier + 1} · ${TIER_VINYLS} <i class="vin" aria-hidden="true"></i></button></p>`}
+        ${d.premium ? "" : `<div class="ps-upsell" id="psUpsell">
+          <div class="ps-up-t"><span class="ps-up-k">Billet Fosse → <b>Backstage VIP</b></span>
+            <b>Un booster toutes les 3 min</b>
+            <small>+ ${premBig} gros boosters de 15 cartes Rare+, une Shiny surprise, ${fmt(premV)} Vinyles, ${fmt(premS)} Streams et ${premTitles.length} titres${lockedNow ? ` · <em>${lockedNow} récompense${lockedNow > 1 ? "s" : ""} VIP t'attend${lockedNow > 1 ? "ent" : ""} déjà</em>` : ""}</small></div>
+          <div class="ps-up-buy"><button class="btn ps-buy" id="psBuy">Surclasser · ${PASS_PRICE}</button>
+            <button class="ps-link" id="psBuyV">ou ${PREMIUM_VINYLS} <i class="vin" aria-hidden="true"></i></button></div>
+        </div>`}
       </div>
       <div class="ps-hero-r">
         <p class="ps-stub"><span>Admit one</span><span>${d.premium ? "Backstage · VIP" : "Fosse"}</span></p>
@@ -181,20 +188,7 @@ async function renderPass() {
       </div>
     </div>
 
-    ${d.premium ? "" : `
-    <details class="ps-vip">
-      <summary><span class="ps-vip-t"><b>Pass VIP</b> · un booster toutes les 3 min, 3 gros boosters de 15 cartes et plus${lockedNow ? ` <em>· ${lockedNow} récompense${lockedNow > 1 ? "s" : ""} en attente</em>` : ""}</span><span class="ps-vip-p">${PASS_PRICE}</span></summary>
-      <div class="ps-vip-in">
-        <ul class="ps-perks">
-          <li><b>Un booster toutes les 3 minutes</b> dans ton stock pendant la saison (au lieu de 10)</li>
-          <li><b>${premBig} gros boosters de 15 cartes</b>, toutes Rare ou mieux (paliers 5, 15 et 25)</li>
-          <li>Une <b>Shiny surprise</b> à la dernière date</li>
-          <li><b>${fmt(premV)} Vinyles</b>, <b>${fmt(premS)} Streams</b> et ${premTitles.length} titres à afficher sous ton pseudo</li>
-        </ul>
-        <div class="ps-vip-buy"><button class="btn ps-buy" id="psBuy">Passer VIP · ${PASS_PRICE}</button>
-          <button class="ps-link" id="psBuyV">ou ${PREMIUM_VINYLS} <i class="vin" aria-hidden="true"></i> Vinyles</button></div>
-      </div>
-    </details>`}
+
 
     <div class="ps-bar">
       <h3>Récompenses</h3>
@@ -231,7 +225,11 @@ async function renderPass() {
   const buy = $("#psBuy");
   if (buy) buy.onclick = () => checkout("pass", buy);
   box.querySelectorAll(".ps-cell.ready").forEach(b => b.onclick = () => claimPass([[+b.dataset.t, b.dataset.p === "1"]]));
-  box.querySelectorAll(".ps-cell.lock").forEach(b => b.onclick = () => { const v = box.querySelector(".ps-vip"); if (v) { v.open = true; v.scrollIntoView({ behavior: "smooth", block: "center" }); } });
+  box.querySelectorAll(".ps-cell.lock").forEach(b => b.onclick = () => {
+    const u = $("#psUpsell"); if (!u) return;
+    u.scrollIntoView({ behavior: "smooth", block: "center" });
+    u.classList.remove("hl"); void u.offsetWidth; u.classList.add("hl");
+  });
   $("#psAll").onclick = () => {
     const list = [];
     for (let i = 1; i <= tier; i++) {
