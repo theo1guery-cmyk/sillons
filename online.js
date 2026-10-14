@@ -43,7 +43,7 @@ const MESSAGES = {
   already_claimed: "Déjà récupéré.",
   no_season: "Pas de saison en cours.",
   not_enough_vinyls: "Pas assez de Vinyles.",
-  no_big_pack: "Tu n'as pas de gros booster à ouvrir : ils se gagnent aux paliers 5, 15 et 25 du Pass VIP.",
+  no_big_pack: "Tu n'as pas d'Édition Deluxe à ouvrir : elles se gagnent aux paliers 5, 15 et 25 du Pass VIP.",
   album_buy_closed: "Les titres d'un album ne s'achètent plus : tire-les, échange-les ou trouve-les au marché.",
   payments_off: "Le paiement n'est pas encore disponible. Réessaie un peu plus tard.",
   bad_pack: "Cette offre n'existe plus.",

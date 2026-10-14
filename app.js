@@ -691,7 +691,7 @@ openBig.onclick = () => openPack(BOOSTER);
 const tearHint = document.createElement("p"); tearHint.className = "tear-hint"; tearHint.textContent = "Déchire le haut du sachet pour l'ouvrir";
 packStage.append(packBtn, tearHint, openBig);
 // the big boosters of the VIP pass: 15 cards, all Rare or better
-const BIG = { g: -1, n: "Gros booster", big: true, el: packBtn };
+const BIG = { g: -1, n: "Édition Deluxe", big: true, el: packBtn };
 const bigBtn = document.createElement("button"); bigBtn.className = "btn big-pack"; bigBtn.id = "openBigPack"; bigBtn.hidden = true;
 bigBtn.onclick = () => bigStage();
 packStage.append(bigBtn);
@@ -715,7 +715,7 @@ document.documentElement.dataset.back = "plain";
 const studioScript = document.createElement("script"); studioScript.type = "module"; studioScript.src = "studio.js?v=17"; document.head.appendChild(studioScript);
 function renderStock() {
   bigBtn.hidden = !S.big;                // the big boosters won with the VIP pass
-  bigBtn.innerHTML = `<b>Ouvrir un gros booster</b><small>15 cartes, toutes Rare ou mieux · ${S.big || 0} à ouvrir</small>`;
+  bigBtn.innerHTML = `<b>Ouvrir une Édition Deluxe</b><small>15 cartes, toutes Rare ou mieux · ${S.big || 0} à ouvrir</small>`;
   if (TEST_MODE) {
     stockEl.innerHTML = `<b>Boosters illimités</b><span class="test-badge">Mode test</span>
       <small>Le stock de 10 boosters (un nouveau toutes les 10 min) sera activé à la sortie du jeu.</small>
@@ -799,7 +799,7 @@ function buyPack(p, pay = "streams") {
 function bigStage() {
   if (busy || !Online.active || !S.big || !window.Studio) return openPack(BIG);
   if (views.shop.hidden) show("shop");             // it opens on the booster table
-  showStage(BIG, "Gros booster", "15 cartes · toutes Rare ou mieux");
+  showStage(BIG, "Édition Deluxe", "15 cartes · toutes Rare ou mieux");
 }
 function showStage(p, title, sub) {
   stagePack = p;
@@ -892,7 +892,7 @@ async function openPack(p, opts = {}) {
   const plain = p === BOOSTER || p === BIG;
   seatTable(plain ? $("#shelf") : $("#store"));
   table.classList.toggle("god", god);
-  $("#tableTitle").textContent = god ? "GOD PACK" : p === BOOSTER ? "Booster" : p === BIG ? "Gros booster · 15 cartes" : "Booster " + p.n;
+  $("#tableTitle").textContent = god ? "GOD PACK" : p === BOOSTER ? "Booster" : p === BIG ? "Édition Deluxe · 15 cartes" : "Booster " + p.n;
   deal.innerHTML = "";
   const rip = document.createElement("div"); rip.className = "rip loading" + (god ? " god" : "");
   const pk = p.el.cloneNode(true); pk.tabIndex = -1; pk.disabled = true; pk.removeAttribute("id");
