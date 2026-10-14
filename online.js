@@ -129,24 +129,27 @@ function addCopy(map, r, t) {
   return c;
 }
 async function fetchCards(owner, onlyTradeable) {
-  const page = async (from, count) => {
-    let q = sb.from("cards").select("id,kind,track_id,artist_id,collector,tier,rank,holo,tradeable,pulled_at,tracks(title,artist,album,cover,duration,bpm,year,explicit,genre),artists(name,picture,fans,nb_album)", count ? { count: "exact" } : undefined)
-      .eq("owner", owner).order("pulled_at").order("id").range(from, from + 999);   // id breaks ties: an import pulls thousands of cards at the same instant, and without it pages skipped or repeated cards
-    if (onlyTradeable) q = q.eq("tradeable", true);
-    const r = await q;
-    if (r.error) throw r.error;
-    return r;
-  };
-  // the first page gives the total; the others load 6 at a time (a 90 000-card collection took 90 trips in a row)
-  const first = await page(0, true), rows = [...first.data];
-  const total = first.count ?? 0, froms = [];
-  for (let from = 1000; from < total; from += 1000) froms.push(from);
-  for (let i = 0; i < froms.length; i += 6) {
-    const got = await Promise.all(froms.slice(i, i + 6).map(f => page(f)));
-    for (const g of got) rows.push(...g.data);
-  }
-  if (first.data.length === 1000 && total <= rows.length) {      // cards pulled meanwhile: finish page by page
-    for (let from = rows.length; ; from += 1000) { const g = await page(from); rows.push(...g.data); if (g.data.length < 1000) break; }
+  // pages follow the last card seen (pulled_at, id) instead of skipping N rows: each page costs the same, even at the
+  // end of a 90 000-card collection, where an offset made the database walk every card before it (and time out
+  // when the disk is slow). A failed page is tried again before giving up.
+  const rows = [];
+  let last = null;
+  for (;;) {
+    let data;
+    for (let attempt = 0; ; attempt++) {
+      let q = sb.from("cards").select("id,kind,track_id,artist_id,collector,tier,rank,holo,tradeable,pulled_at,tracks(title,artist,album,cover,duration,bpm,year,explicit,genre),artists(name,picture,fans,nb_album)")
+        .eq("owner", owner).order("pulled_at").order("id").limit(1000);   // id breaks ties: an import pulls thousands of cards at the same instant
+      if (onlyTradeable) q = q.eq("tradeable", true);
+      if (last) q = q.gte("pulled_at", last.pulled_at)   // lets the index start right there; the or only sorts out ties
+        .or(`pulled_at.gt."${last.pulled_at}",id.gt.${last.id}`);
+      const r = await q;
+      if (!r.error) { data = r.data; break; }
+      if (attempt >= 2) throw r.error;
+      await new Promise(ok => setTimeout(ok, 1500 * (attempt + 1)));
+    }
+    rows.push(...data);
+    if (data.length < 1000) break;
+    last = data[data.length - 1];
   }
   const map = {};
   for (const r of rows) { const t = r.kind === "artist" ? r.artists : r.tracks; if (t) addCopy(map, r, t); }
