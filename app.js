@@ -708,13 +708,11 @@ function skin(el, name, opts) {           // name: a design, or a function givin
 // the classic booster's cards keep the plain back (light to draw); genre boosters get the 3D Égaliseur back
 const backName = () => { const b = document.documentElement.dataset.back || "plain"; return b === "plain" ? null : "back-" + b; };
 // the classic booster is Le Mur; genre boosters are duotones
-// the season's items worn by the player (profiles.cosmetics, read by online.js): the sachet and the card back
-const worn = slot => { try { return (typeof me !== "undefined" && me && me.cosmetics && me.cosmetics[slot]) || null; } catch (e) { return null; } };
-const classicName = () => worn("pack") || "pack-wall";
+const classicName = () => "pack-wall";
 let tornCut = null;                       // the shape of the last tear, so the pack in the opening is torn the same way
 skin(packBtn, classicName, { sway: true, canTear: () => !busy && !packBtn.disabled, tear: cut => { tornCut = cut; openPack(BOOSTER); } });
 document.documentElement.dataset.back = "plain";
-const studioScript = document.createElement("script"); studioScript.type = "module"; studioScript.src = "studio.js?v=18"; document.head.appendChild(studioScript);
+const studioScript = document.createElement("script"); studioScript.type = "module"; studioScript.src = "studio.js?v=17"; document.head.appendChild(studioScript);
 function renderStock() {
   bigBtn.hidden = !S.big;                // the big boosters won with the VIP pass
   bigBtn.innerHTML = `<b>Ouvrir une Édition Deluxe</b><small>15 cartes, toutes Rare ou mieux · ${S.big || 0} à ouvrir</small>`;
@@ -898,7 +896,7 @@ async function openPack(p, opts = {}) {
   deal.innerHTML = "";
   const rip = document.createElement("div"); rip.className = "rip loading" + (god ? " god" : "");
   const pk = p.el.cloneNode(true); pk.tabIndex = -1; pk.disabled = true; pk.removeAttribute("id");
-  document.documentElement.dataset.back = worn("back") ? worn("back").replace(/^back-/, "") : plain ? "plain" : "eq";
+  document.documentElement.dataset.back = plain ? "plain" : "eq";
   skin(pk, p === BIG ? "pack-big" : plain ? classicName() : "pack-" + TYPES[p.g].k, { live: true, cut: tornCut });   // the copy in the opening
   tornCut = null;
   if (god) pk.classList.add("god");
