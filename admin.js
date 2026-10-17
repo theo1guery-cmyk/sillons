@@ -121,6 +121,11 @@ function buildAdmin() {
         <p class="adm-small" id="admMtState">…</p>
         <textarea id="admMt" maxlength="300" rows="2" placeholder="Message affiché (facultatif). Ex. : on corrige l'ouverture des boosters, retour vers 18 h."></textarea>
         <div class="adm-row"><button class="btn" id="admMtToggle">…</button></div>
+        <h3 class="adm-sep">Réglages du jeu</h3>
+        <p class="adm-small" id="admSwTest">…</p>
+        <div class="adm-row"><button class="btn" id="admSwTestBtn">…</button></div>
+        <p class="adm-small" id="admSwPay">…</p>
+        <div class="adm-row"><button class="btn" id="admSwPayBtn">…</button></div>
         <h3 class="adm-sep" id="admBcT">Message à tous les joueurs</h3>
         <p class="adm-small">Chaque joueur le verra une fois, dans une fenêtre, à sa prochaine connexion (ou dans les 30 secondes s'il joue).</p>
         <textarea id="admBc" maxlength="500" rows="3" placeholder="Ex. : maintenance ce soir à 22 h, le jeu sera coupé 10 minutes."></textarea>
@@ -153,6 +158,15 @@ function buildAdmin() {
     try { await rpc("admin_discord_set", { p_url: u, p_enabled: null }); $("#admDcUrl").value = ""; toast(u ? "Webhook Discord enregistré." : "Webhook Discord retiré."); loadDiscord(); loadLog(); }
     catch (e) { toast(message(e)); }
   };
+  const flip = async (key, ask, done) => {
+    const on = !ADM.sw?.[key];
+    if (ask(on) && !confirm(ask(on))) return;
+    try { await rpc("admin_switch_set", { p_key: key, p_on: on }); toast(done(on)); loadSwitches(); loadLog(); } catch (e) { toast(message(e)); }
+  };
+  $("#admSwTestBtn").onclick = () => flip("test_mode", on => on ? "Remettre le mode test (boosters illimités pour tout le monde) ?" : "Terminer le mode test ? Chaque joueur aura 10 boosters, puis 1 toutes les 10 min.",
+    on => on ? "Mode test activé : boosters illimités." : "Mode test terminé : le stock de boosters est actif.");
+  $("#admSwPayBtn").onclick = () => flip("payments_off", on => on ? "Mettre les paiements en maintenance ?" : "",
+    on => on ? "Paiements en maintenance." : "Paiements rouverts.");
   $("#admMtToggle").onclick = async () => {
     const on = !ADM.maint?.on;
     if (on && !confirm("Couper le jeu pour tous les joueurs (sauf les admins) ?")) return;
@@ -165,6 +179,14 @@ function buildAdmin() {
   };
 }
 
+async function loadSwitches() {
+  try { ADM.sw = await rpc("admin_switches_get"); } catch (e) { $("#admSwTest").textContent = message(e); return; }
+  const t = !!ADM.sw?.test_mode, p = !!ADM.sw?.payments_off;
+  $("#admSwTest").innerHTML = t ? "<b>Mode test</b> : boosters illimités pour tout le monde." : "<b>Jeu en ligne</b> : 10 boosters en stock, 1 de plus toutes les 10 min (3 min avec le Pass VIP).";
+  $("#admSwTestBtn").textContent = t ? "Terminer le mode test" : "Remettre le mode test";
+  $("#admSwPay").innerHTML = p ? "<b>Paiements en maintenance</b> : les achats en euros sont refusés (toi, tu peux tester). Le reste du jeu marche." : "<b>Paiements ouverts</b> : les achats en euros marchent.";
+  const b = $("#admSwPayBtn"); b.textContent = p ? "Rouvrir les paiements" : "Mettre les paiements en maintenance"; b.className = p ? "btn primary" : "btn danger";
+}
 async function loadMaint() {
   try { ADM.maint = await rpc("admin_maintenance_get"); } catch (e) { $("#admMtState").textContent = message(e); return; }
   const on = !!ADM.maint?.on;
@@ -184,7 +206,7 @@ async function loadDiscord() {
 async function renderAdmin() {
   if (!me || !ADM.admin) return show("shop");
   buildAdmin();
-  await Promise.all([loadStats(), loadUsers(), loadLog(), loadDiscord(), loadMaint()]);
+  await Promise.all([loadStats(), loadUsers(), loadLog(), loadDiscord(), loadMaint(), loadSwitches()]);
   clearInterval(ADM.timer);
   ADM.timer = setInterval(() => {
     if (views.admin.hidden || !ADM.admin) return clearInterval(ADM.timer);
@@ -341,7 +363,7 @@ async function showUser(u) {
 const GIFTS = [["track", 4], ["track", 5], ["track", 4, true], ["track", 5, true], ["artist", 4], ["artist", 5], ["artist", 4, true], ["artist", 5, true]]
   .map(([kind, tier, shiny = false]) => ({ kind, tier, shiny }));
 const giftName = g => (g.kind === "artist" ? (g.tier === 5 ? "Artiste Diamant" : "Artiste Platine") : (g.tier === 5 ? "Légendaire" : "Mythique")) + (g.shiny ? " Shiny" : "");
-const ACTIONS = { vinyls: "Vinyles", pass: "Pass Tournée", ban: "Banni", unban: "Débanni", warn: "Averti", broadcast: "Message à tous", maintenance: "Maintenance", streams: "Streams", boosters: "Boosters", discord: "Discord", god: "GOD pack", gift: "Cadeau" };
+const ACTIONS = { vinyls: "Vinyles", pass: "Pass Tournée", ban: "Banni", unban: "Débanni", warn: "Averti", broadcast: "Message à tous", maintenance: "Maintenance", test_mode: "Mode test", payments_off: "Paiements en maintenance", streams: "Streams", boosters: "Boosters", discord: "Discord", god: "GOD pack", gift: "Cadeau" };
 const actionTxt = a => ACTIONS[a] || a;
 async function loadLog() {
   let l;

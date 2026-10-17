@@ -84,6 +84,7 @@ const SHINY_CHANCE = 0.01;               // a Mythique or Légendaire has 1 chan
 const GOD_CHANCE = 1 / 3000;             // a booster turns into a GOD pack: 1 Légendaire + 4 cards that are Mythique or Légendaire (50/50)
 const STOCK_MAX = 10;
 let REFILL_MS = 10 * 60 * 1000;          // 3 min for the VIP of the season (set by pass.js)
+let PAY_OFF = false;                   // real money payments paused from the admin page (read from the server)
 let TEST_MODE = true;                   // unlimited free boosters while the game is being tested (read from the server when signed in)
 // signed-in play lives in online.js; this flag switches the game between the guest (this browser) and account modes
 const Online = { active: false };
