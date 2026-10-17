@@ -46,6 +46,8 @@ const MESSAGES = {
   not_enough_vinyls: "Pas assez de Vinyles.",
   no_big_pack: "Tu n'as pas d'Édition Deluxe à ouvrir : elles se gagnent aux paliers 5, 15 et 25 du Pass VIP.",
   album_buy_closed: "Les titres d'un album ne s'achètent plus : tire-les, échange-les ou trouve-les au marché.",
+  payments_maintenance: "Les paiements sont en maintenance pour le moment. Tout le reste du jeu marche normalement.",
+  bad_switch: "Réglage inconnu.",
   payments_off: "Le paiement n'est pas encore disponible. Réessaie un peu plus tard.",
   bad_pack: "Cette offre n'existe plus.",
   stock_not_empty: "Tu as encore des boosters : ouvre-les d'abord.",
@@ -218,7 +220,7 @@ async function loadProfile() {
 }
 async function loadAll() {
   const [{ data: settings }, cards] = await Promise.all([sb.from("settings").select("*").single(), loadMyCards(), loadWishAndTags()]);
-  if (settings) TEST_MODE = settings.test_mode;
+  if (settings) { TEST_MODE = settings.test_mode; PAY_OFF = !!settings.payments_off; }
   S = { c: cards, opened: 0, dry: 0, stock: STOCK_MAX, stockAt: Date.now() };
   await loadProfile();
 }

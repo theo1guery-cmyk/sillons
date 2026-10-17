@@ -396,6 +396,7 @@ function fireBar() {
 // a Stripe Checkout page for a pack (Edge Function create-checkout), then back to the site with ?achat=ok
 async function checkout(pack, btn) {
   if (!me) return toast("Connecte-toi pour acheter.");
+  if (PAY_OFF && !ADM.admin) return toast(message({ message: "payments_maintenance" }));
   const label = btn?.innerHTML;
   if (btn) { btn.disabled = true; btn.textContent = "Paiement…"; }
   let url = null, err = null;
