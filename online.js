@@ -765,7 +765,7 @@ sb.auth.onAuthStateChange((event, session) => {
   else if (event === "SIGNED_OUT") { leaveAccount(); showLanding(); }
   else if (event === "INITIAL_SESSION") { if (me) leaveAccount(); wantsGame() ? showGame() : showLanding(); }
 });
-setTimeout(() => { if (document.body.classList.contains("booting")) showGame(); }, 5000);   // if the account service is unreachable
+setTimeout(() => { if (document.body.classList.contains("booting")) showLanding(); }, 5000);   // if the account service is unreachable: the welcome page, never a game without account
 
 
 /* ---------- Streams: discarding duplicates ---------- */
@@ -1503,9 +1503,10 @@ function showPrank(x) {
 }
 
 /* ---------- welcome page ---------- */
+// the game needs an account: without one, only the welcome page (sign in / sign up) shows
 const GUEST = "zh-guest";
+try { localStorage.removeItem(GUEST); } catch (e) {}   // the old "try without an account" choice
 const wantsGame = () => {
-  try { if (localStorage.getItem(GUEST) === "1") return true; } catch (e) {}
   return /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && /^#(god|demo|shiny|galerie|platine|diamant|platine-shiny|diamant-shiny)$/.test(location.hash);   // local previews
 };
 function showGame() {
@@ -1526,7 +1527,6 @@ function landTab(mode) {
   renderAuth(mode);
 }
 document.querySelectorAll(".land-tabs button").forEach(b => b.onclick = () => landTab(b.dataset.mode));
-$("#landGuest").onclick = () => { try { localStorage.setItem(GUEST, "1"); } catch (e) {} showGame(); };
 $("#landPrivacy").onclick = () => openAuth("privacy");
 
 // the wall: real cards drifting in three columns
