@@ -23,6 +23,8 @@ function gradeBtn(id, after) {
 function gradeExtras(c) {
   const own = S.c[ck(c)], go = gradeBtn("mGrade", "mLink"), crack = gradeBtn("mCrack", "mGrade");
   go.hidden = crack.hidden = true;
+  if (c._grade) { const box = $("#mCard"); box.innerHTML = ""; box.onpointermove = box.onpointerleave = null;     // a graded card from the market
+    const slab = slabEl(c, !!c._grade.holo && c.tier >= MYTH, c._grade); slab.classList.add("in-modal"); box.appendChild(slab); tiltSlab(slab); return; }
   if (!Online.active || !own) return;
   const best = bestGraded(own);
   if (best) {                                               // the sheet shows the case of the best graded copy
@@ -86,7 +88,7 @@ const sleepG = ms => new Promise(r => setTimeout(r, ms));
 // the 3D lab: its own file, fetched the first time a card is graded; null if WebGL or the CDN fails
 let lab = null, labP = null;
 const loadLab = host => labP ??= Promise.all(['900 40px "Unbounded"', '800 40px "Instrument Sans"', '700 40px "Instrument Sans"', '500 20px "DM Mono"'].map(f => document.fonts.load(f)))
-  .then(() => import("./grade3d.js?v=14")).then(m => m.create(host)).then(async x => { await x.warmup(); return lab = x; })
+  .then(() => import("./grade3d.js?v=15")).then(m => m.create(host)).then(async x => { await x.warmup(); return lab = x; })
   .catch(e => { console.warn("Labo 3D indisponible", e); labP = null; return null; });
 const labelOf = (c, holo, g) => ({
   l1: isArtist(c) ? "ZIK HUNTER · ARTISTE" : `${c.y ? c.y + " " : ""}ZIK HUNTER`, l2: c.t.toUpperCase(),

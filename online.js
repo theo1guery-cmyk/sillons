@@ -929,9 +929,10 @@ async function renderDefis() {
 /* ---------- market: La Bourse aux disques ---------- */
 const MK = { q: "", tier: -1, genre: -1, sort: "recent", page: 0, items: [], more: false, seq: 0, sellTrack: null };
 const LISTING_SELECT = "id,seller,card_id,kind,track_id,artist_id,picture,tier,holo,title,artist,genre,price,created_at,expires_at," +
-  "seller_p:profiles!listings_seller_fkey(pseudo,title,cosmetics),tracks(album,cover,duration,bpm,year,explicit),artists(nb_album),cards(rank,collector)";
+  "seller_p:profiles!listings_seller_fkey(pseudo,title,cosmetics),tracks(album,cover,duration,bpm,year,explicit),artists(nb_album),cards(rank,collector,grade,grade_cert,grade_pop)";
 const nowIso = () => new Date().toISOString();
-function listingCard(l) {
+function listingCard(l) { const c = listingCard0(l); if (l.cards?.grade) c._grade = { grade: l.cards.grade, cert: l.cards.grade_cert, pop: l.cards.grade_pop, holo: l.holo }; return c; }
+function listingCard0(l) {
   if (l.kind === "artist") return { kind: "artist", id: "a" + l.artist_id, aid: l.artist_id, t: l.title, a: "Artiste", al: "", cov: l.picture,
     rank: l.cards?.rank || 0, albums: l.artists?.nb_album || 0, tier: l.tier, g: null };
   const t = l.tracks || {};
@@ -993,7 +994,7 @@ function listingEl(l) {
   const mine = l.seller === me.id, c = listingCard(l);
   const el = document.createElement("div"); el.className = "listing";
   const cardBtn = document.createElement("button"); cardBtn.className = "cell"; cardBtn.setAttribute("aria-label", `${c.t} de ${c.a}`);
-  cardBtn.appendChild(cardEl(c, l.holo)); cardBtn.onclick = () => openModal(c, l.holo);
+  cardBtn.appendChild(c._grade ? slabEl(c, l.holo, c._grade) : cardEl(c, l.holo)); cardBtn.onclick = () => openModal(c, l.holo);   // a graded card is sold in its case
   const days = Math.max(0, Math.ceil((Date.parse(l.expires_at) - Date.now()) / 86400000));
   const foot = document.createElement("div"); foot.className = "l-foot";
   foot.innerHTML = `<b class="price"><i class="coin" aria-hidden="true"></i>${streamsTxt(l.price)}</b><small>${mine ? "ta vente" : "par " + (l.seller_p?.cosmetics?.name ? `<b class="${esc(l.seller_p.cosmetics.name)}">${esc(l.seller_p.pseudo)}</b>` : esc(l.seller_p?.pseudo || "?"))} · ${days} j</small>`;

@@ -216,7 +216,7 @@ export async function create(host) {
     [PINCH, [-.05, .2, .26], [-.005, .01, 0]], [DOWN, [.02, .19, .25], [.02, .01, 0]], [CLICK, [CASE_X + .01, .16, .2], [CASE_X, .005, -.01]],
     [PRINT0, [LBL_OUT.x - .005, .085, .13], [LBL_OUT.x, .015, LBL_OUT.z]], [PRINT1, [LBL_OUT.x + .002, .075, .1], [LBL_OUT.x, .02, LBL_OUT.z]],
     [POCKET0, [LBL_OUT.x - .03, .13, .17], [(LBL_OUT.x + CASE_X) / 2, .01, -.02]], [POCKET1, [CASE_X, .16, .17], [CASE_X, .005, -.02]],
-    [STAND0 + .3, [CASE_X, .1, .22], [CASE_X, .035, 0]], [SWAP + 3, [CASE_X + .01, .09, .27], [CASE_X, .045, 0]]];
+    [STAND0 + .3, [CASE_X, .1, .22], [CASE_X, .055, 0]], [SWAP + 3, [CASE_X + .01, .1, .27], [CASE_X, .07, 0]]];
   const portrait = () => clamp(.9 / camera.aspect, 1, 2.1);
   function camAt(t) { let i = 0; while (i < KEYS.length - 2 && t > KEYS[i + 1][0]) i++; const a = KEYS[i], b = KEYS[i + 1], k = ease.inOut(seg(t, a[0], b[0])); return [V(...a[1]).lerp(V(...b[1]), k), V(...a[2]).lerp(V(...b[2]), k)]; }
   function resize() { const w = host.clientWidth || innerWidth, h = host.clientHeight || innerHeight; renderer.setSize(w, h, false); composer.setSize(w, h); camera.aspect = w / h; camera.updateProjectionMatrix(); }
@@ -269,7 +269,8 @@ export async function create(host) {
     const key2 = Math.round(up * 140); if (key2 !== printed) { printed = key2; drawLabel(up, G === 10 && t >= LAND); }
     // standing up to face the camera, case, card and label together
     const sk = ease.inOut(seg(t, STAND0, SWAP - .2));
-    slab.position.set(CASE0.x, lerp(0, .04, sk) + bump, lerp(CASE0.z, -CARD_Z * .2, sk)); slab.rotation.x = sk * Math.PI * .42;   // the label end goes up, the card faces the camera
+    slab.position.set(CASE0.x, lerp(0, SL / 2 * Math.sin(Math.PI * .42) + .006, sk) + bump,   // high enough: the lower end clears the mat
+       lerp(CASE0.z, -CARD_Z * .2, sk)); slab.rotation.x = sk * Math.PI * .42;   // the label end goes up, the card faces the camera
     if (t >= STAND0) { cardG.position.copy(slab.localToWorld(V(0, ST * .5 + CT / 2 - .0006, CARD_Z))); cardG.rotation.copy(slab.rotation);
       label.position.copy(slab.localToWorld(V(0, ST + .0006, LABEL_Z))); label.rotation.copy(slab.rotation); }
     else if (t < PINCH + .15 || t >= DOWN + .25) cardG.rotation.set(0, 0, 0);
