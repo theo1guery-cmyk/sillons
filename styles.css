@@ -368,7 +368,7 @@ img{max-width:100%}
 .wallet{border:1px solid var(--brass);border-radius:16px;padding:16px;display:grid;align-content:center;gap:2px;background:linear-gradient(160deg,rgba(231,177,74,.14),transparent)}
 .wallet small{color:var(--muted);font-family:var(--mono);font-size:.72rem;text-transform:uppercase;letter-spacing:.08em}
 .wallet b{font-family:var(--display);font-size:2rem;color:var(--brass);line-height:1.1;font-variant-numeric:tabular-nums}
-.wallet span{font-size:.85rem;color:var(--muted)}
+.wallet>span{font-size:.85rem;color:var(--muted)}
 .login-box{border:1px solid var(--line);border-radius:16px;padding:14px 16px;background:var(--felt-2);display:grid;gap:12px;align-content:start}
 .login-box small{display:block;color:var(--muted);font-size:.84rem;margin-top:2px}
 .login-box .btn{justify-self:start}
@@ -785,8 +785,16 @@ header.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;just
 .pill small{font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 .pill.streams{border-color:rgba(231,177,74,.45);background:linear-gradient(180deg,rgba(231,177,74,.16),rgba(231,177,74,.04));align-items:center}
 .pill.streams b{color:#ffd98a}
+.vin{display:inline-block;width:1.05em;height:1.05em;min-width:15px;min-height:15px;flex:none;vertical-align:-.16em;background:url(brand/vinyl.svg) center/contain no-repeat;filter:drop-shadow(0 0 5px rgba(176,92,255,.55))}
+.pill.vinyls{border-color:rgba(176,92,255,.5);background:linear-gradient(180deg,rgba(176,92,255,.18),rgba(176,92,255,.04));align-items:center}
+.pill.vinyls b{color:#f0c8ff}
+.coin.coin-fly{position:fixed;left:0;top:0;width:22px;height:22px;margin:-11px 0 0 -11px;z-index:9999;pointer-events:none;will-change:transform}
+.coin-plus{position:fixed;z-index:9999;pointer-events:none;transform:translateX(-50%);font-family:var(--display);font-weight:800;font-size:.95rem;color:#ffd98a;text-shadow:0 0 12px rgba(231,177,74,.8),0 2px 4px rgba(0,0,0,.6);animation:coinPlus 1.6s ease-out forwards}
+@keyframes coinPlus{0%{opacity:0;transform:translate(-50%,-6px) scale(.8)}15%{opacity:1;transform:translate(-50%,0) scale(1.1)}70%{opacity:1}100%{opacity:0;transform:translate(-50%,14px)}}
 .pill.leg b{color:var(--r5)}.pill.myth b{color:var(--r4)}
-.coin{width:15px;height:15px;border-radius:50%;flex:none;background:radial-gradient(circle,#2a1d05 0 18%,transparent 20%),var(--gold-grad);box-shadow:0 0 0 1px #8a6218,0 0 10px rgba(231,177,74,.5)}
+.coin{display:inline-block;width:1.05em;height:1.05em;min-width:15px;min-height:15px;border-radius:50%;flex:none;vertical-align:-.16em;background:url(brand/streams-coin.svg) center/contain no-repeat;filter:drop-shadow(0 0 5px rgba(231,177,74,.45))}
+.wallet b{display:flex;align-items:center;gap:10px}.wallet b .coin{width:1em;height:1em}
+.offer .price b,.wallet-mini b,.l-foot .price,.reward{display:inline-flex;align-items:center;gap:6px}
 .account .btn{padding:9px 16px}
 .player{display:flex;align-items:center;gap:10px;padding:5px 14px 5px 5px;border-radius:99px;background:var(--glass);border:1px solid var(--edge);color:var(--ink);text-align:left}
 .player:hover{border-color:var(--edge-hi)}
@@ -896,7 +904,7 @@ footer.note{color:#6f6681;border-top:1px solid var(--edge);padding-top:16px}
   .main{padding:0 16px 104px}
   header.top{margin:0 -16px 18px;padding:10px 16px}
   .top-brand{display:block}
-  .pill.opened,.counters .pill:not(.streams):not(.leg){display:none}
+  .pill.opened,.counters .pill:not(.streams):not(.vinyls){display:none}
   .player .who{display:none}
   .player{padding:4px}
   #view-shop .shelf{grid-template-columns:minmax(0,1fr);padding:26px 18px;gap:22px;min-height:0}
@@ -1052,7 +1060,8 @@ body.fx-on{overflow:hidden}
 .fx-screen.three.s-hold .fx-card{animation:float 3.2s ease-in-out infinite}
 .fx-screen.three.s-out .fx-gl{opacity:0;transition-duration:.45s}
 /* the signed sleeve (Platine and Diamant artists) has its own canvas; only one of the two 3D scenes shows */
-.fx-screen.sleeve .fx-gl:not(.fx-gl-sleeve),.fx-screen:not(.sleeve) .fx-gl-sleeve{display:none}
+/* !important: three.js puts display:block on its canvas, which beat this rule — the sleeve showed through a GOD pack */
+.fx-screen.sleeve .fx-gl:not(.fx-gl-sleeve),.fx-screen:not(.sleeve) .fx-gl-sleeve{display:none!important}
 .fx-screen.sleeve .fx-gl{transition-duration:.2s}
 .fx-screen.sleeve.s-reveal .flipper{animation:sleeveTurn .75s cubic-bezier(.3,1.3,.45,1) both}   /* the record was edge-on: the card finishes its turn */
 @keyframes sleeveTurn{from{transform:rotateY(90deg)}to{transform:rotateY(180deg)}}

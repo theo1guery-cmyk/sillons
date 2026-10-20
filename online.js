@@ -16,6 +16,15 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { st
 const backHere = () => location.origin + location.pathname;
 
 const MESSAGES = {
+  account_banned: "Ton compte est suspendu.",
+  maintenance: "Le jeu est en maintenance. On revient très vite !",
+  not_admin: "Réservé aux admins.",
+  cannot_ban_admin: "Impossible de bannir un admin.",
+  user_not_found: "Joueur introuvable.",
+  empty_message: "Le message est vide.",
+  bad_amount: "Montant invalide.",
+  card_not_found: "Carte introuvable (déjà supprimée ?).",
+  bad_webhook: "Adresse de webhook Discord invalide (elle commence par https://discord.com/api/webhooks/).",
   not_signed_in: "Connecte-toi pour faire ça.",
   no_stock: "Plus de booster pour l'instant. Le prochain arrive bientôt.",
   too_many_open_packs: "Trop de boosters en cours d'ouverture. Attends quelques secondes.",
@@ -33,6 +42,26 @@ const MESSAGES = {
   self_trade: "Tu ne peux pas échanger avec toi-même.",
   already_imported: "Ta collection a déjà été importée.",
   already_claimed: "Déjà récupéré.",
+  no_season: "Pas de saison en cours.",
+  not_enough_vinyls: "Pas assez de Vinyles.",
+  no_big_pack: "Tu n'as pas d'Édition Deluxe à ouvrir : elles se gagnent aux paliers 5, 15 et 25 du Pass VIP.",
+  album_buy_closed: "Les titres d'un album ne s'achètent plus : tire-les, échange-les ou trouve-les au marché.",
+  payments_maintenance: "Les paiements sont en maintenance pour le moment. Tout le reste du jeu marche normalement.",
+  bad_switch: "Réglage inconnu.",
+  payments_off: "Le paiement n'est pas encore disponible. Réessaie un peu plus tard.",
+  bad_pack: "Cette offre n'existe plus.",
+  stock_not_empty: "Tu as encore des boosters : ouvre-les d'abord.",
+  pity_far: "Ta Mythique garantie est encore trop loin pour cette offre.",
+  album_far: "Cet album n'est pas encore assez avancé pour acheter le titre manquant.",
+  album_not_found: "Cet album n'est pas disponible.",
+  offer_expired: "Cette offre n'est plus disponible.",
+  offer_used: "Tu as déjà profité de cette offre.",
+  not_signed_in: "Connecte-toi pour acheter.",
+  max_tier: "Tu as déjà atteint le dernier palier.",
+  already_premium: "Tu as déjà le Pass VIP.",
+  tier_locked: "Tu n'as pas encore atteint ce palier.",
+  premium_only: "Cette récompense est réservée au Pass VIP.",
+  gift_pending: "Une carte t'attend déjà dans ton prochain booster : ouvre-le avant de récupérer celle-ci.",
   not_done: "Pas encore terminé.",
   not_today: "Ce défi n'est plus disponible aujourd'hui.",
   keep_one: "Tu dois garder au moins un exemplaire de chaque carte.",
@@ -48,6 +77,7 @@ const MESSAGES = {
   listing_closed: "Cette carte n'est plus en vente.",
   own_listing: "C'est ta propre annonce.",
   album_incomplete: "Il te manque encore des titres de cet album.",
+  album_cards_used: "Ces cartes ont déjà servi à compléter cet album pour un autre joueur : il te faut tes propres exemplaires.",
   collector_card: "Une carte Collector ne se défausse pas.",
   wishlist_full: "Ta liste de souhaits est pleine (300 cartes).",
   deck_needs_five: "Il faut 5 morceaux dans ton deck de clash.",
@@ -107,20 +137,80 @@ function addCopy(map, r, t) {
     grade: r.grade || null, cert: r.grade_cert || null, pop: r.grade_pop || null });   // a graded copy is sealed in its case
   return c;
 }
-async function fetchCards(owner, onlyTradeable) {
+const CARD_COLS = "id,kind,track_id,artist_id,collector,tier,rank,holo,tradeable,pulled_at,grade,grade_cert,grade_pop,tracks(title,artist,album,cover,duration,bpm,year,explicit,genre),artists(name,picture,fans,nb_album)";
+// pages follow the last card seen (pulled_at, id) instead of skipping N rows: each page costs the same, even at the
+// end of a 90 000-card collection, where an offset made the database walk every card before it (and time out when
+// the disk is slow). A failed page is tried again before giving up. since: only cards pulled from that instant.
+async function fetchRows(owner, onlyTradeable, since = null) {
   const rows = [];
-  for (let from = 0; ; from += 1000) {
-    let q = sb.from("cards").select("id,kind,track_id,artist_id,collector,tier,rank,holo,tradeable,pulled_at,grade,grade_cert,grade_pop,tracks(title,artist,album,cover,duration,bpm,year,explicit,genre),artists(name,picture,fans,nb_album)")
-      .eq("owner", owner).order("pulled_at").order("id").range(from, from + 999);   // id breaks ties: an import pulls thousands of cards at the same instant, and without it pages skipped or repeated cards
-    if (onlyTradeable) q = q.eq("tradeable", true);
-    const { data, error } = await q;
-    if (error) throw error;
+  let last = null;
+  for (;;) {
+    let data;
+    for (let attempt = 0; ; attempt++) {
+      let q = sb.from("cards").select(CARD_COLS)
+        .eq("owner", owner).order("pulled_at").order("id").limit(1000);   // id breaks ties: an import pulls thousands of cards at the same instant
+      if (onlyTradeable) q = q.eq("tradeable", true);
+      if (last) q = q.gte("pulled_at", last.pulled_at)   // lets the index start right there; the or only sorts out ties
+        .or(`pulled_at.gt."${last.pulled_at}",id.gt.${last.id}`);
+      else if (since) q = q.gte("pulled_at", since);
+      const r = await q;
+      if (!r.error) { data = r.data; break; }
+      if (attempt >= 2) throw r.error;
+      await new Promise(ok => setTimeout(ok, 1500 * (attempt + 1)));
+    }
     rows.push(...data);
     if (data.length < 1000) break;
+    last = data[data.length - 1];
   }
+  return rows;
+}
+function rowsToMap(rows) {
   const map = {};
   for (const r of rows) { const t = r.kind === "artist" ? r.artists : r.tracks; if (t) addCopy(map, r, t); }
   return map;
+}
+async function fetchCards(owner, onlyTradeable) { return rowsToMap(await fetchRows(owner, onlyTradeable)); }
+
+// my collection is kept in the browser (IndexedDB): at sign-in only the cards pulled since the last visit come down.
+// profiles.cards_rev moves when a card leaves or changes (trade, sale, discard): then everything is downloaded again,
+// as it is once a week (covers or titles fixed meanwhile).
+const CARDS_CACHE = 1;                           // raise it to drop every browser's copy
+const IDB = {
+  db: null,
+  open() {
+    return this.db || (this.db = new Promise((ok, ko) => {
+      const r = indexedDB.open("zikhunter", 1);
+      r.onupgradeneeded = () => r.result.createObjectStore("kv");
+      r.onsuccess = () => ok(r.result); r.onerror = () => ko(r.error);
+    }));
+  },
+  async get(k) {
+    try { const db = await this.open(); return await new Promise((ok, ko) => { const q = db.transaction("kv").objectStore("kv").get(k); q.onsuccess = () => ok(q.result); q.onerror = () => ko(q.error); }); }
+    catch (e) { return null; }
+  },
+  async set(k, v) {
+    try { const db = await this.open(); await new Promise((ok, ko) => { const t = db.transaction("kv", "readwrite"); t.objectStore("kv").put(v, k); t.oncomplete = ok; t.onerror = () => ko(t.error); }); }
+    catch (e) {}
+  },
+};
+async function loadMyCards() {
+  const p = await sb.from("profiles").select("cards_rev").eq("id", me.id).single();
+  const rev = p.error ? null : p.data.cards_rev;   // no cards_rev yet: no copy kept
+  const key = "cards:" + me.id;
+  const old = rev == null ? null : await IDB.get(key);
+  if (old && old.v === CARDS_CACHE && old.rev === rev && Date.now() - old.at < 7 * 864e5 && old.rows?.length) {
+    // from 10 minutes before the last card: a booster still being opened when the copy was saved gets in too
+    const since = new Date(Date.parse(old.rows[old.rows.length - 1].pulled_at) - 10 * 60e3).toISOString();
+    const known = new Set();
+    for (let i = old.rows.length - 1; i >= 0 && Date.parse(old.rows[i].pulled_at) >= Date.parse(since); i--) known.add(old.rows[i].id);
+    const fresh = (await fetchRows(me.id, false, since)).filter(r => !known.has(r.id));
+    const rows = fresh.length ? old.rows.concat(fresh) : old.rows;
+    if (fresh.length) IDB.set(key, { v: CARDS_CACHE, rev, at: old.at, rows });
+    return rowsToMap(rows);
+  }
+  const rows = await fetchRows(me.id, false);
+  if (rev != null) IDB.set(key, { v: CARDS_CACHE, rev, at: Date.now(), rows });
+  return rowsToMap(rows);
 }
 async function loadProfile() {
   const { data, error } = await sb.from("profiles").select("*").eq("id", me.id).single();
@@ -128,11 +218,13 @@ async function loadProfile() {
   Object.assign(me, data);
   S.opened = data.opened; S.dry = data.dry; S.gods = data.gods;
   S.stock = data.stock; S.stockAt = Date.parse(data.stock_at);
-  S.streams = data.streams;
+  const before = S.streams;
+  S.streams = data.streams; S.vinyls = data.vinyls || 0; S.big = data.big_packs || 0;
+  if (before != null && data.streams > before) coinRain(data.streams - before, before);   // Streams won: coins fall in the counter
 }
 async function loadAll() {
-  const [{ data: settings }, cards] = await Promise.all([sb.from("settings").select("*").single(), fetchCards(me.id), loadWishAndTags()]);
-  if (settings) TEST_MODE = settings.test_mode;
+  const [{ data: settings }, cards] = await Promise.all([sb.from("settings").select("*").single(), loadMyCards(), loadWishAndTags()]);
+  if (settings) { TEST_MODE = settings.test_mode; PAY_OFF = !!settings.payments_off; }
   S = { c: cards, opened: 0, dry: 0, stock: STOCK_MAX, stockAt: Date.now() };
   await loadProfile();
 }
@@ -153,16 +245,17 @@ async function enterAccount(user) {
   try {
     await loadAll();
     Online.active = true;
-    $("#tab-trades").hidden = false; $("#tab-grading").hidden = false; $("#tab-defis").hidden = false; $("#tab-market").hidden = false; $("#tab-albums").hidden = false; $("#tab-duels").hidden = false; $("#navCommunity").hidden = false;
+    $("#tab-trades").hidden = false; $("#tab-grading").hidden = false; $("#tab-defis").hidden = false; $("#tab-market").hidden = false; $("#tab-albums").hidden = false; $("#tab-duels").hidden = false; $("#tab-pass").hidden = false; $("#navCommunity").hidden = false;
     unseatTable();                       // closes the opening table and puts the booster back on its shelf
     refreshViews();
-    pollOffers(); updateDefisBadge();
+    pollOffers(); updateDefisBadge(); Online.loadPass?.();
   } catch (e) {
     me = null; toast(message(e));
   }
 }
 function leaveAccount() {
   me = null; Online.active = false;
+  Online.adminOff?.();
   WISH.clear(); TAGS.length = 0; CARD_TAGS.clear(); F.tag = null;
   $("#tagBar").hidden = true; $("#marketBadge").hidden = true;
   try { const p = JSON.parse(localStorage.getItem(LS)); S = p && p.c ? p : { c: {}, opened: 0, stock: STOCK_MAX, stockAt: Date.now(), dry: 0 }; }
@@ -171,22 +264,81 @@ function leaveAccount() {
   $("#tab-trades").hidden = true; $("#tradeBadge").hidden = true; $("#tab-grading").hidden = true;
   $("#tab-defis").hidden = true; $("#defisBadge").hidden = true; $("#tab-market").hidden = true; $("#tab-albums").hidden = true; $("#albumsBadge").hidden = true;
   $("#tab-duels").hidden = true; $("#duelsBadge").hidden = true; $("#navCommunity").hidden = true;
-  if (!views.grading.hidden || !views.trades.hidden || !views.defis.hidden || !views.market.hidden || !views.albums.hidden || !views.duels.hidden) show("shop");
+  $("#tab-pass").hidden = true; $("#tab-grading").hidden = true; $("#passBadge").hidden = true;
+  if (!views.grading.hidden || !views.trades.hidden || !views.defis.hidden || !views.market.hidden || !views.albums.hidden || !views.duels.hidden || !views.pass.hidden) show("shop");
   unseatTable();
   refreshViews();
 }
 
+/* ---------- the server's pool: what this browser found on Deezer (checked by the server when drawn) ---------- */
+let pooling = false;
+async function flushPool() {
+  if (!me || pooling || (!POOL_Q.tracks.length && !POOL_Q.artists.length)) return;
+  pooling = true;
+  const tracks = POOL_Q.tracks.splice(0, 250), artists = POOL_Q.artists.splice(0, 300 - tracks.length);
+  try { await rpc("pool_offer", { p_tracks: tracks, p_artists: artists }); } catch (e) {}
+  pooling = false;
+}
+setInterval(flushPool, 20000);
+// the random track numbers drawn by the server (Communes and Peu communes come from them): looked up here, reported back
+const PROBE = { ids: [], loading: null, done: [], off: false };
+Online.probeId = async () => {
+  if (!me || PROBE.off) return null;
+  if (!PROBE.ids.length) {
+    PROBE.loading ||= rpc("pool_probe_ids", { p_n: 40 }).then(ids => {
+      PROBE.ids.push(...(ids || []));
+      if (!ids?.length) { PROBE.off = true; setTimeout(() => { PROBE.off = false; }, 3600e3); }   // enough for today
+    }).catch(() => { PROBE.off = true; setTimeout(() => { PROBE.off = false; }, 600e3); }).finally(() => { PROBE.loading = null; });
+    await PROBE.loading;
+  }
+  return PROBE.ids.shift() || null;
+};
+Online.probeDone = (id, t) => {
+  PROBE.done.push(t ? { id, rank: t.rank || 0 } : { id });
+  if (PROBE.done.length >= 40) flushProbes();
+};
+async function flushProbes() {
+  if (!me || !PROBE.done.length) return;
+  const batch = PROBE.done.splice(0, 100);
+  try { await rpc("pool_probe_report", { p: batch }); } catch (e) {}
+}
+setInterval(flushProbes, 30000);
+
+// the server's walk through Deezer, helped by this browser while the game is open and idle: it visits the artists the
+// server hands it (top tracks, related artists) and reports them
+const WALK = { ids: [], busy: false, off: 0 };
+async function walkStep() {
+  if (!BOT_TAB || !me || WALK.busy || document.hidden || busy || queue.length || Date.now() < WALK.off) return;
+  WALK.busy = true;
+  try {
+    if (!WALK.ids.length) {
+      WALK.ids = (await rpc("harvest_take", { p_n: 5 })) || [];
+      if (!WALK.ids.length) { WALK.off = Date.now() + 600e3; return; }   // nothing to visit, or enough for today
+    }
+    const id = WALK.ids.shift();
+    const rel = await dz(`artist/${id}/related`, { limit: 50 }).catch(() => ({}));
+    const tracks = [];                           // every track down to Peu commune, up to 5 pages of 100
+    for (let index = 0; index < 500; index += 100) {
+      const page = (await dz(`artist/${id}/top`, { limit: 100, index }).catch(() => ({}))).data || [];
+      const good = page.filter(t => t.id && t.rank >= 250000);
+      tracks.push(...good.map(t => ({ id: t.id, rank: t.rank })));
+      if (page.length < 100 || good.length < page.length) break;
+    }
+    await rpc("harvest_report", {
+      p_artist: id,
+      p_tracks: tracks,
+      p_related: (rel.data || []).filter(a => a.id && a.nb_fan >= 1000).map(a => ({ id: a.id, fans: a.nb_fan })),
+    });
+  } catch (e) { WALK.off = Date.now() + 60e3; }
+  finally { WALK.busy = false; }
+}
+setInterval(walkStep, 2500);
+
 /* ---------- boosters with an account ---------- */
-Object.assign(Online, {
-  message,
-  async startPack(p) {
-    const d = await rpc("start_pack", { p_kind: p.g >= 0 ? "genre" : "booster", p_genre: p.g >= 0 ? p.g : null });
-    return d;
-  },
-  async abandon(pk) { try { await rpc("abandon_pack", { p_pack: pk.id }); await loadProfile(); } catch (e) {} },
-  // the browser finds tracks for the rarities the server rolled; the server checks them on Deezer
-  async drawPack(p, pk) {
-    const used = new Set(), usedArtists = new Set(), raws = [];
+async function proposals(p, pk) {
+  const used = new Set(), usedArtists = new Set(), raws = [];
+  QUICK_FIND = true;                             // only fallback proposals: the server draws the cards
+  try {
     for (const [i, tier] of pk.slots.entries()) {
       if (pk.artists?.[i]) {                     // an artist card: the server checks its fans on Deezer
         const a = await findArtist(tier, usedArtists);
@@ -196,8 +348,28 @@ Object.assign(Online, {
         if (t) { used.add(t.id); raws.push(t); }
       }
     }
-    if (raws.length < 5) throw { code: "short" };
-    const res = await rpc("finish_pack", { p_pack: pk.id, p_tracks: raws.map(t => t.id) });
+  } finally { QUICK_FIND = false; }
+  if (raws.length < 5) throw { code: "short" };
+  return raws.map(t => t.id);
+}
+Object.assign(Online, {
+  message,
+  async startPack(p) {
+    const d = await rpc("start_pack", { p_kind: p.big ? "big" : p.g >= 0 ? "genre" : "booster", p_genre: p.g >= 0 ? p.g : null, p_pay: p.pay === "vinyls" ? "vinyls" : "streams" });
+    return d;
+  },
+  async abandon(pk) { try { await rpc("abandon_pack", { p_pack: pk.id }); await loadProfile(); } catch (e) {} },
+  // the browser proposes tracks for the rarities the server rolled; the server draws the cards from its pool (the
+  // proposals are only used when the pool has nothing for a slot) and checks them on Deezer
+  async drawPack(p, pk) {
+    // the server draws first; the browser searches Deezer only when the pool had nothing for a slot (a big
+    // collection made those searches run every try, since most found tracks were already owned)
+    let res;
+    try { res = await rpc("finish_pack", { p_pack: pk.id, p_tracks: pk.slots.map(() => 0) }); }
+    catch (e) {
+      if (!/need_proposals|_not_found 0\b/.test(e?.message || "")) throw e;
+      res = await rpc("finish_pack", { p_pack: pk.id, p_tracks: await proposals(p, pk) });
+    }
     const trackIds = res.filter(r => r.kind !== "artist").map(r => r.track);
     const artistIds = res.filter(r => r.kind === "artist").map(r => r.track);
     const [tq, aq] = await Promise.all([
@@ -215,7 +387,8 @@ Object.assign(Online, {
       return { c: cardFromRow(row, meta), holo: r.holo, isNew: r.new, wanted: r.wanted };
     }).sort((a, b) => a.c.tier - b.c.tier || a.c.rank - b.c.rank);
     await loadProfile();
-    updateDefisBadge();
+    flushPool();
+    updateDefisBadge(); Online.loadPass?.(); Online.afterPack?.(pulls, pk.god);
     return pulls;
   },
   async reset() {
@@ -240,7 +413,8 @@ function renderAccount() {
     box.innerHTML = `<button class="btn primary" id="signIn">Se connecter</button>`;
     $("#signIn").onclick = () => openAuth("in");
   } else {
-    box.innerHTML = `<button class="player" id="myAccount" aria-label="Mon compte"><span class="avatar" aria-hidden="true">${esc((me.pseudo || "?").slice(0, 1).toUpperCase())}</span><span class="who"><b>${esc(me.pseudo || "Mon compte")}</b>${me.title ? `<small>${esc(me.title)}</small>` : `<small>Joueur</small>`}</span></button>`;
+    const cos = me.cosmetics || {};
+    box.innerHTML = `<button class="player" id="myAccount" aria-label="Mon compte"><span class="avatar${cos.avatar ? " av-" + esc(cos.avatar) : ""}" aria-hidden="true">${cos.avatar ? `<span>${esc((me.pseudo || "?").slice(0, 1).toUpperCase())}</span><i></i><i></i><i></i><i></i>` : esc((me.pseudo || "?").slice(0, 1).toUpperCase())}</span><span class="who"><b${cos.name ? ` class="${esc(cos.name)}"` : ""}>${esc(me.pseudo || "Mon compte")}</b>${me.title ? `<small>${esc(me.title)}</small>` : `<small>Joueur</small>`}</span></button>`;
     $("#myAccount").onclick = () => openAuth("account");
   }
 }
@@ -395,24 +569,8 @@ function renderAuth(mode, note = "") {
 }
 $("#privacyLink").onclick = () => openAuth("privacy");
 
-/* ---------- import of the guest collection (once, cards stay untradeable) ---------- */
-function renderImport() {
-  const box = $("#importBox");
-  const local = (() => { try { return JSON.parse(localStorage.getItem(LS)); } catch (e) { return null; } })();
-  const cards = local && local.c ? Object.values(local.c) : [];
-  if (!me || me.imported || !cards.length) { box.hidden = true; return; }
-  const copies = cards.reduce((a, c) => a + (c.n || 1), 0);
-  box.hidden = false;
-  box.innerHTML = `<p><b>Tu as ${fmt(copies)} cartes jouées sans compte sur cet appareil.</b> Tu peux les ajouter à ton compte pour les retrouver partout et les échanger.</p>
-    <div class="btns"><button class="btn primary" id="doImport">Ajouter à mon compte</button></div>`;
-  $("#doImport").onclick = async () => {
-    $("#doImport").disabled = true; $("#doImport").textContent = "Import…";
-    try {
-      const n = await rpc("import_collection", { p_cards: cards, p_opened: local.opened || 0 });
-      await loadAll(); refreshViews(); toast(fmt(n) + " cartes ajoutées à ton compte.");
-    } catch (e) { toast(message(e)); $("#doImport").disabled = false; $("#doImport").textContent = "Ajouter à mon compte"; }
-  };
-}
+/* ---------- import of the guest collection: closed (the server trusted the cards sent by the browser) ---------- */
+function renderImport() { $("#importBox").hidden = true; }
 
 /* ---------- trades ---------- */
 const OFFER_SELECT = "id,status,created_at,decided_at,from_user,to_user,from:profiles!offers_from_user_fkey(pseudo),to:profiles!offers_to_user_fkey(pseudo)," +
@@ -428,6 +586,7 @@ async function pollOffers() {
     $("#tradeBadge").hidden = !count; $("#tradeBadge").textContent = count || "";
   } catch (e) {}
   checkNotifications();
+  Online.beat?.();                       // presence for the admin page, and the ban check
   pollTimer = setTimeout(pollOffers, 30000);
 }
 
@@ -521,11 +680,11 @@ $("#playerForm").onsubmit = e => { e.preventDefault(); clearTimeout(playerTimer)
 async function findPlayers() {
   const q = $("#playerQ").value.trim(), box = $("#players");
   if (q.length < 2) { box.innerHTML = ""; return; }
-  const { data, error } = await sb.from("profiles").select("id,pseudo,title,created_at").ilike("pseudo", q.replace(/[%_]/g, "") + "%").neq("id", me.id).limit(8);
+  const { data, error } = await sb.from("profiles").select("id,pseudo,title,cosmetics,created_at").ilike("pseudo", q.replace(/[%_]/g, "") + "%").neq("id", me.id).limit(8);
   if (error) return toast(message(error));
   box.innerHTML = data.length ? "" : `<p class="empty-line">Aucun joueur avec ce pseudo.</p>`;
   for (const p of data) {
-    const b = document.createElement("button"); b.className = "chip player"; b.textContent = p.pseudo + (p.title ? " · " + p.title : "");
+    const b = document.createElement("button"); b.className = "chip player" + (p.cosmetics?.name ? " " + p.cosmetics.name : ""); b.textContent = p.pseudo + (p.title ? " · " + p.title : "");
     b.onclick = () => openEditor(p);
     box.appendChild(b);
   }
@@ -610,7 +769,7 @@ sb.auth.onAuthStateChange((event, session) => {
   else if (event === "SIGNED_OUT") { leaveAccount(); showLanding(); }
   else if (event === "INITIAL_SESSION") { if (me) leaveAccount(); wantsGame() ? showGame() : showLanding(); }
 });
-setTimeout(() => { if (document.body.classList.contains("booting")) showGame(); }, 5000);   // if the account service is unreachable
+setTimeout(() => { if (document.body.classList.contains("booting")) showLanding(); }, 5000);   // if the account service is unreachable: the welcome page, never a game without account
 
 
 /* ---------- Streams: discarding duplicates ---------- */
@@ -717,7 +876,7 @@ async function renderDefis() {
   for (const c of daily.challenges) {
     const done = c.progress >= c.goal;
     const el = document.createElement("div"); el.className = "daily" + (c.claimed ? " claimed" : done ? " ready" : "");
-    el.innerHTML = `<div class="d-head"><b>${esc(c.label)}</b><span class="reward">+${c.reward}</span></div>
+    el.innerHTML = `<div class="d-head"><b>${esc(c.label)}</b><span class="reward"><i class="coin" aria-hidden="true"></i>+${c.reward}</span></div>
       <div class="meter" role="progressbar" aria-valuemin="0" aria-valuemax="${c.goal}" aria-valuenow="${c.progress}"><s style="width:${c.progress / c.goal * 100}%"></s></div>
       <div class="d-foot"><small>${c.progress} / ${c.goal}</small>${c.claimed ? `<small class="ok">Récupéré</small>` : done ? `<button class="btn primary">Récupérer</button>` : ""}</div>`;
     const b = el.querySelector("button");
@@ -753,7 +912,8 @@ async function renderDefis() {
     grid.appendChild(el);
   }
 
-  // title under the pseudo
+  // title under the pseudo (achievements, and the titles of the pass)
+  try { const { data } = await sb.from("player_titles").select("title"); for (const r of data || []) if (!earnedTitles.includes(r.title)) earnedTitles.push(r.title); } catch (e) {}
   const tp = $("#titlePick");
   tp.innerHTML = earnedTitles.length
     ? `<label for="titleSel">Titre affiché sous ton pseudo</label> <select id="titleSel"><option value="">Aucun</option>${earnedTitles.map(t => `<option ${t === me.title ? "selected" : ""}>${esc(t)}</option>`).join("")}</select>`
@@ -769,7 +929,7 @@ async function renderDefis() {
 /* ---------- market: La Bourse aux disques ---------- */
 const MK = { q: "", tier: -1, genre: -1, sort: "recent", page: 0, items: [], more: false, seq: 0, sellTrack: null };
 const LISTING_SELECT = "id,seller,card_id,kind,track_id,artist_id,picture,tier,holo,title,artist,genre,price,created_at,expires_at," +
-  "seller_p:profiles!listings_seller_fkey(pseudo,title),tracks(album,cover,duration,bpm,year,explicit),artists(nb_album),cards(rank,collector)";
+  "seller_p:profiles!listings_seller_fkey(pseudo,title,cosmetics),tracks(album,cover,duration,bpm,year,explicit),artists(nb_album),cards(rank,collector)";
 const nowIso = () => new Date().toISOString();
 function listingCard(l) {
   if (l.kind === "artist") return { kind: "artist", id: "a" + l.artist_id, aid: l.artist_id, t: l.title, a: "Artiste", al: "", cov: l.picture,
@@ -836,7 +996,7 @@ function listingEl(l) {
   cardBtn.appendChild(cardEl(c, l.holo)); cardBtn.onclick = () => openModal(c, l.holo);
   const days = Math.max(0, Math.ceil((Date.parse(l.expires_at) - Date.now()) / 86400000));
   const foot = document.createElement("div"); foot.className = "l-foot";
-  foot.innerHTML = `<b class="price">${streamsTxt(l.price)}</b><small>${mine ? "ta vente" : "par " + esc(l.seller_p?.pseudo || "?")} · ${days} j</small>`;
+  foot.innerHTML = `<b class="price"><i class="coin" aria-hidden="true"></i>${streamsTxt(l.price)}</b><small>${mine ? "ta vente" : "par " + (l.seller_p?.cosmetics?.name ? `<b class="${esc(l.seller_p.cosmetics.name)}">${esc(l.seller_p.pseudo)}</b>` : esc(l.seller_p?.pseudo || "?"))} · ${days} j</small>`;
   const btn = document.createElement("button"); btn.className = "btn " + (mine ? "" : "primary");
   btn.textContent = mine ? "Retirer" : "Acheter";
   btn.onclick = async () => {
@@ -991,12 +1151,13 @@ async function renderAlbums() {
   albumsBusy = true;
   $("#aStatus").textContent = "Chargement de tes albums…";
   try {
-    AL.list = await rpc("my_albums");
-    const pending = await sb.from("cards").select("id,tracks!inner(album_id)", { count: "exact", head: true })
-      .eq("owner", me.id).is("tracks.album_id", null);
+    const r = await rpc("my_albums_fast");        // each album as a short array, to keep big collections fast
+    AL.list = r.albums.map(([id, title, artist, artist_id, cover, year, type, total, complete, owned, claimed]) => ({
+      id, title, artist, artist_id, cover, year, type, total, complete, owned, claimed,
+      pct: Math.round(100 * owned / Math.max(1, total)), reward: Math.min(500, Math.max(50, total * 10)) }));
     const sync = $("#albumsSync");
-    sync.hidden = !pending.count;
-    if (pending.count) sync.innerHTML = `<p>On retrouve encore l'album de <b>${fmt(pending.count)}</b> de tes cartes : certains albums n'apparaissent pas encore. Repasse dans quelques minutes.</p>`;
+    sync.hidden = !r.pending;
+    if (r.pending) sync.innerHTML = `<p>On retrouve encore l'album de <b>${fmt(r.pending)}</b> de tes cartes : certains albums n'apparaissent pas encore. Repasse dans quelques minutes.</p>`;
   } catch (e) { $("#aStatus").textContent = message(e); albumsBusy = false; return; }
   albumsBusy = false;
   bindAlbumControls();
@@ -1306,6 +1467,7 @@ async function checkNotifications() {
     else if (x.type === "duel_result") toast(`⚔️ ${x.title} a joué votre clash : le résultat est dans l'onglet Clashs.`);
     else if (x.type === "duel_declined") toast(`${x.title} a refusé ton clash.`);
     else if (x.type === "prank") showPrank(x);
+    else if (x.type === "admin_warning" || x.type === "admin_message") Online.showNotice?.(x);
   }
   if ((data || []).some(x => x.type.startsWith("duel"))) Online.updateDuelsBadge?.();
 }
@@ -1345,9 +1507,10 @@ function showPrank(x) {
 }
 
 /* ---------- welcome page ---------- */
+// the game needs an account: without one, only the welcome page (sign in / sign up) shows
 const GUEST = "zh-guest";
+try { localStorage.removeItem(GUEST); } catch (e) {}   // the old "try without an account" choice
 const wantsGame = () => {
-  try { if (localStorage.getItem(GUEST) === "1") return true; } catch (e) {}
   return /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && /^#(god|demo|shiny|galerie|platine|diamant|platine-shiny|diamant-shiny)$/.test(location.hash);   // local previews
 };
 function showGame() {
@@ -1368,7 +1531,6 @@ function landTab(mode) {
   renderAuth(mode);
 }
 document.querySelectorAll(".land-tabs button").forEach(b => b.onclick = () => landTab(b.dataset.mode));
-$("#landGuest").onclick = () => { try { localStorage.setItem(GUEST, "1"); } catch (e) {} showGame(); };
 $("#landPrivacy").onclick = () => openAuth("privacy");
 
 // the wall: real cards drifting in three columns

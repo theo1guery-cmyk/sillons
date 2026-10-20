@@ -82,7 +82,9 @@ const PITY = 70;                         // boosters without a Mythique or bette
 let devShiny = false;                  // local preview (#shiny): every Mythique / Légendaire comes out Shiny
 const SHINY_CHANCE = 0.01;               // a Mythique or Légendaire has 1 chance in 100 to be Shiny
 const GOD_CHANCE = 1 / 3000;             // a booster turns into a GOD pack: 1 Légendaire + 4 cards that are Mythique or Légendaire (50/50)
-const STOCK_MAX = 10, REFILL_MS = 10 * 60 * 1000;
+const STOCK_MAX = 10;
+let REFILL_MS = 10 * 60 * 1000;          // 3 min for the VIP of the season (set by pass.js)
+let PAY_OFF = false;                   // real money payments paused from the admin page (read from the server)
 let TEST_MODE = true;                   // unlimited free boosters while the game is being tested (read from the server when signed in)
 // signed-in play lives in online.js; this flag switches the game between the guest (this browser) and account modes
 const Online = { active: false };
@@ -143,17 +145,54 @@ const tag = (list, src) => { for (const t of list) t._src = t._src || src; retur
 const ID_MAX = 4200000000, RESERVE_MAX = 30;
 const reserve = RAR.map(() => []);       // tracks waiting to be pulled, by rarity
 let probing = 0;
+// with an account, the tracks and artists found on Deezer are offered to the server's pool, where boosters are drawn from
+const POOL_Q = { tracks: [], artists: [] };
+function offerToPool(list, artists = false) {
+  const q = artists ? POOL_Q.artists : POOL_Q.tracks;
+  for (const x of list) {
+    if (!x || !x.id || q.length >= 600) continue;
+    q.push(artists ? { id: x.id, fans: x.nb_fan || 0 } : { id: x.id, rank: x.rank || 0 });
+  }
+}
 function stash(list) {                   // keep good leftovers instead of throwing fetched tracks away
+  offerToPool(list);
   for (const t of list) {
     const r = reserve[tierOf(t.rank || 0)];
     if (isPlayable(t) && !ownsTrack(t.id) && r.length < RESERVE_MAX && !r.some(x => x.id === t.id)) r.push(t);
   }
 }
+// with an account, the random numbers come from the server (it draws them; the browser only looks them up and reports)
 async function probeRandomTrack() {
-  try { const t = await dz("track/" + (1 + randInt(ID_MAX))); if (isPlayable(t)) stash(tag([t], "id")); } catch (e) {}
+  const id = Online.active ? await Online.probeId?.() : 1 + randInt(ID_MAX);
+  if (!id) return;
+  let t = null;
+  try { t = await dz("track/" + id); } catch (e) {}
+  const ok = t && t.id && isPlayable(t);
+  if (Online.active) Online.probeDone?.(id, ok ? t : null);
+  if (ok && reserve[0].length < RESERVE_MAX) stash(tag([t], "id"));
 }
+// the bots (random numbers, the walk through Deezer) run in a single tab per browser: the visible one holding the lock
+// (several open tabs used to run them each, multiplying the calls and the Deezer blocks; same pace for the player)
+let BOT_TAB = !("locks" in navigator);
+if (!BOT_TAB) {
+  let release = null, waiting = false;
+  const claim = () => {
+    if (document.hidden || release || waiting) return;
+    waiting = true;
+    navigator.locks.request("zikhunter-bots", () => {
+      waiting = false;
+      if (document.hidden) return;               // hidden while waiting: another tab can have it
+      return new Promise(done => { BOT_TAB = true; release = () => { BOT_TAB = false; release = null; done(); }; });
+    });
+  };
+  document.addEventListener("visibilitychange", () => { if (document.hidden) release?.(); else claim(); });
+  claim();
+}
+let slowProbe = 0;
 setInterval(() => {                      // only when Deezer isn't busy with a booster
-  if (probing >= 2 || queue.length || reserve[0].length >= RESERVE_MAX) return;
+  if (!BOT_TAB || probing >= 2 || queue.length) return;
+  // reserve full: with an account, keep looking up the server's random numbers (one every 0.5 s at most)
+  if (reserve[0].length >= RESERVE_MAX && (!Online.active || ++slowProbe % 2)) return;
   probing++; probeRandomTrack().finally(() => probing--);
 }, 220);
 function takeReserve(tier, used) {
@@ -224,14 +263,18 @@ function poolFor(tier) {
   return r < .5 ? searchPool(tier) : playlistPool();
 }
 
+// with an account the server draws the cards itself, so the browser only proposes a fallback: a few tries are enough
+// (a big collection made the search run 25 tries a card before a booster could open)
+let QUICK_FIND = false;
 async function findTrack(typeIdx, tier, used) {
   if (typeIdx >= 0) return findGenreTrack(typeIdx, tier, used);
   const ready = takeReserve(tier, used);
   if (ready) return ready;
-  let best = null, ownedHit = null;
-  const attempts = tier >= MYTH ? 10 : 25;
+  let best = null, ownedHit = null, any = null;
+  const attempts = QUICK_FIND ? 3 : tier >= MYTH ? 10 : 25;
   for (let attempt = 0; attempt < attempts; attempt++) {
     const pool = (await poolFor(tier).catch(() => [])).filter(t => isPlayable(t) && !used.has(t.id));
+    if (!any) any = pool[0] || null;
     if (pool[0]?._src === "playlist") noteArtists(pool, "all");
     const fresh = pool.filter(t => !ownsTrack(t.id));
     const hits = fresh.filter(t => inTier(t.rank, tier));
@@ -241,7 +284,8 @@ async function findTrack(typeIdx, tier, used) {
     for (const t of fresh) { const d = tierDistance(t.rank, tier); if (!best || d < best.d) best = { t, d }; }
   }
   // Commune → Épique never repeat: a new track of the nearest rarity beats a duplicate
-  return tier <= 3 ? (best && best.t) || ownedHit : ownedHit || (best && best.t);
+  const found = tier <= 3 ? (best && best.t) || ownedHit : ownedHit || (best && best.t);
+  return found || (QUICK_FIND ? any : null);
 }
 
 /* ---------- artists for the artist slots ----------
@@ -259,15 +303,17 @@ async function certArtistPool(tier) {
     const from = known.length && Math.random() < .6 ? pick(known).id : pick(famous.seeds);
     const rel = (await dz(`artist/${from}/related`, { limit: 50 })).data || [];
     for (const a of rel) famous.pool.set(a.id, a);
+    offerToPool(rel, true);
     return [...famous.pool.values()];
   }
   const q = tier >= 2 ? randomQuery(true) : randomQuery(false);
   const d = await dz("search/artist", { q, limit: 100, index: randInt(tier >= 2 ? 50 : 150) });
+  offerToPool(d.data || [], true);
   return d.data || [];
 }
 async function findArtist(tier, used, owned = false) {   // owned: local previews may give an artist already in the collection
   let best = null;
-  for (let attempt = 0; attempt < 12; attempt++) {
+  for (let attempt = 0; attempt < (QUICK_FIND ? 3 : 12); attempt++) {
     const pool = (await certArtistPool(tier).catch(() => [])).filter(a => a.id && a.nb_fan != null && !used.has(a.id) && (owned || !ownsTrack("a" + a.id)));
     const hits = pool.filter(a => inCert(a.nb_fan, tier, a.id));
     if (hits.length) return pick(hits);
@@ -323,7 +369,7 @@ async function firstOfType(cands, typeIdx) {   // checks each album's real genre
 }
 async function findGenreTrack(typeIdx, tier, used) {
   let near = [];
-  const attempts = tier >= MYTH ? 10 : 18;
+  const attempts = QUICK_FIND ? 4 : tier >= MYTH ? 10 : 18;
   for (let attempt = 0; attempt < attempts; attempt++) {
     const fresh = (await genreSource(typeIdx, tier).catch(() => [])).filter(t => isPlayable(t) && !used.has(t.id) && !ownsTrack(t.id));
     const ok = await firstOfType(fresh.filter(t => inTier(t.rank, tier)), typeIdx);
@@ -405,6 +451,14 @@ function refill() {
   if (gained > 0) { S.stock = Math.min(STOCK_MAX, S.stock + gained); S.stockAt = S.stock >= STOCK_MAX ? now : S.stockAt + gained * REFILL_MS; }
 }
 const nextRefillMs = () => S.stock >= STOCK_MAX ? 0 : S.stockAt + REFILL_MS - Date.now();
+const clock = ms => {
+  const t = Math.max(0, Math.ceil(ms / 1000)), h = Math.floor(t / 3600), m = Math.floor(t / 60) % 60, sec = t % 60;
+  return (h ? h + ":" + String(m).padStart(2, "0") : String(m).padStart(2, "0")) + ":" + String(sec).padStart(2, "0");
+};
+const clockFull = () => {
+  const min = Math.ceil(((STOCK_MAX - S.stock - 1) * REFILL_MS + nextRefillMs()) / 60000);
+  return min >= 60 ? `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, "0")}` : `${min} min`;
+};
 function save() {
   if (Online.active) return;             // with an account, the server holds the collection
   try { localStorage.setItem(LS, JSON.stringify(S)); }
@@ -415,7 +469,7 @@ function save() {
 const $ = s => document.querySelector(s);
 const fmt = n => n.toLocaleString("fr-FR");
 const fmtDur = s => Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
-const esc = s => String(s).replace(/[&<>"]/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m]));
+const esc = s => String(s).replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
 function initials(t) { const w = t.replace(/[^\p{L}\p{N} ]/gu, "").split(/\s+/).filter(Boolean); return (w.length > 1 ? w[0][0] + w[1][0] : (w[0] || "?").slice(0, 2)).toUpperCase(); }
 let toastTimer;
 function toast(m) { const t = $("#toast"); t.textContent = m; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => t.hidden = true, 2600); }
@@ -433,17 +487,19 @@ function artistStats(c) {
 // certification's material (kraft, lacquer, silver, gold, platinum, cut crystal)
 function artistCardEl(c, holo) {
   const st = artistStats(c);
-  if (c.tier === 5 && c.cov) {             // Disque de diamant: the Icône, its platinum frame set with brilliant-cut stones. Its Shiny is the Black Diamond (black lacquer, photo in black and white)
-    const shiny = holo && !c.collector, name = c.t.toUpperCase();
+  // Disque de diamant: the Icône, its platinum frame set with brilliant-cut stones. Its Shiny is the Black Diamond (black lacquer, photo in black and white).
+  // Disque de platine: its little sister — the same full photo and name down the side, but a rounded platinum frame, a satin name, a disc in the badge and no signature
+  if (c.tier >= MYTH && c.cov) {
+    const dia = c.tier === 5, shiny = holo && !c.collector, name = c.t.toUpperCase();
     const sig = c.t === c.t.toUpperCase() ? c.t.toLowerCase().replace(/(^|[\s-])\p{L}/gu, m => m.toUpperCase()) : c.t;
     const nfs = Math.min(16, fitCqw(name, LEG_TITLE_FONT, -.02, 108)), sfs = Math.min(12, fitCqw(sig, LEG_SIG_FONT, 0, 64));
     const fans = c.rank >= 1e6 ? (c.rank / 1e6).toFixed(1).replace(".", ",") + " M" : fmtFans(c.rank);
     const el = document.createElement("div");
-    el.className = "dcard" + (shiny ? " bd" : "") + (c.collector ? " collector" : ""); el.dataset.cert = 5; el.dataset.r = 5;
-    el.innerHTML = `<div class="pave"></div>${"<i class=\"tw\"></i>".repeat(6)}<div class="in"><img class="photo" src="${esc(c.cov.replace(/\/\d+x\d+-/, "/1000x1000-"))}" alt="Photo de ${esc(c.t)}" loading="lazy" decoding="async"><div class="ice"></div><div class="shade"></div>
-      <div class="vname"><span class="chrome" style="font-size:${nfs.toFixed(2)}cqw"><span class="depth">${esc(name)}</span><span class="face">${esc(name)}</span></span></div>
-      <div class="head"><span class="badge"><span class="gem"></span>${shiny ? "BLACK DIAMOND" : "DIAMANT"}</span><span class="pw" title="Puissance">${st.pw}</span></div>
-      <div class="foot"><div class="sig" style="font-size:${sfs.toFixed(2)}cqw">${esc(sig)}</div><div class="fans">${fans}<small>FANS SUR DEEZER</small></div>
+    el.className = "dcard" + (dia ? "" : " pcard") + (shiny ? dia ? " bd" : " shiny" : "") + (c.collector ? " collector" : ""); el.dataset.cert = c.tier; el.dataset.r = c.tier;
+    el.innerHTML = `${dia ? `<div class="pave"></div>${"<i class=\"tw\"></i>".repeat(6)}` : ""}<div class="in"><img class="photo" src="${esc(c.cov.replace(/\/\d+x\d+-/, "/1000x1000-"))}" alt="Photo de ${esc(c.t)}" loading="lazy" decoding="async">${dia ? '<div class="ice"></div>' : ""}<div class="shade"></div>
+      <div class="vname"><span class="chrome" style="font-size:${nfs.toFixed(2)}cqw">${dia ? `<span class="depth">${esc(name)}</span>` : ""}<span class="face">${esc(name)}</span></span></div>
+      <div class="head"><span class="badge">${dia ? '<span class="gem"></span>' : '<span class="vinyl"></span>'}${!dia ? "PLATINE" : shiny ? "BLACK DIAMOND" : "DIAMANT"}</span><span class="pw" title="Puissance">${st.pw}</span></div>
+      <div class="foot">${dia ? `<div class="sig" style="font-size:${sfs.toFixed(2)}cqw">${esc(sig)}</div>` : ""}<div class="fans">${fans}<small>FANS SUR DEEZER</small></div>
         <div class="stl"><span>FANS <b>${fmtFans(c.rank)}</b></span><span>ALBUMS <b>${c.albums || "?"}</b></span><span>AURA <b>${st.aura}</b></span></div></div></div>
       ${shiny ? '<span class="ribbon">SHINY</span><div class="sweep"></div>' : c.collector ? '<span class="ribbon">COLLECTOR</span>' : ""}`;
     const w = document.createElement("div"); w.className = "cq"; w.appendChild(el);
@@ -528,7 +584,7 @@ function backEl(gl = false) {
 }
 
 /* ---------- views ---------- */
-const views = { shop: $("#view-shop"), store: $("#view-store"), binder: $("#view-binder"), catalog: $("#view-catalog"), trades: $("#view-trades"), defis: $("#view-defis"), market: $("#view-market"), albums: $("#view-albums"), duels: $("#view-duels"), grading: $("#view-grading") };
+const views = { shop: $("#view-shop"), store: $("#view-store"), binder: $("#view-binder"), catalog: $("#view-catalog"), trades: $("#view-trades"), defis: $("#view-defis"), market: $("#view-market"), albums: $("#view-albums"), duels: $("#view-duels"), admin: $("#view-admin"), pass: $("#view-pass"), grading: $("#view-grading") };
 function show(v) {
   for (const k in views) { views[k].hidden = k !== v; $("#tab-" + k).setAttribute("aria-selected", k === v); }
   if (!busy) unseatTable();   // leaving the tab puts the booster back
@@ -540,6 +596,8 @@ function show(v) {
   if (v === "albums") Online.renderAlbums();
   if (v === "duels") Online.renderDuels?.();
   if (v === "grading") Online.renderGrading?.();
+  if (v === "admin") Online.renderAdmin?.();
+  if (v === "pass") Online.renderPass?.();
 }
 $("#tab-shop").onclick = () => show("shop");
 $("#tab-store").onclick = () => show("store");
@@ -551,6 +609,8 @@ $("#tab-market").onclick = () => show("market");
 $("#tab-grading").onclick = () => show("grading");
 $("#tab-albums").onclick = () => show("albums");
 $("#tab-duels").onclick = () => show("duels");
+$("#tab-admin").onclick = () => show("admin");
+$("#tab-pass").onclick = () => show("pass");
 
 const owned = () => Object.values(S.c);
 const ck = c => c.id + "#" + c.tier;                     // key of a card: a track in one rarity
@@ -569,11 +629,53 @@ const bestOwned = id => versionsOf(id).reduce((b, c) => !b || c.tier > b.tier ? 
 function renderCounters() {
   const all = owned();
   const pill = (cls, value, label) => `<span class="pill ${cls}"><b>${value}</b><small>${label}</small></span>`;
-  $("#counters").innerHTML = (Online.active ? `<span class="pill streams"><i class="coin" aria-hidden="true"></i><b>${fmt(S.streams || 0)}</b><small>Streams</small></span>` : "")
+  $("#counters").innerHTML = (Online.active ? `<span class="pill streams"><i class="coin" aria-hidden="true"></i><b>${fmt(S.streams || 0)}</b><small>Streams</small></span><span class="pill vinyls" title="Vinyles : la monnaie rare"><i class="vin" aria-hidden="true"></i><b>${fmt(S.vinyls || 0)}</b><small>Vinyles</small></span>` : "")
     + pill("", fmt(all.length), "Cartes")
     + pill("myth", all.filter(c => c.tier === MYTH && !isArtist(c)).length, "Mythiques")
     + pill("leg", all.filter(c => c.tier === LEG && !isArtist(c)).length, "Légendaires")
     + pill("opened", fmt(S.opened), "Boosters");
+}
+
+// Streams won: gold coins fly from where the player clicked (or the middle of the screen) into the counter, which counts up
+let lastTap = null;
+addEventListener("pointerdown", e => { lastTap = { x: e.clientX, y: e.clientY, t: Date.now() }; }, true);
+function coinRain(gain, from) {
+  requestAnimationFrame(() => {
+    const pillNow = () => $("#counters .pill.streams");   // the counter is redrawn often: always take the current one
+    const pill = pillNow(), coin = pill?.querySelector(".coin");
+    if (!pill || !coin || !pill.offsetParent) return;
+    const to = coin.getBoundingClientRect(), tx = to.left + to.width / 2, ty = to.top + to.height / 2;
+    if (reduceMotion()) return;
+    const tap = lastTap && Date.now() - lastTap.t < 4000 ? lastTap : { x: innerWidth / 2, y: innerHeight * .55 };
+    const n = Math.max(4, Math.min(14, Math.round(3 + Math.log10(gain) * 3)));
+    const fly = 650, gap = 55;
+    for (let i = 0; i < n; i++) {
+      const c = document.createElement("i"); c.className = "coin coin-fly"; c.setAttribute("aria-hidden", "true");
+      document.body.appendChild(c);
+      const sx = tap.x + (Math.random() - .5) * 90, sy = tap.y + (Math.random() - .5) * 50;
+      const mx = (sx + tx) / 2 + (Math.random() - .5) * 160, my = Math.max(30, ty + (sy - ty) * .3 - 40 - Math.random() * 60);
+      const a = c.animate([
+        { transform: `translate(${sx}px,${sy}px) scale(.4) rotateY(0deg)`, opacity: 0 },
+        { transform: `translate(${sx}px,${sy - 30}px) scale(1.25) rotateY(180deg)`, opacity: 1, offset: .18 },
+        { transform: `translate(${mx}px,${my}px) scale(1.1) rotateY(360deg)`, offset: .55 },
+        { transform: `translate(${tx}px,${ty}px) scale(.8) rotateY(540deg)`, opacity: 1 },
+      ], { duration: fly, delay: i * gap, easing: "cubic-bezier(.45,0,.55,1)", fill: "both" });
+      a.onfinish = () => { c.remove(); pillNow()?.animate([{ transform: "scale(1)" }, { transform: "scale(1.12)" }, { transform: "scale(1)" }], { duration: 180 }); };
+    }
+    // the number counts up while the coins land, then a "+N" floats above the counter
+    const start = performance.now() + fly, total = (n - 1) * gap + 250;
+    (function tick(now) {
+      const k = Math.min(1, Math.max(0, (now - start) / total)), num = pillNow()?.querySelector("b");
+      if (num) num.textContent = fmt(Math.round(from + (S.streams - from) * k));
+      if (k < 1) requestAnimationFrame(tick);
+    })(performance.now());
+    setTimeout(() => {
+      const plus = document.createElement("span"); plus.className = "coin-plus"; plus.textContent = "+" + fmt(gain);
+      const p = pillNow(); if (!p) return;
+      const r = p.getBoundingClientRect(); plus.style.left = r.left + r.width / 2 + "px"; plus.style.top = r.bottom + 4 + "px";
+      document.body.appendChild(plus); setTimeout(() => plus.remove(), 1600);
+    }, fly + (n - 1) * gap);
+  });
 }
 
 /* ---------- shelf: one booster, limited stock ---------- */
@@ -591,6 +693,11 @@ const openBig = document.createElement("button"); openBig.className = "btn prima
 openBig.onclick = () => openPack(BOOSTER);
 const tearHint = document.createElement("p"); tearHint.className = "tear-hint"; tearHint.textContent = "Déchire le haut du sachet pour l'ouvrir";
 packStage.append(packBtn, tearHint, openBig);
+// the big boosters of the VIP pass: 15 cards, all Rare or better
+const BIG = { g: -1, n: "Édition Deluxe", big: true, el: packBtn };
+const bigBtn = document.createElement("button"); bigBtn.className = "btn big-pack"; bigBtn.id = "openBigPack"; bigBtn.hidden = true;
+bigBtn.onclick = () => bigStage();
+packStage.append(bigBtn);
 shelf.append(packStage, stockEl);
 // boosters and card backs printed in 3D by studio.js
 const studioQueue = [];
@@ -604,54 +711,78 @@ function skin(el, name, opts) {           // name: a design, or a function givin
 // the classic booster's cards keep the plain back (light to draw); genre boosters get the 3D Égaliseur back
 const backName = () => { const b = document.documentElement.dataset.back || "plain"; return b === "plain" ? null : "back-" + b; };
 // the classic booster is Le Mur; genre boosters are duotones
-const classicName = () => "pack-wall";
+// the season's items worn by the player (profiles.cosmetics, read by online.js): the sachet and the card back
+const worn = slot => { try { return (typeof me !== "undefined" && me && me.cosmetics && me.cosmetics[slot]) || null; } catch (e) { return null; } };
+const classicName = () => worn("pack") || "pack-wall";
 let tornCut = null;                       // the shape of the last tear, so the pack in the opening is torn the same way
 skin(packBtn, classicName, { sway: true, canTear: () => !busy && !packBtn.disabled, tear: cut => { tornCut = cut; openPack(BOOSTER); } });
 document.documentElement.dataset.back = "plain";
-const studioScript = document.createElement("script"); studioScript.type = "module"; studioScript.src = "studio.js?v=16"; document.head.appendChild(studioScript);
+const studioScript = document.createElement("script"); studioScript.type = "module"; studioScript.src = "studio.js?v=19"; document.head.appendChild(studioScript);
 function renderStock() {
+  bigBtn.hidden = !S.big;                // the big boosters won with the VIP pass
+  bigBtn.innerHTML = `<b>Ouvrir une Édition Deluxe</b><small>15 cartes, toutes Rare ou mieux · ${S.big || 0} à ouvrir</small>`;
   if (TEST_MODE) {
     stockEl.innerHTML = `<b>Boosters illimités</b><span class="test-badge">Mode test</span>
       <small>Le stock de 10 boosters (un nouveau toutes les 10 min) sera activé à la sortie du jeu.</small>
       <small>Mythique garantie dans ${Math.max(1, PITY - S.dry)} booster${PITY - S.dry > 1 ? "s" : ""} si tu n'en tires pas avant</small>`;
     if (!busy) { packBtn.disabled = false; openBig.disabled = false; $("#again").disabled = false; }
+    Online.stockOffers?.(stockEl, false);
     return;
   }
   refill();
   const left = nextRefillMs(), min = Math.max(1, Math.ceil(left / 60000));
   const pips = Array.from({ length: STOCK_MAX }, (_, i) => `<i class="${i < S.stock ? "on" : ""}"></i>`).join("");
   stockEl.innerHTML = `<b>${S.stock} / ${STOCK_MAX}</b> booster${S.stock > 1 ? "s" : ""} disponible${S.stock > 1 ? "s" : ""}
+    ${S.stock < STOCK_MAX ? `<span class="stock-timer" role="timer"><span class="st-ic" aria-hidden="true"></span>Prochain dans <time>${clock(left)}</time><em> · plein dans ${clockFull()}</em></span>` : `<span class="stock-timer full">Stock plein</span>`}
     <span class="pips" aria-hidden="true">${pips}</span>
-    <small>${S.stock >= STOCK_MAX ? "Stock plein. Un nouveau booster arrive toutes les 10 min quand le stock n'est pas plein." : `Prochain booster dans ${min >= 60 ? "1 h" : min + " min"}`}</small>
+    <small>${S.stock >= STOCK_MAX ? "Stock plein. Un nouveau booster arrive toutes les ${REFILL_MS / 60000} min quand le stock n'est pas plein." : `Prochain booster dans ${min >= 60 ? "1 h" : min + " min"}`}</small>
     <small>Mythique garantie dans ${Math.max(1, PITY - S.dry)} booster${PITY - S.dry > 1 ? "s" : ""} si tu n'en tires pas avant</small>`;
   const empty = S.stock <= 0;
-  if (!busy) { packBtn.disabled = empty; openBig.disabled = empty; $("#again").disabled = empty; }
+  if (!busy) { packBtn.disabled = empty; openBig.disabled = empty; $("#again").disabled = empty && lastPack !== BIG; }
+  Online.stockOffers?.(stockEl, empty && Online.active);   // stock empty: recharge, or the guaranteed Mythique now
 }
 setInterval(() => { renderStock(); save(); }, 30000);
+// the countdown to the next booster, every second (the whole stock is redrawn when a booster arrives)
+setInterval(() => {
+  const t = stockEl.querySelector(".stock-timer time");
+  if (!t || document.hidden) return;
+  const left = nextRefillMs();
+  if (left <= 0) { renderStock(); save(); return; }
+  t.textContent = clock(left);
+  const full = stockEl.querySelector(".stock-timer em");
+  if (full) full.textContent = " · plein dans " + clockFull();
+}, 1000);
 
 /* ---------- boutique: one-genre boosters (free while testing, paid later) ---------- */
 const STORE_PACKS = TYPES.slice(0, AUTRE).map((t, g) => ({ g, n: t.n }));
-const STORE_PRICE = 100;                 // Streams, charged by the server
+const STORE_PRICE = 400, STORE_VINYLS = 15;   // a genre pack: Streams or Vinyles, charged by the server
+const canPay = p => p.pay === "vinyls" ? (S.vinyls || 0) >= STORE_VINYLS : (S.streams || 0) >= STORE_PRICE;
 for (const p of STORE_PACKS) {
   const offer = document.createElement("div"); offer.className = "offer";
   const b = document.createElement("button"); b.className = "pack"; b.style.setProperty("--h", TYPES[p.g].h);
   b.innerHTML = `<span class="pack-shine" aria-hidden="true"></span><canvas class="pack-gl" aria-hidden="true"></canvas><img class="pack-logo" src="brand/zikhunter-icon.svg" alt=""><span class="lbl"><b>${p.n}</b><span>5 cartes ${p.n}</span></span>`;
   skin(b, "pack-" + TYPES[p.g].k);
   b.setAttribute("aria-label", "Ouvrir un booster " + p.n);
-  b.onclick = () => buyPack(p);
+  b.onclick = () => buyPack(p, (S.streams || 0) < STORE_PRICE && (S.vinyls || 0) >= STORE_VINYLS ? "vinyls" : "streams");
   p.el = b;
   const price = document.createElement("div"); price.className = "price";
-  price.innerHTML = `<b>${STORE_PRICE} Streams</b><small>5 cartes ${p.n}</small>`;
-  const buy = document.createElement("button"); buy.className = "btn primary"; buy.textContent = "Acheter";
+  price.innerHTML = `<small>5 cartes ${p.n}</small>`;
+  const buy = document.createElement("button"); buy.className = "btn primary pay-s";
+  buy.innerHTML = `<i class="coin" aria-hidden="true"></i>${STORE_PRICE} Streams`;
   buy.setAttribute("aria-label", "Acheter un booster " + p.n + " pour " + STORE_PRICE + " Streams");
-  buy.onclick = () => buyPack(p);
-  offer.append(b, price, buy); $("#store").appendChild(offer);
+  buy.onclick = () => buyPack(p, "streams");
+  const buyV = document.createElement("button"); buyV.className = "btn pay-v";
+  buyV.innerHTML = `<i class="vin" aria-hidden="true"></i>${STORE_VINYLS} Vinyles`;
+  buyV.setAttribute("aria-label", "Acheter un booster " + p.n + " pour " + STORE_VINYLS + " Vinyles");
+  buyV.onclick = () => buyPack(p, "vinyls");
+  const pays = document.createElement("div"); pays.className = "pay-row"; pays.append(buy, buyV);
+  offer.append(b, price, pays); $("#store").appendChild(offer);
 }
 
 // buying a genre booster brings it up big, centre screen: it is torn open there (nothing is paid until then)
 const tearStage = document.createElement("div"); tearStage.className = "tear-stage"; tearStage.hidden = true;
 tearStage.setAttribute("role", "dialog"); tearStage.setAttribute("aria-modal", "true"); tearStage.setAttribute("aria-label", "Ouvrir le booster");
-tearStage.innerHTML = `<div class="ts-head"><b></b><small>${STORE_PRICE} Streams · 5 cartes</small></div>
+tearStage.innerHTML = `<div class="ts-head"><b></b><small></small></div>
   <div class="pack stage-pack"><canvas class="pack-gl" aria-hidden="true"></canvas></div>
   <p class="ts-hint">Déchire le haut du sachet pour l'ouvrir</p>
   <button class="btn" type="button">Annuler</button>`;
@@ -663,14 +794,25 @@ const stageKeys = e => { if (e.key === "Escape") closeStage(); };
 tearStage.querySelector("button").onclick = closeStage;
 tearStage.addEventListener("click", e => { if (e.target === tearStage) closeStage(); });
 let stageReady = false;
-function buyPack(p) {
-  // the checks of the opening come first (account, Streams), so a pack you can't open is never shown torn
-  if (busy || !Online.active || (S.streams || 0) < STORE_PRICE || !window.Studio) return openPack(p);
+function buyPack(p, pay = "streams") {
+  p.pay = pay;
+  // the checks of the opening come first (account, Streams or Vinyles), so a pack you can't open is never shown torn
+  if (busy || !Online.active || !canPay(p) || !window.Studio) return openPack(p);
+  showStage(p, "Booster " + p.n, (pay === "vinyls" ? STORE_VINYLS + " Vinyles" : STORE_PRICE + " Streams") + " · 5 cartes");
+}
+// a big booster of the VIP pass comes up the same way, big and centre screen
+function bigStage() {
+  if (busy || !Online.active || !S.big || !window.Studio) return openPack(BIG);
+  if (views.shop.hidden) show("shop");             // it opens on the booster table
+  showStage(BIG, "Édition Deluxe", "15 cartes · toutes Rare ou mieux");
+}
+function showStage(p, title, sub) {
   stagePack = p;
-  tearStage.querySelector(".ts-head b").textContent = "Booster " + p.n;
+  tearStage.querySelector(".ts-head b").textContent = title;
+  tearStage.querySelector(".ts-head small").textContent = sub;
   if (!stageReady) {
     stageReady = true;
-    skin(stageHost, () => "pack-" + TYPES[stagePack.g].k, { sway: true, canTear: () => !busy && !tearStage.hidden,
+    skin(stageHost, () => stagePack.big ? "pack-big" : "pack-" + TYPES[stagePack.g].k, { sway: true, canTear: () => !busy && !tearStage.hidden,
       tear: cut => { tornCut = cut; closeStage(); openPack(stagePack); } });
   }
   tearStage.hidden = false; document.addEventListener("keydown", stageKeys);
@@ -685,6 +827,7 @@ async function drawPack(p, god = false, forced = null, artistTier = null) {   //
     for (let s = 0; s < 4; s++) slots.push(Math.random() < .5 ? MYTH : LEG);
   } else {
     for (let s = 0; s < 5; s++) slots.push(rollTier());   // same odds for every card
+    if (slots[4] < 2) slots[4] = 2;                         // the last card is Rare or better
     if (S.dry + 1 >= PITY && Math.max(...slots) < MYTH) slots[0] = rollTopTier();
   }
   const raws = [];
@@ -717,7 +860,11 @@ const LOADING_LINES = ["On fouille Deezer…", "On feuillette les bacs…", "On 
 async function openPack(p, opts = {}) {
   if (busy) return;
   if (p.g >= 0 && !Online.active) { toast("Les packs de la Boutique s'achètent en Streams : connecte-toi ou crée un compte."); Online.askSignIn?.(); return; }
-  if (p.g >= 0 && (S.streams || 0) < STORE_PRICE) { toast(`Il te faut ${STORE_PRICE} Streams pour ce pack. Tu en as ${fmt(S.streams || 0)} : va voir les Défis.`); return; }
+  if (p.g >= 0 && !canPay(p)) {
+    toast(p.pay === "vinyls" ? `Il te faut ${STORE_VINYLS} Vinyles pour ce pack. Tu en as ${fmt(S.vinyls || 0)}.`
+      : `Il te faut ${STORE_PRICE} Streams pour ce pack. Tu en as ${fmt(S.streams || 0)} : va voir les Défis, ou paie en Vinyles.`);
+    return;
+  }
   refill();
   if (!Online.active && !TEST_MODE && S.stock <= 0) { renderStock(); toast("Plus de booster pour l'instant. Le prochain arrive dans " + Math.ceil(nextRefillMs() / 60000) + " min."); return; }
   busy = true; lastPack = p;
@@ -747,14 +894,15 @@ async function openPack(p, opts = {}) {
   const god = serverPack ? serverPack.god : opts.god ?? (devHash === "#god" || (p === BOOSTER && Math.random() < GOD_CHANCE));
 
   const table = $("#table"), deal = $("#deal");
-  seatTable(p === BOOSTER ? $("#shelf") : $("#store"));
+  const plain = p === BOOSTER || p === BIG;
+  seatTable(plain ? $("#shelf") : $("#store"));
   table.classList.toggle("god", god);
-  $("#tableTitle").textContent = god ? "GOD PACK" : p === BOOSTER ? "Booster" : "Booster " + p.n;
+  $("#tableTitle").textContent = god ? "GOD PACK" : p === BOOSTER ? "Booster" : p === BIG ? "Édition Deluxe · 15 cartes" : "Booster " + p.n;
   deal.innerHTML = "";
   const rip = document.createElement("div"); rip.className = "rip loading" + (god ? " god" : "");
   const pk = p.el.cloneNode(true); pk.tabIndex = -1; pk.disabled = true; pk.removeAttribute("id");
-  document.documentElement.dataset.back = p === BOOSTER ? "plain" : "eq";
-  skin(pk, p === BOOSTER ? classicName() : "pack-" + TYPES[p.g].k, { live: true, cut: tornCut });   // the copy in the opening
+  document.documentElement.dataset.back = worn("back") ? worn("back").replace(/^back-/, "") : plain ? "plain" : "eq";
+  skin(pk, p === BIG ? "pack-big" : plain ? classicName() : "pack-" + TYPES[p.g].k, { live: true, cut: tornCut });   // the copy in the opening
   tornCut = null;
   if (god) pk.classList.add("god");
   const line = document.createElement("p"); line.textContent = god ? "GOD PACK ! 1 chance sur 3 000…" : pick(LOADING_LINES);
@@ -855,15 +1003,7 @@ const Stage = (() => {
   }
   const $s = sel => el.querySelector(sel);
 
-  // the record's rotation runs on its own clock so it can speed up and slow down smoothly
-  let spin = { a: 0, v: 0, to: 0, raf: 0, t: 0 };
-  function spinLoop(t) {
-    const dt = Math.min(.05, (t - (spin.t || t)) / 1000); spin.t = t;
-    spin.v += (spin.to - spin.v) * Math.min(1, dt * 2.2);
-    spin.a = (spin.a + spin.v * 360 * dt) % 360;
-    $s(".rec").style.transform = `rotate(${spin.a}deg)`;
-    spin.raf = requestAnimationFrame(spinLoop);
-  }
+  let spin = { raf: 0 };
 
   function stopAudio(ms = 500) {
     clearInterval(fading);
@@ -898,7 +1038,7 @@ const Stage = (() => {
       if (url) { clearInterval(fading); audio.src = url; audio.volume = 0; audio.play().then(() => { fadeIn(); window.NowPlaying?.(pl.c, audio); }).catch(() => {}); }
     };
     const flash = () => { const f = document.createElement("div"); f.className = "flash"; document.body.appendChild(f); setTimeout(() => f.remove(), 900); };
-    // a Platine or Diamant artist gets its own film: the signed sleeve (falls back to the turntable, then to CSS)
+    // a Platine or Diamant artist gets its own film: the signed sleeve
     // the sleeve's 3D (about 4 MB) may still be on its way when the card is flipped right after the opening: a black
     // screen while it loads (a word after a second), rather than falling back to the turntable too early
     let sl = null;
@@ -907,8 +1047,20 @@ const Stage = (() => {
       sl = await Promise.race([loadSleeve(), wait(15000)]);
       clearTimeout(slow); $s(".fx-hint").textContent = "";
     }
-    if (sl?.lost) { dropSleeve(); sl = null; }                   // its 3D died since last time: the turntable, and a fresh one next time
-    const g = sl ? null : await Promise.race([load3d(), wait(1200)]);
+    if (sl?.lost && !reduceMotion()) { dropSleeve(); sl = await Promise.race([loadSleeve(), wait(15000)]); }   // its 3D died while waiting (the computer slept): a fresh one
+    if (sl?.lost) { dropSleeve(); sl = null; }                   // and if that one is lost too: no film
+    // only two films: the turntable for a track, the signed sleeve for an artist. The turntable is waited for like the
+    // sleeve; without 3D (no WebGL, CDN down) there is no film at all and the card simply turns over
+    let g = null;
+    if (!sl && !isArtist(pl.c)) {
+      const slow = setTimeout(() => { $s(".fx-hint").textContent = "Chargement…"; }, 1200);
+      g = await Promise.race([load3d(), wait(15000)]);
+      clearTimeout(slow); $s(".fx-hint").textContent = "";
+    }
+    if (!sl && !g) {
+      sparks.stop(); el.hidden = true; document.body.classList.remove("fx-on"); el.className = "fx-screen";
+      return;
+    }
     let r;
     if (sl) {
       el.classList.add("three", "sleeve");
@@ -948,21 +1100,6 @@ const Stage = (() => {
       $s(".fx-title").style.top = (r.top + r.height + 18) + "px";
       el.classList.remove("s-charge"); el.classList.add("s-reveal");
       g.hold(big);
-    } else {
-      // no 3D (old phone, offline CDN): the record and its sleeve in plain CSS
-      spin = { a: 0, v: 0, to: 0, raf: 0, t: 0 };
-      spin.raf = requestAnimationFrame(spinLoop);
-      void el.offsetWidth; el.classList.add("s-in");             // 1. the sleeve appears, the record slides out of it
-      await wait(380); el.classList.add("s-slide");
-      await wait(620); el.classList.add("s-free"); spin.to = .55;   // out of the sleeve, it starts turning
-      await wait(520);
-      el.style.setProperty("--vc", col);                          // 2. it takes the colour of the hit, the needle is down
-      el.classList.add("s-charge"); spin.to = big ? 1.1 : .8;
-      sparks.embers(big ? 3 : 2);
-      await playTrack();
-      await wait(big ? 1450 : 1100);
-      el.classList.remove("s-charge"); el.classList.add("s-reveal");   // 3. burst: the card comes out of the record
-      spin.to = .35;
     }
     r = $s(".fx-card").getBoundingClientRect();
     if (!sl) { sparks.burst(r.left + r.width / 2, r.top + r.height / 2, big ? 260 : 150); if (big) flash(); }
@@ -996,7 +1133,7 @@ const Stage = (() => {
     .catch(e => { console.warn("Pochette 3D indisponible", e); sleeveP = null; return null; }))(performance.now());
   // the 3D scene is a separate file, fetched only when a booster holds a hit; null if WebGL or the CDN fails
   let hit3d = null, hit3dP = null;
-  const load3d = () => hit3dP ??= import("./hit3d.js?v=21").then(m => m.create($s(".fx-gl-host"))).then(async x => { await x.warmup(); return hit3d = x; })
+  const load3d = () => hit3dP ??= import("./hit3d.js?v=23").then(m => m.create($s(".fx-gl-host"))).then(async x => { await x.warmup(); return hit3d = x; })
     .catch(e => { console.warn("3D indisponible, animation simple", e); return null; });
   /* GOD pack: "GOD PACK" is written in gold in the dark, the lamp lights a solid gold record, the needle lands, light
      leaks out of the grooves and the record bursts into five cards turning in a ring around the deck. Each tap brings
@@ -1085,8 +1222,20 @@ const Stage = (() => {
     if (pulls.some(pl => isArtist(pl.c) && pl.c.tier >= MYTH)) loadSleeve();
     if (pulls.some(pl => !isArtist(pl.c) && isHit(pl)) || !pulls.length) load3d();
   }
-  return { isHit, warm, hit, god, prepare };
+  // the signed sleeve, prepared ahead of time (on a computer, once the page is open)
+  function preload() { if (!el) build(); loadSleeve(); }
+  return { isHit, warm, hit, god, prepare, preload };
 })();
+
+// the files of the artists' animation are kept on the device after the first visit (sw.js); on a computer, its 3D scene
+// is also prepared in the background once the page is open, so it starts at once when a Platine or Diamant artist comes
+// out — phones keep preparing it only when a booster holds one (memory, mobile data)
+if ("serviceWorker" in navigator && isSecureContext) navigator.serviceWorker.register("sw.js").catch(() => {});
+const isPhone = Math.min(innerWidth, innerHeight) < 600 || /Android|iPhone|iPad/.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
+if (!isPhone && !reduceMotion()) {
+  const go = () => setTimeout(() => (window.requestIdleCallback || setTimeout)(() => Stage.preload()), 3000);
+  if (document.readyState === "complete") go(); else addEventListener("load", go, { once: true });
+}
 
 // light particles for the hit screen: slow embers rising during the charge, a burst when the card comes out
 function Particles(cv) {
