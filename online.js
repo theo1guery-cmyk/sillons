@@ -65,6 +65,9 @@ const MESSAGES = {
   album_not_found: "Cet album n'est pas disponible.",
   discography_incomplete: "Il te manque encore des albums de cet artiste.",
   artist_not_found: "Cet artiste n'est pas disponible.",
+  already_graded: "Cette carte est déjà gradée.",
+  not_graded: "Cette carte n'est pas gradée.",
+  graded_card: "Une carte gradée ne se défausse pas. Casse d'abord sa boîte.",
 };
 function message(e) {
   const raw = (e && (e.message || e.code)) || "";
@@ -100,13 +103,14 @@ function addCopy(map, r, t) {
   const c = map[k] || (map[k] = { ...cardFromRow(r, t), n: 0, holo: 0, locked: 0, copies: [], at: Date.parse(r.pulled_at) });
   c.n++; if (r.holo) c.holo++; if (!r.tradeable && !r.collector) c.locked++;
   if (r.collector) c.collector = true;
-  c.copies.push({ id: r.id, tier: r.tier, holo: r.holo, tradeable: r.tradeable, collector: !!r.collector });
+  c.copies.push({ id: r.id, tier: r.tier, holo: r.holo, tradeable: r.tradeable, collector: !!r.collector,
+    grade: r.grade || null, cert: r.grade_cert || null, pop: r.grade_pop || null });   // a graded copy is sealed in its case
   return c;
 }
 async function fetchCards(owner, onlyTradeable) {
   const rows = [];
   for (let from = 0; ; from += 1000) {
-    let q = sb.from("cards").select("id,kind,track_id,artist_id,collector,tier,rank,holo,tradeable,pulled_at,tracks(title,artist,album,cover,duration,bpm,year,explicit,genre),artists(name,picture,fans,nb_album)")
+    let q = sb.from("cards").select("id,kind,track_id,artist_id,collector,tier,rank,holo,tradeable,pulled_at,grade,grade_cert,grade_pop,tracks(title,artist,album,cover,duration,bpm,year,explicit,genre),artists(name,picture,fans,nb_album)")
       .eq("owner", owner).order("pulled_at").order("id").range(from, from + 999);   // id breaks ties: an import pulls thousands of cards at the same instant, and without it pages skipped or repeated cards
     if (onlyTradeable) q = q.eq("tradeable", true);
     const { data, error } = await q;
@@ -149,7 +153,7 @@ async function enterAccount(user) {
   try {
     await loadAll();
     Online.active = true;
-    $("#tab-trades").hidden = false; $("#tab-defis").hidden = false; $("#tab-market").hidden = false; $("#tab-albums").hidden = false; $("#tab-duels").hidden = false; $("#navCommunity").hidden = false;
+    $("#tab-trades").hidden = false; $("#tab-grading").hidden = false; $("#tab-defis").hidden = false; $("#tab-market").hidden = false; $("#tab-albums").hidden = false; $("#tab-duels").hidden = false; $("#navCommunity").hidden = false;
     unseatTable();                       // closes the opening table and puts the booster back on its shelf
     refreshViews();
     pollOffers(); updateDefisBadge();
@@ -164,10 +168,10 @@ function leaveAccount() {
   try { const p = JSON.parse(localStorage.getItem(LS)); S = p && p.c ? p : { c: {}, opened: 0, stock: STOCK_MAX, stockAt: Date.now(), dry: 0 }; }
   catch (e) { S = guestS; }
   TEST_MODE = true;
-  $("#tab-trades").hidden = true; $("#tradeBadge").hidden = true;
+  $("#tab-trades").hidden = true; $("#tradeBadge").hidden = true; $("#tab-grading").hidden = true;
   $("#tab-defis").hidden = true; $("#defisBadge").hidden = true; $("#tab-market").hidden = true; $("#tab-albums").hidden = true; $("#albumsBadge").hidden = true;
   $("#tab-duels").hidden = true; $("#duelsBadge").hidden = true; $("#navCommunity").hidden = true;
-  if (!views.trades.hidden || !views.defis.hidden || !views.market.hidden || !views.albums.hidden || !views.duels.hidden) show("shop");
+  if (!views.grading.hidden || !views.trades.hidden || !views.defis.hidden || !views.market.hidden || !views.albums.hidden || !views.duels.hidden) show("shop");
   unseatTable();
   refreshViews();
 }

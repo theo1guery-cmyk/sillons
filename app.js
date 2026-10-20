@@ -528,7 +528,7 @@ function backEl(gl = false) {
 }
 
 /* ---------- views ---------- */
-const views = { shop: $("#view-shop"), store: $("#view-store"), binder: $("#view-binder"), catalog: $("#view-catalog"), trades: $("#view-trades"), defis: $("#view-defis"), market: $("#view-market"), albums: $("#view-albums"), duels: $("#view-duels") };
+const views = { shop: $("#view-shop"), store: $("#view-store"), binder: $("#view-binder"), catalog: $("#view-catalog"), trades: $("#view-trades"), defis: $("#view-defis"), market: $("#view-market"), albums: $("#view-albums"), duels: $("#view-duels"), grading: $("#view-grading") };
 function show(v) {
   for (const k in views) { views[k].hidden = k !== v; $("#tab-" + k).setAttribute("aria-selected", k === v); }
   if (!busy) unseatTable();   // leaving the tab puts the booster back
@@ -539,6 +539,7 @@ function show(v) {
   if (v === "market") Online.renderMarket();
   if (v === "albums") Online.renderAlbums();
   if (v === "duels") Online.renderDuels?.();
+  if (v === "grading") Online.renderGrading?.();
 }
 $("#tab-shop").onclick = () => show("shop");
 $("#tab-store").onclick = () => show("store");
@@ -547,6 +548,7 @@ $("#tab-catalog").onclick = () => show("catalog");
 $("#tab-trades").onclick = () => show("trades");
 $("#tab-defis").onclick = () => show("defis");
 $("#tab-market").onclick = () => show("market");
+$("#tab-grading").onclick = () => show("grading");
 $("#tab-albums").onclick = () => show("albums");
 $("#tab-duels").onclick = () => show("duels");
 
@@ -1570,3 +1572,39 @@ async function buildGallery() {
   for (const id of [1424821, 75798, 564]) add(gC, artist(await dz("artist/" + id), true), false);
 }
 if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) && location.hash === "#galerie") buildGallery();
+
+/* ---------- graded cards: the card sealed in its case, the grade in big on the label ---------- */
+const GRADE_NAME = { 10: "GEM MT", 9: "MINT", 8: "NM-MT", 7: "NM", 6: "EX-MT", 5: "EX", 4: "VG-EX", 3: "VG", 2: "GOOD", 1: "POOR" };
+function slabEl(c, holo, g) {   // g: { grade, cert, pop } — pop: this copy was the n-th of this card to be graded
+  const box = document.createElement("div"); box.className = "slab-box";      // the container its sizes are measured on
+  const el = document.createElement("div"); el.className = "slab"; el.dataset.g = g.grade; box.appendChild(el);
+  const l1 = isArtist(c) ? "ZIK HUNTER · ARTISTE" : `${c.y ? c.y + " " : ""}ZIK HUNTER`;
+  const l3 = (isArtist(c) ? CERT[c.tier] : `${c.a} · ${RAR[c.tier]}`) + (holo ? " · SHINY" : "");
+  el.innerHTML = `<div class="pocket"><div class="lbl">
+      <div class="txt"><span class="l1">${esc(l1)}</span><b class="l2">${esc(c.t)}</b><span class="l3">${esc(l3)}</span>
+        <span class="l4">#${String(g.pop).padStart(3, "0")}${g.pop === 1 ? " · 1re authentifiée" : ""}</span></div>
+      <div class="mark"><img src="brand/zikhunter-icon.svg" alt=""></div>
+      <div class="gr"><small>${GRADE_NAME[g.grade]}</small><b>${g.grade}</b><span class="bar" aria-hidden="true"></span><span class="cert">${esc(g.cert)}</span></div>
+    </div></div>
+    <div class="grip" aria-hidden="true"></div><div class="well"></div><div class="glare" aria-hidden="true"></div>`;
+  el.querySelector(".well").appendChild(cardEl(c, holo));
+  return box;
+}
+function tiltSlab(wrap) {
+  const el = wrap.querySelector(".slab");
+  wrap.addEventListener("pointermove", e => { const r = wrap.getBoundingClientRect(), x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+    el.style.setProperty("--ry", ((x - .5) * 16).toFixed(1) + "deg"); el.style.setProperty("--rx", ((.5 - y) * 12).toFixed(1) + "deg");
+    el.style.setProperty("--gx", (x * 100).toFixed(0) + "%"); el.style.setProperty("--gy", (y * 100).toFixed(0) + "%"); });
+  wrap.addEventListener("pointerleave", () => { el.style.setProperty("--ry", "0deg"); el.style.setProperty("--rx", "0deg"); });
+}
+// local preview only: http://localhost:8765/#boites shows the three looks of the case
+async function buildBoites() {
+  const shop = $("#view-shop"), wrap = document.createElement("div"); wrap.id = "boitesDemo"; shop.prepend(wrap);
+  const used = new Set(), cards = [];
+  for (const t of [LEG, MYTH, 3, 1]) { const raw = await findTrack(-1, t, used); if (raw) { used.add(raw.id); cards.push(await enrich(raw, -1)); } }
+  const art = await dz("artist/27"), artist = { kind: "artist", id: "a27", aid: 27, t: art.name, a: "Artiste", cov: art.picture_big.replace("http:", "https:"), rank: art.nb_fan, albums: art.nb_album, tier: certOf(art.nb_fan, 27), collector: false };
+  const sets = [[cards[0], false, 10, 1], [cards[1], true, 9, 4], [artist, false, 10, 2], [cards[2], false, 8, 17], [cards[3], false, 6, 3]].filter(x => x[0]);
+  const sec = document.createElement("section"); sec.innerHTML = `<h2>Le boîtier Zik Hunter</h2><p>Passe la souris sur une boîte : elle s'incline et le plexi accroche la lumière.</p><div class="row"></div>`; wrap.appendChild(sec);
+  for (const [c, holo, grade, pop] of sets) { const w = slabEl(c, holo, { grade, cert: String(10000000 + Math.floor(Math.random() * 89999999)), pop }); tiltSlab(w); sec.querySelector(".row").appendChild(w); }
+}
+if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) && location.hash === "#boites") buildBoites();

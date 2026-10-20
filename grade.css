@@ -1,0 +1,132 @@
+/* Zik Hunter — graded cards. A grading case like the real ones: a thick, polished acrylic body, the label sealed in its
+   own pocket at the top (text on the left, the logo in the middle, the grade, barcode and certificate on the right,
+   a thin gold frame where other graders use red), a ribbed grip under it, side notches, and the card held in a recessed
+   well. Everything is sized in cqw of .slab-box, so the case scales with the card. Local preview: #boites */
+.slab-box{container-type:inline-size;width:100%;perspective:1000px}
+.slab{--zh:#c9962f;--zh2:#f2d27e;position:relative;width:100%;aspect-ratio:66/104;border-radius:3.2cqw;padding:3.2cqw;box-sizing:border-box;
+  display:flex;flex-direction:column;transform-style:preserve-3d;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.05) 18%,rgba(255,255,255,.03) 70%,rgba(255,255,255,.1)),
+    linear-gradient(90deg,rgba(200,215,230,.14),rgba(200,215,230,.04) 12%,rgba(200,215,230,.04) 88%,rgba(200,215,230,.14));
+  box-shadow:
+    inset 0 0 0 .28cqw rgba(255,255,255,.7),            /* polished outer edge */
+    inset 0 0 0 .9cqw rgba(255,255,255,.07),
+    inset .9cqw .9cqw 1.4cqw rgba(255,255,255,.22),     /* bevel catching the light top-left */
+    inset -.9cqw -.9cqw 1.6cqw rgba(0,0,0,.35),          /* and the shade bottom-right */
+    0 .5cqw .8cqw rgba(0,0,0,.45),0 4cqw 9cqw rgba(0,0,0,.55)}
+/* the notches on both sides, where the two halves of the case are welded */
+.slab::before,.slab::after{content:"";position:absolute;top:38%;width:1.1cqw;height:9cqw;border-radius:1cqw;
+  background:linear-gradient(90deg,rgba(0,0,0,.45),rgba(255,255,255,.25));box-shadow:0 0 0 .2cqw rgba(255,255,255,.15)}
+.slab::before{left:.6cqw}.slab::after{right:.6cqw;transform:scaleX(-1)}
+
+/* ---- the label pocket and the label */
+.slab .pocket{position:relative;border-radius:1.6cqw;padding:1.3cqw;background:rgba(255,255,255,.05);
+  box-shadow:inset 0 0 0 .25cqw rgba(255,255,255,.35),inset .5cqw .5cqw 1cqw rgba(0,0,0,.35),inset -.3cqw -.3cqw .6cqw rgba(255,255,255,.12)}
+.slab .lbl{position:relative;display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:2.2cqw;height:21cqw;box-sizing:border-box;
+  padding:1.8cqw 2.6cqw;border-radius:.6cqw;color:#141016;overflow:hidden;
+  background:linear-gradient(180deg,#ffffff,#f4f1ea);
+  box-shadow:inset 0 0 0 .55cqw var(--zh),inset 0 0 0 .8cqw #fff,inset 0 0 0 .95cqw rgba(201,150,47,.55)}
+.slab .lbl .txt{min-width:0;display:grid;gap:.55cqw;font-family:var(--body);text-transform:uppercase}
+.slab .lbl .l1,.slab .lbl .l3{font:700 2.55cqw/1.05 var(--body);letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slab .lbl .l2{font:800 3.5cqw/1.05 var(--body);letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slab .lbl .l4{font:700 2.1cqw/1 var(--mono);letter-spacing:.06em;color:#8a6516}
+.slab .lbl .mark{display:grid;justify-items:center;gap:.5cqw}
+.slab .lbl .mark img{width:9cqw;height:9cqw;display:block}
+
+.slab .lbl .gr{display:grid;justify-items:end;text-align:right;gap:.3cqw;min-width:15cqw}
+.slab .lbl .gr small{font:800 2.5cqw/1 var(--body);letter-spacing:.03em}
+.slab .lbl .gr b{font:800 9.6cqw/.84 var(--body);letter-spacing:-.03em}
+.slab .lbl .bar{width:14.5cqw;height:2.4cqw;margin-top:.3cqw;
+  background:repeating-linear-gradient(90deg,#141016 0 .25cqw,transparent .25cqw .5cqw,#141016 .5cqw .95cqw,transparent .95cqw 1.15cqw,#141016 1.15cqw 1.35cqw,transparent 1.35cqw 1.8cqw)}
+.slab .lbl .cert{font:500 1.75cqw/1 var(--mono);letter-spacing:.08em}
+/* a 10 gets its gold */
+.slab[data-g="10"] .lbl .gr b{background:linear-gradient(180deg,#8a5d14,#d9a83f 40%,#7a520f 60%,#c9962f);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+/* ---- the ribbed grip between the label and the card */
+.slab .grip{height:3.2cqw;margin:1.6cqw 3cqw;border-radius:.6cqw;
+  background:repeating-linear-gradient(180deg,rgba(255,255,255,.22) 0 .25cqw,rgba(0,0,0,.18) .25cqw .55cqw);
+  box-shadow:inset 0 0 0 .2cqw rgba(255,255,255,.12);opacity:.8}
+
+/* ---- the well holding the card */
+.slab .well{position:relative;flex:1;border-radius:2cqw;padding:2.2cqw;display:grid;place-items:center;
+  background:rgba(0,0,0,.14);
+  box-shadow:inset 0 0 0 .25cqw rgba(255,255,255,.32),inset 0 0 0 .9cqw rgba(255,255,255,.05),inset 0 0 0 1.15cqw rgba(255,255,255,.18),
+    inset .6cqw .8cqw 1.6cqw rgba(0,0,0,.5)}
+.slab .well>.cq{width:100%;filter:drop-shadow(0 .8cqw 1.2cqw rgba(0,0,0,.5))}
+
+/* ---- the light on the acrylic: a fixed streak, plus a highlight that follows the pointer */
+.slab .glare{position:absolute;inset:0;border-radius:inherit;pointer-events:none;mix-blend-mode:screen;z-index:2;
+  background:
+    radial-gradient(55% 40% at var(--gx,25%) var(--gy,15%),rgba(255,255,255,.22),transparent 65%),
+    linear-gradient(118deg,transparent 28%,rgba(255,255,255,.07) 37%,transparent 47%,transparent 58%,rgba(255,255,255,.05) 66%,transparent 74%)}
+.slab-box .slab{transition:transform .25s ease;transform:rotateY(var(--ry,0deg)) rotateX(var(--rx,0deg))}
+
+/* the demo page */
+#boitesDemo{display:grid;gap:34px;margin-bottom:40px}
+#boitesDemo section h2{margin:0 0 4px}
+#boitesDemo section p{margin:0 0 16px;color:var(--muted)}
+#boitesDemo .row{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:30px}
+
+/* ---- the case appearing around the card during the reveal: .raw = only the card, then the case closes */
+.slab,.slab .pocket,.slab .grip,.slab .well,.slab::before,.slab::after,.slab .glare{transition:opacity .6s ease,box-shadow .6s ease,background .6s ease,transform .6s cubic-bezier(.2,.9,.2,1)}
+.slab.raw{background:transparent;box-shadow:none}
+.slab.raw::before,.slab.raw::after,.slab.raw .grip,.slab.raw .glare{opacity:0}
+.slab.raw .pocket{opacity:0;transform:translateY(-14cqw)}
+.slab.raw .well{background:none;box-shadow:none}
+.slab.sealing{animation:sealIn .7s cubic-bezier(.2,.9,.2,1)}
+@keyframes sealIn{from{transform:scale(1.06)}to{transform:none}}
+/* the scan light over the card */
+.slab.scan .well{overflow:hidden}
+.slab.scan .well::after{content:"";position:absolute;left:0;right:0;height:18%;top:-18%;pointer-events:none;mix-blend-mode:screen;
+  background:linear-gradient(180deg,transparent,rgba(160,230,255,.45) 45%,rgba(255,255,255,.8) 50%,rgba(160,230,255,.45) 55%,transparent);
+  animation:scanMove 1.05s ease-in-out infinite}
+@keyframes scanMove{to{top:100%}}
+.slab.landed .gr b{animation:gradeLand .5s cubic-bezier(.2,1.6,.4,1)}
+@keyframes gradeLand{from{transform:scale(1.8);opacity:.2}to{transform:none;opacity:1}}
+
+/* ---- the reveal screen */
+.g-screen{position:fixed;inset:0;z-index:60;display:grid;place-items:center;background:radial-gradient(70% 60% at 50% 45%,#1d1726,#050407 75%);
+  opacity:0;transition:opacity .35s ease;cursor:pointer}
+.g-screen.on{opacity:1}
+.g-stage{width:min(72vw,330px,calc((100vh - 220px) * .63));margin-top:-40px}
+.g-checks{position:absolute;left:0;right:0;bottom:calc(120px + env(safe-area-inset-bottom,0px));display:flex;justify-content:center;flex-wrap:wrap;gap:8px 18px;
+  font:500 .78rem var(--mono);letter-spacing:.14em;text-transform:uppercase;color:#bfe9ff;transition:opacity .4s ease}
+.g-checks span{animation:checkIn .3s ease both}.g-checks b{color:#7dffb0}
+.g-checks.out{opacity:0}
+@keyframes checkIn{from{opacity:0;transform:translateY(6px)}}
+.g-title{position:absolute;left:0;right:0;bottom:calc(84px + env(safe-area-inset-bottom,0px));display:grid;justify-items:center;gap:6px;text-align:center;padding:0 16px}
+.g-title b{font:900 clamp(1.4rem,4.5vw,2.2rem)/1 var(--display);letter-spacing:.06em;animation:checkIn .5s ease both}
+.g-title small{font:500 .78rem var(--mono);letter-spacing:.1em;color:var(--muted);animation:checkIn .5s .15s ease both}
+.g-screen.g10 .g-title b{background:var(--gold-grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.g-screen.g10{background:radial-gradient(70% 60% at 50% 45%,#3a2a0e,#0a0703 75%)}
+.g-screen.g10 .g-stage{filter:drop-shadow(0 0 40px rgba(245,194,77,.45))}
+.g-screen.g9 .g-stage{filter:drop-shadow(0 0 30px rgba(220,230,245,.3))}
+.g-hint{position:absolute;left:0;right:0;bottom:calc(24px + env(safe-area-inset-bottom,0px));margin:0;text-align:center;font:500 .74rem var(--mono);letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.55);animation:hintBlink 1.6s ease-in-out infinite}
+
+/* ---- the Gradation tab, the sheet, the collection */
+.slab-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:26px;margin-bottom:28px}
+.slab-cell .slab-box{cursor:pointer}
+.slab-cap{margin:8px 0 0;text-align:center;font-size:.82rem;color:var(--muted)}
+.g-counts{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 22px}
+.g-count{display:grid;justify-items:center;min-width:46px;padding:6px 8px;border-radius:10px;border:1px solid var(--edge);background:rgba(0,0,0,.25)}
+.g-count b{font:900 1.05rem/1 var(--display)}.g-count small{font:500 .7rem var(--mono);color:var(--muted)}
+.g-count.g10 b{color:#f5c24d}.g-count.g9 b{color:#e3e7ef}.g-count.g8 b{color:#e0a36a}
+.g-count-l{font-size:.8rem;color:var(--muted);margin-left:4px}
+.cell .g-price{position:absolute;left:50%;bottom:-10px;transform:translateX(-50%);display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;
+  background:#120e18;border:1px solid var(--edge-hi);font:600 .74rem var(--mono);white-space:nowrap}
+.cell .g-price .coin{width:11px;height:11px}
+.cell .g-tag{position:absolute;top:-6px;right:-6px;z-index:3;min-width:24px;height:24px;padding:0 5px;box-sizing:border-box;display:grid;place-items:center;border-radius:7px;
+  font:900 .78rem/1 var(--display);color:#141016;background:linear-gradient(180deg,#fff,#e9e4d8);box-shadow:0 0 0 2px #c9962f,0 4px 10px rgba(0,0,0,.4)}
+.cell .g-tag.g10{background:var(--gold-grad)}
+#mCard .slab-box.in-modal{width:min(100%,300px);margin:0 auto}
+.btn.primary-soft{border-color:#c9962f;color:#f2d27e}
+
+/* ---- the 3D lab: the canvas fills the screen, the real case fades in where the 3D one stopped */
+.g-gl-host{position:absolute;inset:0;pointer-events:none}
+.g-gl{position:absolute;inset:0;width:100%;height:100%;display:block;opacity:0;transition:opacity .4s ease}
+.g-screen.lit .g-gl{opacity:1}
+.g-screen.three{background:#040305}
+.g-screen.three .g-stage{opacity:0;transition:opacity .35s ease}
+.g-screen.three .g-stage.g-in{opacity:1}
+.g-screen.three .g-checks{bottom:calc(64px + env(safe-area-inset-bottom,0px))}
+.g-screen.three .g-title{text-shadow:0 2px 18px rgba(0,0,0,.8)}

@@ -1,0 +1,11 @@
+Model Information:
+* title:	Label Maker Photoscan
+* source:	https://sketchfab.com/3d-models/label-maker-photoscan-6bebfafe1e7a40c6a21db9d33e11d67a
+* author:	BrainIess (https://sketchfab.com/BrainIess)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Label Maker Photoscan" (https://sketchfab.com/3d-models/label-maker-photoscan-6bebfafe1e7a40c6a21db9d33e11d67a) by BrainIess (https://sketchfab.com/BrainIess) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
