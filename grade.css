@@ -130,3 +130,23 @@
 .g-screen.three .g-stage.g-in{opacity:1}
 .g-screen.three .g-checks{bottom:calc(64px + env(safe-area-inset-bottom,0px))}
 .g-screen.three .g-title{text-shadow:0 2px 18px rgba(0,0,0,.8)}
+
+/* ---- choosing up to 5 cards to grade at once */
+.cell .g-tick{position:absolute;top:-8px;left:-8px;z-index:3;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font:900 .8rem/1 var(--display);
+  color:#1c1305;background:var(--gold-grad);box-shadow:0 4px 10px rgba(0,0,0,.4);opacity:0;transform:scale(.6);transition:opacity .15s,transform .15s}
+.cell.g-sel .g-tick{opacity:1;transform:none}
+.cell.g-sel .cq{outline:3px solid #e7b14a;outline-offset:3px;border-radius:6%}
+.g-check{font-size:.82rem;color:var(--muted);display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.g-bar{position:sticky;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:20;margin:18px auto 0;width:max-content;max-width:100%;box-sizing:border-box;
+  display:flex;align-items:center;gap:12px;padding:10px 12px 10px 18px;border-radius:999px;background:rgba(18,14,24,.92);border:1px solid #c9962f;
+  box-shadow:0 10px 30px rgba(0,0,0,.5);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.g-bar[hidden]{display:none}
+#gBarTxt{display:inline-flex;align-items:center;gap:6px;font-size:.9rem;white-space:nowrap}
+#gBarTxt .coin{width:13px;height:13px}
+/* the reveal of a batch: the cases in a row */
+.g-batch{place-items:center;padding:20px 16px 80px;box-sizing:border-box;overflow:auto}
+.g-row{display:flex;flex-wrap:wrap;justify-content:center;gap:22px;max-width:1100px}
+.g-cell{width:min(200px,40vw);animation:checkIn .5s ease both}
+.g-res{margin:8px 0 0;text-align:center;font:500 .78rem var(--mono);letter-spacing:.06em;color:var(--muted);min-height:1.2em}
+.g-res b{font-family:var(--display);color:var(--ink)}.g-res b.g10{color:#f5c24d}.g-res b.g9{color:#e3e7ef}
+.g-tags{display:flex;flex-wrap:wrap;gap:8px;width:100%}

@@ -4,7 +4,8 @@
    buttons in a card's sheet, the Gradation tab, and the reveal of the grade. */
 
 const GRADE_PRICE = [25, 50, 100, 250, 600, 1500];          // by rarity (same as grade_price on the server)
-const G = { shiny: undefined, shown: 48, q: "", busy: false };
+const G = { shiny: undefined, shown: 48, q: "", busy: false, r: -1, kind: "all", shinyOnly: false, sort: "rare", tag: null, sel: [] };   // sel: [card, copy], 5 at most
+const MAX_BATCH = 5;
 const bestGraded = c => (c?.copies || []).filter(cp => cp.grade).sort((a, b) => b.grade - a.grade || a.pop - b.pop)[0] || null;
 const ungraded = c => (c?.copies || []).filter(cp => !cp.grade);
 const rarLabel = c => isArtist(c) ? CERT[c.tier] : RAR[c.tier];
@@ -176,7 +177,7 @@ let gTimer;
 $("#gq").addEventListener("input", () => { clearTimeout(gTimer); gTimer = setTimeout(() => { G.q = $("#gq").value.trim().toLowerCase(); G.shown = 48; drawPick(); }, 250); });
 $("#gForm").onsubmit = e => { e.preventDefault(); G.q = $("#gq").value.trim().toLowerCase(); drawPick(); };
 $("#gMore").onclick = () => { G.shown += 48; drawPick(); };
-$("#gPrices").textContent = "Prix : " + RAR.map((r, i) => `${r} ${fmt(GRADE_PRICE[i])}`).join(" · ") + " Streams (même prix pour les artistes, du Démo au Diamant). Touche une carte pour l'envoyer.";
+$("#gPrices").textContent = "Prix : " + RAR.map((r, i) => `${r} ${fmt(GRADE_PRICE[i])}`).join(" · ") + " Streams (même prix pour les artistes, du Démo au Diamant). Choisis jusqu'à 5 cartes, puis « Faire grader ».";
 
 function slabCell(c, copy, caption) {
   const wrap = document.createElement("div"); wrap.className = "slab-cell";
@@ -193,7 +194,7 @@ async function renderGrading() {
     .sort((a, b) => b[1].grade - a[1].grade || b[0].tier - a[0].tier || a[1].pop - b[1].pop);
   if (!graded.length) mine.innerHTML = `<div class="empty">Aucune carte gradée pour l'instant. Choisis-en une plus bas.</div>`;
   for (const [c, cp] of graded) mine.appendChild(slabCell(c, cp));
-  drawPick();
+  G.sel = G.sel.filter(([c, cp]) => !cp.grade); drawFilters(); drawPick();
   try {
     const b = await rpc("grade_board");
     const counts = b.counts || {};
@@ -208,20 +209,108 @@ async function renderGrading() {
     }
   } catch (e) { $("#gBoard").innerHTML = `<div class="empty">${esc(message(e))}</div>`; }
 }
+// the filters of the "Faire grader" list: rarity, kind, Shiny, order
+function drawFilters() {
+  const f = $("#gFilters");
+  f.innerHTML = [-1, ...RAR.keys()].map(r => `<button class="chip" data-r="${r}" aria-pressed="${G.r === r}">${r < 0 ? "Toutes raretés" : `<i style="background:${RCOL[r]}"></i>${RAR[r]} / ${CERT[r]}`}</button>`).join("") +
+    `<label for="gKind">Cartes <select id="gKind"><option value="all">toutes</option><option value="tracks">morceaux</option><option value="artists">artistes</option></select></label>` +
+    `<label for="gSort">Trier <select id="gSort"><option value="rare">les plus rares</option><option value="cheap">les moins chères à grader</option><option value="recent">les plus récentes</option><option value="az">de A à Z</option></select></label>` +
+    `<label class="g-check"><input type="checkbox" id="gShiny"${G.shinyOnly ? " checked" : ""}> Shiny seulement</label>` +
+    (typeof TAGS !== "undefined" && TAGS.length ? `<div class="g-tags"><button class="chip" data-tag="" aria-pressed="${!G.tag}">Toutes les étiquettes</button>` +
+      TAGS.map(t => `<button class="chip tagchip" data-tag="${t.id}" aria-pressed="${G.tag === t.id}" style="--tc:${t.color}"><i></i>${esc(t.name)}</button>`).join("") + `</div>` : "");
+  $("#gKind").value = G.kind; $("#gSort").value = G.sort;
+  f.querySelectorAll(".chip[data-r]").forEach(b => b.onclick = () => { G.r = +b.dataset.r; G.shown = 48; drawFilters(); drawPick(); });
+  f.querySelectorAll(".chip[data-tag]").forEach(b => b.onclick = () => { G.tag = b.dataset.tag || null; G.shown = 48; drawFilters(); drawPick(); });   // your tags, as in the collection
+  $("#gKind").onchange = e => { G.kind = e.target.value; G.shown = 48; drawPick(); };
+  $("#gSort").onchange = e => { G.sort = e.target.value; drawPick(); };
+  $("#gShiny").onchange = e => { G.shinyOnly = e.target.checked; G.shown = 48; drawPick(); };
+}
+// the copy sent for a card: its Shiny if it has one (the most precious), else any ungraded copy
+const copyFor = c => { const free = ungraded(c); return free.find(cp => cp.holo && c.tier >= MYTH) || free[0]; };
+const isSel = c => G.sel.some(([x]) => ck(x) === ck(c));
 function drawPick() {
   const grid = $("#gPick"); grid.innerHTML = "";
-  const list = Object.values(S.c).filter(c => ungraded(c).length && (!G.q || (c.t + " " + c.a).toLowerCase().includes(G.q)))
-    .sort((a, b) => b.tier - a.tier || b.rank - a.rank);
-  if (!list.length) grid.innerHTML = `<div class="empty">${G.q ? "Aucune carte ne correspond." : "Toutes tes cartes sont déjà gradées."}</div>`;
+  const sorts = { rare: (a, b) => b.tier - a.tier || b.rank - a.rank, cheap: (a, b) => a.tier - b.tier || b.rank - a.rank,
+    recent: (a, b) => (b.at || 0) - (a.at || 0), az: (a, b) => a.t.localeCompare(b.t, "fr") };
+  const list = Object.values(S.c).filter(c => ungraded(c).length && !c.collector
+      && (!G.q || (c.t + " " + c.a).toLowerCase().includes(G.q)) && (G.r < 0 || c.tier === G.r)
+      && (G.kind === "all" || (G.kind === "artists") === isArtist(c)) && (!G.shinyOnly || (c.holo > 0 && c.tier >= MYTH))
+      && (!G.tag || (Online.tagsOf?.(c) || []).some(t => t.id === G.tag)))
+    .sort(sorts[G.sort]);
+  if (!list.length) grid.innerHTML = `<div class="empty">${G.q || G.r >= 0 || G.kind !== "all" || G.shinyOnly || G.tag ? "Aucune carte ne correspond." : "Toutes tes cartes sont déjà gradées."}</div>`;
   for (const c of list.slice(0, G.shown)) {
-    const b = document.createElement("button"); b.className = "cell";
-    b.setAttribute("aria-label", `${c.t}, ${rarLabel(c)} : faire grader pour ${GRADE_PRICE[c.tier]} Streams`);
-    b.appendChild(cardEl(c, c.holo > 0 && c.tier >= MYTH));
-    b.insertAdjacentHTML("beforeend", `<span class="g-price">${fmt(GRADE_PRICE[c.tier])} <i class="coin" aria-hidden="true"></i></span>`);
-    b.onclick = () => openModal(c);
+    const b = document.createElement("button"); b.className = "cell" + (isSel(c) ? " g-sel" : "");
+    b.setAttribute("aria-pressed", isSel(c)); b.setAttribute("aria-label", `${c.t}, ${rarLabel(c)} : ${fmt(GRADE_PRICE[c.tier])} Streams. Touche pour la choisir.`);
+    b.appendChild(cardEl(c, !!copyFor(c)?.holo && c.tier >= MYTH));
+    b.insertAdjacentHTML("beforeend", `<span class="g-price">${fmt(GRADE_PRICE[c.tier])} <i class="coin" aria-hidden="true"></i></span><span class="g-tick" aria-hidden="true">✓</span>`);
+    b.onclick = () => {
+      if (isSel(c)) G.sel = G.sel.filter(([x]) => ck(x) !== ck(c));
+      else if (G.sel.length >= MAX_BATCH) return toast(`${MAX_BATCH} cartes maximum à la fois.`);
+      else G.sel.push([c, copyFor(c)]);
+      drawPick();
+    };
     grid.appendChild(b);
   }
   $("#gMore").hidden = list.length <= G.shown;
+  drawBar();
+}
+function drawBar() {
+  const bar = $("#gBar"), n = G.sel.length, total = G.sel.reduce((s, [c]) => s + GRADE_PRICE[c.tier], 0);
+  bar.hidden = !n;
+  $("#gBarTxt").innerHTML = `<b>${n} / ${MAX_BATCH}</b> carte${n > 1 ? "s" : ""} · ${fmt(total)} <i class="coin" aria-hidden="true"></i>`;
+  $("#gBarGo").textContent = n > 1 ? `Faire grader les ${n}` : "Faire grader";
+}
+$("#gBarClear").onclick = () => { G.sel = []; drawPick(); };
+$("#gBarGo").onclick = () => gradeBatch(G.sel.slice());
+
+// several cards at once: the server grades them one by one (each is paid and numbered on its own), then the reveal
+async function gradeBatch(sel) {
+  if (G.busy || !sel.length) return;
+  const total = sel.reduce((s, [c]) => s + GRADE_PRICE[c.tier], 0);
+  if ((S.streams || 0) < total) return toast(`Il te faut ${fmt(total)} Streams pour ces ${sel.length} cartes. Tu en as ${fmt(S.streams || 0)}.`);
+  G.busy = true; $("#gBarGo").disabled = true;
+  const done = [];
+  for (const [c, copy] of sel) {
+    try { const res = await rpc("grade_card", { p_card: copy.id }); Object.assign(copy, { grade: res.grade, cert: res.cert, pop: res.pop }); S.streams = Math.max(0, (S.streams || 0) - GRADE_PRICE[c.tier]); done.push([c, copy]); }
+    catch (e) { toast(`« ${c.t} » : ${message(e)}`); }
+  }
+  G.sel = []; $("#gBarGo").disabled = false;
+  if (done.length === 1) await gradeReveal(done[0][0], !!done[0][1].holo && done[0][0].tier >= MYTH, done[0][1]);
+  else if (done.length) await batchReveal(done);
+  loadProfile?.().catch(() => {});
+  refreshGradingViews();
+  G.busy = false;
+}
+// the reveal of a batch: the cases of all but the rarest come up in a row and their grades land one after the other;
+// then the rarest one gets the whole film in the lab
+async function batchReveal(done) {
+  done.sort((a, b) => a[0].tier - b[0].tier || a[0].rank - b[0].rank);
+  const last = done.pop();
+  try { gsfx().resume(); } catch {}
+  const scr = document.createElement("div"); scr.className = "g-screen g-batch"; scr.setAttribute("role", "dialog"); scr.setAttribute("aria-label", "Résultats de la gradation");
+  scr.innerHTML = `<div class="g-row"></div><p class="g-hint"></p>`;
+  document.body.appendChild(scr); document.body.classList.add("fx-on"); void scr.offsetWidth; scr.classList.add("on");
+  const row = scr.querySelector(".g-row"), items = [];
+  for (const [c, cp] of done) {
+    const box = slabEl(c, !!cp.holo && c.tier >= MYTH, cp), inner = box.querySelector(".slab");
+    box.querySelector(".gr b").textContent = "?"; box.querySelector(".gr small").textContent = "· · ·"; inner.dataset.g = "";
+    const cell = document.createElement("div"); cell.className = "g-cell"; cell.append(box); cell.insertAdjacentHTML("beforeend", `<p class="g-res"></p>`);
+    row.appendChild(cell); items.push([box, inner, cp]);
+  }
+  await sleepG(reduceMotion() ? 100 : 700);
+  for (const [box, inner, cp] of items) {
+    const num = box.querySelector(".gr b");
+    if (!reduceMotion()) for (let i = 0; i < 10; i++) { num.textContent = 4 + Math.floor(Math.random() * 7); tick(0, 2200, .03, .02); await sleepG(40 + i * i * 3); }
+    num.textContent = cp.grade; box.querySelector(".gr small").textContent = GRADE_NAME[cp.grade]; inner.dataset.g = cp.grade; inner.classList.add("landed");
+    thud(0, cp.grade >= 9 ? .6 : .35);
+    box.parentElement.querySelector(".g-res").innerHTML = `<b class="g${cp.grade}">${GRADE_NAME[cp.grade]} ${cp.grade}</b> · #${String(cp.pop).padStart(3, "0")}`;
+    await sleepG(500);
+  }
+  scr.querySelector(".g-hint").textContent = "Et la dernière… touche pour continuer";
+  await new Promise(r => { const f = e => { if (e.type === "keydown" && !["Enter", " ", "Escape"].includes(e.key)) return; removeEventListener("keydown", f, true); scr.removeEventListener("click", f); r(); };
+    scr.addEventListener("click", f); addEventListener("keydown", f, true); });
+  scr.classList.remove("on"); await sleepG(300); scr.remove(); document.body.classList.remove("fx-on");
+  await gradeReveal(last[0], !!last[1].holo && last[0].tier >= MYTH, last[1]);
 }
 Object.assign(Online, { renderGrading: () => renderGrading() });
 
