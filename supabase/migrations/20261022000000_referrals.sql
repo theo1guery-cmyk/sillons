@@ -2,7 +2,7 @@
 -- 7 days of signing up) gets 10 boosters, 500 Streams and an Édition Deluxe at once. The referrer is rewarded when the
 -- friend really plays: 50 boosters opened on at least 5 different days (so fake accounts are not worth it). Then the
 -- referrer gets 500 Streams per active friend (up to 50), and steps: 1 Édition Deluxe, 2 a Mythique, 3 a Légendaire,
--- 5 the VIP pass of the season, 10 a Légendaire Shiny, 20 the VIP pass of the next season.
+-- 5 the VIP pass of the season, 10 a Shiny surprise (as at the end of the pass), 20 the VIP pass of the next season.
 
 create table if not exists public.referrals (
   referee uuid primary key references public.profiles on delete cascade,
@@ -26,7 +26,7 @@ alter table public.profiles add column if not exists vip_next_after int;   -- VI
 create or replace function public.referral_steps_def() returns table (n int, kind text, label text)
 language sql immutable as $$
   values (1, 'deluxe', 'Une Édition Deluxe (15 cartes, toutes Rare ou mieux)'), (2, 'mythic', 'Une carte Mythique'), (3, 'legend', 'Une carte Légendaire'),
-         (5, 'vip', 'Le Pass VIP de la saison'), (10, 'shiny', 'Une Légendaire Shiny'), (20, 'vip_next', 'Le Pass VIP de la saison suivante')
+         (5, 'vip', 'Le Pass VIP de la saison'), (10, 'shiny', 'Une carte Shiny surprise'), (20, 'vip_next', 'Le Pass VIP de la saison suivante')
 $$;
 
 -- the VIP pass of the current season (500 Vinyles, its price, if the player already has it)
@@ -58,7 +58,7 @@ end $$;
 -- a friend just became active: the referrer's rewards
 create or replace function public.referral_activate(p_referee uuid) returns void
 language plpgsql security definer set search_path = public as $$
-declare r uuid; who text; cnt int; d record; s seasons;
+declare r uuid; who text; cnt int; d record; s seasons; x double precision;
 begin
   update referrals set active_at = now() where referee = p_referee and active_at is null returning referrer into r;
   if r is null then return; end if;
@@ -72,7 +72,12 @@ begin
     if d.kind = 'deluxe' then update profiles set big_packs = big_packs + 1 where id = r;
     elsif d.kind = 'mythic' then perform give_card(r, 'track', 4::smallint, false, 'referral');
     elsif d.kind = 'legend' then perform give_card(r, 'track', 5::smallint, false, 'referral');
-    elsif d.kind = 'shiny' then perform give_card(r, 'track', 5::smallint, true, 'referral');
+    elsif d.kind = 'shiny' then                  -- the Shiny surprise, as at the end of the pass
+      x := random();
+      if x < .4 then perform give_card(r, 'track', 4::smallint, true, 'referral');
+      elsif x < .7 then perform give_card(r, 'artist', 4::smallint, true, 'referral');
+      elsif x < .9 then perform give_card(r, 'track', 5::smallint, true, 'referral');
+      else perform give_card(r, 'artist', 5::smallint, true, 'referral'); end if;
     elsif d.kind = 'vip' then perform referral_give_vip(r);
     elsif d.kind = 'vip_next' then s := current_season(); update profiles set vip_next_after = coalesce(s.id, 0) where id = r;
     end if;
