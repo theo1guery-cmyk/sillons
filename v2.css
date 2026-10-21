@@ -292,3 +292,19 @@
 .dcard.bd .badge,.dcard.bd .pw{background:#000;border-color:#e9c46a;color:#f5d27a}
 .dcard.bd .gem{background:linear-gradient(135deg,#fff6cf,#d9a83f 50%,#fff1b8);filter:drop-shadow(0 0 .8cqw rgba(233,196,106,.8))}
 .dcard.bd .ribbon{color:#f5d27a;border-color:#e9c46a}
+
+/* the booster's cards one by one, big in the middle of the screen (soloReveal) */
+.solo{position:fixed;inset:0;z-index:42;display:grid;grid-template-rows:auto 1fr auto;justify-items:center;padding:18px 16px 26px;cursor:pointer;
+  background:radial-gradient(ellipse at 50% 45%,rgba(40,24,60,.55),rgba(6,4,10,.9) 70%);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);animation:tsIn .3s ease-out}
+.solo.out{animation:fade-out .26s ease forwards}
+.solo-head{width:min(560px,100%);display:flex;justify-content:space-between;align-items:center;gap:12px}
+.solo-n{font-family:var(--mono);font-size:.8rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.solo-stage{position:relative;width:100%;display:grid;place-items:center}
+.solo-card{position:absolute;opacity:1;transform:none;width:min(460px,80vw,calc((100dvh - 190px) * .716));animation:soloIn .45s cubic-bezier(.2,.9,.3,1.15) both}
+.solo-card .tag{font-size:.8rem;margin-top:14px}
+.solo-card.leave{animation:soloOut .32s ease-in forwards;pointer-events:none}
+.solo-hint{min-height:1.3em;margin:0;font-family:var(--mono);font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);animation:soloHint 1.8s ease-in-out infinite}
+@keyframes soloIn{from{opacity:0;transform:translateX(70px) rotate(6deg) scale(.9)}}
+@keyframes soloOut{to{opacity:0;transform:translateX(-90px) rotate(-8deg) scale(.88)}}
+@keyframes soloHint{50%{opacity:.45}}
+@media (prefers-reduced-motion:reduce){.solo-card,.solo-card.leave,.solo-hint{animation:none}}
