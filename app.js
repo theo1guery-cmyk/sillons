@@ -1846,8 +1846,7 @@ function slabEl(c, holo, g) {   // g: { grade, cert, pop } — pop: this copy wa
       <div class="mark"><img src="brand/zikhunter-icon.svg" alt=""></div>
       <div class="gr"><small>${GRADE_NAME[g.grade]}</small><b>${g.grade}</b><span class="bar" aria-hidden="true"></span><span class="cert">${esc(g.cert)}</span></div>
     </div></div>
-    <div class="grip" aria-hidden="true"></div><div class="well"></div><div class="glare" aria-hidden="true"></div>
-    ${g.pop === 1 ? `<span class="seal" title="Première carte de ce titre authentifiée"><small>N°</small><b>001</b><i>1re</i></span>` : ""}`;
+    <div class="grip" aria-hidden="true"></div><div class="well"></div><div class="glare" aria-hidden="true"></div>`;
   el.querySelector(".well").appendChild(cardEl(c, holo));
   return box;
 }
