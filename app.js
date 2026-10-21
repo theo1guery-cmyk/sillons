@@ -1028,6 +1028,8 @@ async function openPack(p, opts = {}) {
     if (pulls.some(Stage.isHit)) Stage.prepare(pulls);
     for (const pl of pulls) if (Stage.isHit(pl)) Stage.warm(pl);   // the hits' tracks load while the first cards flip
     window.V2?.pulls(pulls);
+    const xp = window.packXp?.(p, god);
+    if (xp) { const t = document.createElement("span"); t.className = "op-xp"; t.textContent = `+${xp} XP`; $o(".op-head").appendChild(t); setTimeout(() => t.remove(), 2600); }
     if (god && !reduceMotion()) {                   // the GOD pack keeps its own film, then the booster laid out
       OP.pulls = pulls; opRecap();
       await Stage.god(pulls, [...$o(".op-recap").querySelectorAll(".flip")]);

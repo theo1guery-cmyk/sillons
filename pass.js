@@ -188,9 +188,7 @@ async function renderPass() {
         <span class="ps-barcode" aria-hidden="true"></span>
       </div>
     </div>
-
-
-
+    ${xpBox(d)}
     <div class="ps-bar">
       <h3>Récompenses</h3>
       <button class="btn primary" id="psAll" ${ready ? "" : "disabled"}>${ready ? `Tout récupérer (${ready})` : "Rien à récupérer"}</button>
@@ -245,6 +243,37 @@ async function renderPass() {
   const next = box.querySelector(".ps-tier.next") || [...box.querySelectorAll(".ps-tier.reached")].pop();
   const track = $("#psTrack");
   if (next && track) track.scrollLeft = Math.max(0, next.offsetLeft - track.clientWidth / 2 + next.clientWidth / 2);
+}
+
+// how XP is won, with this player's numbers (VIP bonus and boost included), and the XP of the day
+const xpMult = d => (d?.xp_vip ? 1.5 : 1) * (d?.xp_boost || 1);
+function xpBox(d) {
+  if (d.xp_cap == null) return "";
+  const m = xpMult(d), v = n => Math.round(n * m), pct = Math.min(100, Math.round(100 * d.xp_today / d.xp_cap));
+  const until = d.xp_boost > 1 && d.xp_boost_until ? new Date(Date.parse(d.xp_boost_until) - 60000).toLocaleDateString("fr-FR", { day: "numeric", month: "long" }) + " inclus" : "";
+  const rows = [["Booster ouvert", v(10)], ["Édition Deluxe ouverte", v(30)], ["GOD pack", v(100)], ["Défi du jour réussi", v(50)],
+    ["Prime de connexion", v(25)], ["Succès, albums, blind test, parrainage", `+${v(2)} XP pour 10 Streams`]];
+  return `<section class="ps-xpbox" aria-labelledby="psXpT">
+    <div class="ps-xpday">
+      <h3 id="psXpT">XP du jour</h3>
+      <div class="ps-meter"><s style="width:${pct}%"></s></div>
+      <small><b>${fmt(d.xp_today)}</b> / ${fmt(d.xp_cap)} XP${d.xp_today >= d.xp_cap ? " · plafond atteint, il se recharge à minuit" : " · le plafond se recharge à minuit"}</small>
+      <div class="ps-xptags">${d.xp_boost > 1 ? `<span class="ps-boost">⚡ XP ×${String(d.xp_boost).replace(".", ",")}${until ? ` jusqu'au ${until}` : ""}</span>` : ""}
+        ${d.xp_vip ? `<span class="ps-vipx">VIP · +50 % d'XP</span>` : `<span class="ps-vipno">Avec le VIP : +50 % d'XP et un plafond plus haut</span>`}</div>
+    </div>
+    <div class="ps-how">
+      <h3>Comment gagner de l'XP</h3>
+      <ul>${rows.map(([t, n]) => `<li><span>${t}</span><b>${typeof n === "number" ? "+" + n + " XP" : n}</b></li>`).join("")}</ul>
+      <small>Les paliers se débloquent aussi avec des Vinyles. ${m > 1 ? "Les valeurs tiennent compte de tes bonus." : ""} 200 XP par palier.</small>
+    </div>
+  </section>`;
+}
+// the XP of a booster just opened, shown on the opening scene (a guess from the pass data: the server counts the real XP)
+function packXp(p, god) {
+  const d = PASS.data; if (!d || d.xp_cap == null || p.pay === "vinyls" && p.g >= 0) return 0;
+  const n = Math.round((god ? 100 : p.big ? 30 : 10) * xpMult(d)), left = Math.max(0, d.xp_cap - d.xp_today);
+  const got = Math.min(n, left); d.xp_today += got;
+  return got;
 }
 
 // "Tes objets de saison": the items received, worn or not
