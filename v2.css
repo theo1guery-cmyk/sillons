@@ -339,7 +339,7 @@ body.op-on{overflow:hidden}
 /* the cards, one by one: they come out of the booster */
 .op-cards{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
 .op[data-phase=cards] .op-cards{pointer-events:auto;cursor:pointer}
-.op .solo-card{position:absolute;opacity:1;transform:none;width:min(400px,76vw,calc((100dvh - 290px) * .716));animation:opCardIn .55s cubic-bezier(.2,.9,.3,1.12) both}
+.op .solo-card{position:absolute;opacity:1;transform:none;width:min(310px,62vw,calc((100dvh - 330px) * .66));animation:opCardIn .55s cubic-bezier(.2,.9,.3,1.12) both}
 .op .solo-card .tag{font-size:.8rem;margin-top:14px}
 .op .solo-card.leave{animation:opCardOut .38s ease-in forwards;pointer-events:none}
 @keyframes opCardIn{from{opacity:0;transform:translateY(26vh) scale(.45)}}
