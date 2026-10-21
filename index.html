@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Instrument+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&family=Mrs+Saint+Delafield&display=swap">
 <link rel="stylesheet" href="styles.css?v=71">
-<link rel="stylesheet" href="v2.css?v=45">
+<link rel="stylesheet" href="v2.css?v=46">
 <link rel="stylesheet" href="v3.css?v=8">
 <link rel="stylesheet" href="admin.css?v=4">
 <link rel="stylesheet" href="pass.css?v=21">
@@ -25,6 +25,7 @@
   <main class="land-panel">
     <img class="land-logo" src="brand/zikhunter-horizontal.svg" alt="Zik Hunter" width="260" height="71">
     <h1 class="land-title">Chasse les sons.<br>Collectionne les tubes.</h1>
+    <p class="land-ref" id="landRef" hidden></p>
     <p class="land-pitch">Chaque carte est un vrai morceau de Deezer. Plus il est écouté, plus il est rare : seuls les tubes mondiaux sont Légendaires.</p>
     <section class="land-auth" aria-labelledby="landAuthTitle">
       <div class="land-tabs" role="tablist">
@@ -222,6 +223,7 @@
       <div class="wallet"><small>Ton solde</small><b><i class="coin" aria-hidden="true"></i><span id="walletStreams">0</span></b><span>Streams</span></div>
       <div class="login-box" id="loginBox"></div>
     </div>
+    <section class="ref-box" id="refBox" aria-labelledby="refTitle" hidden></section>
     <h3>Défis du jour</h3>
     <div class="dailies" id="dailies"></div>
     <h3>Succès</h3>
@@ -292,7 +294,7 @@
 <div class="toast" id="toast" hidden></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <script src="app.js?v=148"></script>
-<script src="online.js?v=98"></script>
+<script src="online.js?v=99"></script>
 <script src="duels.js?v=51"></script>
 <script src="grade.js?v=20"></script>
 <script src="admin.js?v=13"></script>

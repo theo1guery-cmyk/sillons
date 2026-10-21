@@ -363,3 +363,40 @@ body.op-on{overflow:hidden}
 @media (max-width:600px){.op{padding:14px 10px 18px}.op-pack{height:min(56vh,480px)}.op-recap{gap:10px}.op-recap .slot{width:calc(33% - 10px)}.op-recap.many .slot{width:calc(25% - 10px)}.op-recap .slot .tag{font-size:.56rem}}
 @media (prefers-reduced-motion:reduce){.op .solo-card,.op .solo-card.leave,.op-mini,.op-pack.in,.op[data-phase=load] .op-pack,.op-hint{animation:none!important}}
 .op.flipping .op-actions,.op.flipping .op-x{visibility:hidden}
+
+/* ---------- referrals (online.js: renderReferral) ---------- */
+.land-ref{margin:-4px 0 14px;padding:10px 14px;border-radius:12px;border:1px solid rgba(231,177,74,.45);background:rgba(231,177,74,.1);color:#ffe2a0;font-size:.9rem;line-height:1.45}
+.ref-box{margin:22px 0 6px;padding:18px;border-radius:18px;border:1px solid rgba(231,177,74,.35);
+  background:radial-gradient(ellipse at 0 0,rgba(231,177,74,.14),transparent 60%),var(--felt-2,rgba(255,255,255,.03));display:grid;gap:16px}
+.ref-head{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,420px);gap:16px;align-items:center}
+.ref-head h3{margin:0 0 6px}
+.ref-head p{margin:0;color:var(--muted);font-size:.9rem;line-height:1.5}
+.ref-head p b{color:#ffe2a0;font-weight:600}
+.ref-link{display:flex;gap:8px}
+.ref-link input{flex:1;min-width:0;padding:10px 12px;border-radius:10px;border:1px solid var(--line,rgba(255,255,255,.12));background:rgba(0,0,0,.3);color:#fff;font:500 .8rem var(--mono)}
+.ref-title{font:900 clamp(20px,2.4vw,26px) var(--display)!important;letter-spacing:0!important;text-transform:none!important;color:#ffe2a0!important}
+.ref-title::after{display:none!important}
+.ref-track{position:relative;padding-top:4px}
+.ref-bar{position:absolute;left:calc(50% / var(--k));right:calc(50% / var(--k));top:23px;height:4px;border-radius:4px;background:rgba(255,255,255,.08)}
+.ref-bar i{display:block;height:100%;width:calc(var(--p) * 100%);border-radius:4px;background:linear-gradient(90deg,#c9952f,#ffe2a0);box-shadow:0 0 12px rgba(240,190,90,.6)}
+.ref-track ol{position:relative;list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(var(--k),minmax(0,1fr))}
+.ref-track li{display:grid;justify-items:center;align-content:start;text-align:center;gap:4px;padding:0 4px}
+.ref-dot{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-size:1.1rem;background:#1b1530;border:2px solid rgba(255,255,255,.14);filter:grayscale(.8);opacity:.75}
+.ref-track li.done .ref-dot{border-color:#e8bf62;filter:none;opacity:1;box-shadow:0 0 14px rgba(240,190,90,.55)}
+.ref-track li.next .ref-dot{border-color:#e8bf62;filter:none;opacity:1;animation:soloHint 1.8s ease-in-out infinite}
+.ref-track li b{font:700 .72rem var(--mono);letter-spacing:.08em;text-transform:uppercase;color:#cdbfdc}
+.ref-track li.done b{color:#ffe2a0}
+.ref-track li small{font-size:.74rem;line-height:1.3;color:var(--muted)}
+.ref-count{margin:0;font-size:.88rem;color:var(--muted)}
+.ref-count b{color:#ffe2a0;font-size:1.1rem}
+.ref-friends{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.ref-friends li{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;padding:10px 12px;border-radius:12px;border:1px solid var(--line,rgba(255,255,255,.1));background:rgba(255,255,255,.03);font-size:.82rem}
+.ref-friends li span{color:var(--muted);font-size:.74rem}
+.ref-friends li .ok{color:#7fe0a4;font-weight:600}
+.ref-friends li.on{border-color:rgba(127,224,164,.4)}
+.ref-mini{grid-column:1/-1;height:4px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden}
+.ref-mini i{display:block;height:100%;background:linear-gradient(90deg,#c9952f,#ffe2a0)}
+.ref-set{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:.88rem}
+.ref-set input{padding:8px 10px;border-radius:10px;border:1px solid var(--line,rgba(255,255,255,.12));background:rgba(0,0,0,.3);color:#fff}
+.ref-rule{margin:0;font-size:.76rem;color:var(--muted)}
+@media (max-width:760px){.ref-head{grid-template-columns:minmax(0,1fr)}.ref-dot{width:32px;height:32px;font-size:.9rem}.ref-bar{top:19px}.ref-track li{padding:0 1px}.ref-track li b{font-size:.6rem;letter-spacing:.02em}.ref-track li small{font-size:.6rem}}
