@@ -1836,12 +1836,13 @@ if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) && location.hash === "#
 const GRADE_NAME = { 10: "GEM MT", 9: "MINT", 8: "NM-MT", 7: "NM", 6: "EX-MT", 5: "EX", 4: "VG-EX", 3: "VG", 2: "GOOD", 1: "POOR" };
 function slabEl(c, holo, g) {   // g: { grade, cert, pop } — pop: this copy was the n-th of this card to be graded
   const box = document.createElement("div"); box.className = "slab-box";      // the container its sizes are measured on
-  const el = document.createElement("div"); el.className = "slab"; el.dataset.g = g.grade; box.appendChild(el);
+  const el = document.createElement("div"); el.className = "slab" + (g.pop === 1 ? " first" : ""); el.dataset.g = g.grade; box.appendChild(el);
+  if (g.pop === 1) box.classList.add("first");
   const l1 = isArtist(c) ? "ZIK HUNTER · ARTISTE" : `${c.y ? c.y + " " : ""}ZIK HUNTER`;
   const l3 = (isArtist(c) ? CERT[c.tier] : `${c.a} · ${RAR[c.tier]}`) + (holo ? " · SHINY" : "");
   el.innerHTML = `<div class="pocket"><div class="lbl">
       <div class="txt"><span class="l1">${esc(l1)}</span><b class="l2">${esc(c.t)}</b><span class="l3">${esc(l3)}</span>
-        <span class="l4">#${String(g.pop).padStart(3, "0")}${g.pop === 1 ? " · 1re authentifiée" : ""}</span></div>
+        <span class="l4"><b>#${String(g.pop).padStart(3, "0")}</b>${g.pop === 1 ? " · 1re authentifiée" : ""}</span></div>
       <div class="mark"><img src="brand/zikhunter-icon.svg" alt=""></div>
       <div class="gr"><small>${GRADE_NAME[g.grade]}</small><b>${g.grade}</b><span class="bar" aria-hidden="true"></span><span class="cert">${esc(g.cert)}</span></div>
     </div></div>
