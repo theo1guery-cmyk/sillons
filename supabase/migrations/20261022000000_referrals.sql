@@ -25,7 +25,7 @@ alter table public.profiles add column if not exists vip_next_after int;   -- VI
 
 create or replace function public.referral_steps_def() returns table (n int, kind text, label text)
 language sql immutable as $$
-  values (1, 'deluxe', 'Une Édition Deluxe'), (2, 'mythic', 'Une carte Mythique'), (3, 'legend', 'Une carte Légendaire'),
+  values (1, 'deluxe', 'Une Édition Deluxe (15 cartes, toutes Rare ou mieux)'), (2, 'mythic', 'Une carte Mythique'), (3, 'legend', 'Une carte Légendaire'),
          (5, 'vip', 'Le Pass VIP de la saison'), (10, 'shiny', 'Une Légendaire Shiny'), (20, 'vip_next', 'Le Pass VIP de la saison suivante')
 $$;
 

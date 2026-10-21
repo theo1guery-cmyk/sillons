@@ -56,6 +56,7 @@
         <button role="tab" id="tab-market" aria-selected="false" hidden><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11 11 3h7a3 3 0 0 1 3 3v7l-8 8z"/><circle cx="16.5" cy="7.5" r="1.4"/></svg><span class="lbl">Marché</span><span class="badge" id="marketBadge" hidden></span></button>
         <button role="tab" id="tab-trades" aria-selected="false" hidden><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13l-3-3"/><path d="M20 16H7l3 3"/></svg><span class="lbl">Échanges</span><span class="badge" id="tradeBadge" hidden></span></button>
         <button role="tab" id="tab-defis" aria-selected="false" hidden><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4"/><path d="M16 6h3a3 3 0 0 1-3 4"/><path d="M12 13v4"/><path d="M8 21h8"/><path d="M10 17h4v4h-4z"/></svg><span class="lbl">Défis</span><span class="badge" id="defisBadge" hidden></span></button>
+        <button role="tab" id="tab-ref" aria-selected="false" hidden><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M18 8v6"/><path d="M15 11h6"/></svg><span class="lbl">Parrainage</span></button>
         <button role="tab" id="tab-admin" aria-selected="false" hidden><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6z"/><path d="m9 12 2 2 4-4"/></svg><span class="lbl">Admin</span></button>
     </nav>
   </aside>
@@ -216,6 +217,11 @@
 
   <section id="view-pass" class="ps" hidden></section>
 
+  <section id="view-ref" hidden>
+    <h2>Parrainage</h2>
+    <p class="sub">Invite tes amis avec ton lien : ils démarrent avec des cadeaux, et toi tu gagnes des récompenses à chaque ami qui joue vraiment, jusqu'au Pass VIP.</p>
+    <section class="ref-box" id="refBox" aria-labelledby="refTitle" hidden></section>
+  </section>
   <section id="view-defis" hidden>
     <h2>Défis</h2>
     <p class="sub">Gagne des Streams, la monnaie du jeu : une prime chaque jour, trois défis qui changent tous les jours, et des succès permanents en bronze, argent et or.</p>
@@ -223,7 +229,6 @@
       <div class="wallet"><small>Ton solde</small><b><i class="coin" aria-hidden="true"></i><span id="walletStreams">0</span></b><span>Streams</span></div>
       <div class="login-box" id="loginBox"></div>
     </div>
-    <section class="ref-box" id="refBox" aria-labelledby="refTitle" hidden></section>
     <h3>Défis du jour</h3>
     <div class="dailies" id="dailies"></div>
     <h3>Succès</h3>
@@ -293,8 +298,8 @@
 </div>
 <div class="toast" id="toast" hidden></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
-<script src="app.js?v=148"></script>
-<script src="online.js?v=99"></script>
+<script src="app.js?v=149"></script>
+<script src="online.js?v=100"></script>
 <script src="duels.js?v=51"></script>
 <script src="grade.js?v=20"></script>
 <script src="admin.js?v=13"></script>

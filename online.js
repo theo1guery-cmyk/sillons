@@ -249,7 +249,7 @@ async function enterAccount(user) {
   try {
     await loadAll();
     Online.active = true;
-    $("#tab-trades").hidden = false; $("#tab-grading").hidden = false; $("#tab-defis").hidden = false; $("#tab-market").hidden = false; $("#tab-albums").hidden = false; $("#tab-duels").hidden = false; $("#tab-pass").hidden = false; $("#navCommunity").hidden = false;
+    $("#tab-trades").hidden = false; $("#tab-grading").hidden = false; $("#tab-defis").hidden = false; $("#tab-ref").hidden = false; $("#tab-market").hidden = false; $("#tab-albums").hidden = false; $("#tab-duels").hidden = false; $("#tab-pass").hidden = false; $("#navCommunity").hidden = false;
     unseatTable();                       // closes the opening table and puts the booster back on its shelf
     refreshViews();
     pollOffers(); updateDefisBadge(); Online.loadPass?.(); claimReferral();
@@ -266,7 +266,7 @@ function leaveAccount() {
   catch (e) { S = guestS; }
   TEST_MODE = true;
   $("#tab-trades").hidden = true; $("#tradeBadge").hidden = true; $("#tab-grading").hidden = true;
-  $("#tab-defis").hidden = true; $("#defisBadge").hidden = true; $("#tab-market").hidden = true; $("#tab-albums").hidden = true; $("#albumsBadge").hidden = true;
+  $("#tab-defis").hidden = true; $("#tab-ref").hidden = true; $("#defisBadge").hidden = true; $("#tab-market").hidden = true; $("#tab-albums").hidden = true; $("#albumsBadge").hidden = true;
   $("#tab-duels").hidden = true; $("#duelsBadge").hidden = true; $("#navCommunity").hidden = true;
   $("#tab-pass").hidden = true; $("#tab-grading").hidden = true; $("#passBadge").hidden = true;
   if (!views.grading.hidden || !views.trades.hidden || !views.defis.hidden || !views.market.hidden || !views.albums.hidden || !views.duels.hidden || !views.pass.hidden) show("shop");
@@ -401,6 +401,7 @@ Object.assign(Online, {
   },
   renderTrades: () => renderTrades(),
   renderDefis: () => renderDefis(),
+  renderReferral: () => renderReferral(),
   renderDiscard: () => renderDiscard(),
   modalExtras: c => { modalExtras(c); marketExtras(c); wishExtras(c); tagExtras(c); },
   tagsOf: c => tagsOf(c),
@@ -865,7 +866,7 @@ const REF_KEY = "zh-ref";
   let who = null; try { who = localStorage.getItem(REF_KEY); } catch (e) {}
   if (!who) return;
   const el = $("#landRef"); el.hidden = false;
-  el.innerHTML = `🎁 <b>${esc(who)}</b> t'invite : à l'inscription, <b>10 boosters, 500 Streams et une Édition Deluxe</b> offerts.`;
+  el.innerHTML = `🎁 <b>${esc(who)}</b> t'invite : à l'inscription, <b>10 boosters, 500 Streams et une Édition Deluxe (15 cartes, toutes Rare ou mieux)</b> offerts.`;
 })();
 async function claimReferral() {
   let who = null; try { who = localStorage.getItem(REF_KEY); } catch (e) {}
@@ -873,7 +874,7 @@ async function claimReferral() {
   try {
     const r = await rpc("set_referrer", { p_pseudo: who });
     await loadProfile(); renderCounters(); renderStock?.();
-    toast(`🎁 Bienvenue ! Cadeau de ${r.referrer} : 10 boosters, 500 Streams et une Édition Deluxe.`);
+    toast(`🎁 Bienvenue ! Cadeau de ${r.referrer} : 10 boosters, 500 Streams et une Édition Deluxe (15 cartes, toutes Rare ou mieux).`);
   } catch (e) {
     if (!["already_referred", "referral_too_late", "referrer_not_found", "referral_self"].includes(e.message)) return;   // try again later
   }
@@ -893,7 +894,7 @@ async function renderReferral() {
   box.hidden = false;
   box.innerHTML = `<div class="ref-head">
       <div><h3 class="ref-title" id="refTitle">Parraine tes amis</h3>
-        <p>Ton ami reçoit <b>10 boosters, 500 Streams et une Édition Deluxe</b>. Toi, <b>500 Streams par ami actif</b> et des cadeaux jusqu'au <b>Pass VIP</b>.</p></div>
+        <p>Ton ami reçoit <b>10 boosters, 500 Streams et une Édition Deluxe (15 cartes, toutes Rare ou mieux)</b>. Toi, <b>500 Streams par ami actif</b> et des cadeaux jusqu'au <b>Pass VIP</b>.</p></div>
       <div class="ref-link"><input id="refLink" readonly value="${esc(link)}" aria-label="Ton lien de parrainage">
         <button class="btn primary" id="refShare">Inviter</button><button class="btn" id="refCopy">Copier</button></div>
     </div>
@@ -911,7 +912,7 @@ async function renderReferral() {
     <p class="ref-rule">Un ami compte comme actif après 50 boosters ouverts sur 5 jours différents.</p>`;
   $("#refCopy").onclick = async () => { try { await navigator.clipboard.writeText(link); toast("Lien copié !"); } catch (e) { $("#refLink").select(); } };
   $("#refShare").onclick = async () => {
-    const text = "Viens jouer à Zik Hunter, le jeu de cartes musicales : avec mon lien tu reçois 10 boosters, 500 Streams et une Édition Deluxe !";
+    const text = "Viens jouer à Zik Hunter, le jeu de cartes musicales : avec mon lien tu reçois 10 boosters, 500 Streams et une Édition Deluxe (15 cartes, toutes Rare ou mieux) !";
     if (navigator.share) { try { await navigator.share({ title: "Zik Hunter", text, url: link }); } catch (e) {} }
     else { try { await navigator.clipboard.writeText(text + " " + link); toast("Message et lien copiés : colle-les à tes amis !"); } catch (e) { $("#refLink").select(); } }
   };
@@ -919,7 +920,7 @@ async function renderReferral() {
   if (form) form.onsubmit = async e => {
     e.preventDefault();
     const who = $("#refWho").value.trim(); if (!who) return;
-    try { const r = await rpc("set_referrer", { p_pseudo: who }); await loadProfile(); renderCounters(); renderStock?.(); toast(`🎁 Cadeau de ${r.referrer} : 10 boosters, 500 Streams et une Édition Deluxe !`); renderReferral(); }
+    try { const r = await rpc("set_referrer", { p_pseudo: who }); await loadProfile(); renderCounters(); renderStock?.(); toast(`🎁 Cadeau de ${r.referrer} : 10 boosters, 500 Streams et une Édition Deluxe (15 cartes, toutes Rare ou mieux) !`); renderReferral(); }
     catch (err) { toast(message(err)); }
   };
 }
@@ -944,8 +945,6 @@ async function renderDefis() {
     <ol class="streak" aria-label="Récompenses de la série">${days}</ol>
     ${L.claimed ? "" : `<button class="btn primary" id="claimLogin">Récupérer +${L.next}</button>`}`;
   if (!L.claimed) $("#claimLogin").onclick = () => claim("claim_login", {}, r => `+${r.reward} Streams. Série de ${r.streak} jour${r.streak > 1 ? "s" : ""} !`);
-
-  renderReferral();
 
   // daily challenges
   const dl = $("#dailies"); dl.innerHTML = "";
