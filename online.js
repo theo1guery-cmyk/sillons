@@ -21,6 +21,7 @@ const MESSAGES = {
   referral_too_late: "Le parrainage se choisit dans les 7 jours qui suivent l'inscription.",
   referrer_not_found: "Aucun joueur avec ce pseudo.",
   referral_self: "Tu ne peux pas être ton propre parrain.",
+  no_reset: "Pas de grand ménage prévu pour ton compte.",
   maintenance: "Le jeu est en maintenance. On revient très vite !",
   not_admin: "Réservé aux admins.",
   cannot_ban_admin: "Impossible de bannir un admin.",
@@ -263,7 +264,7 @@ async function enterAccount(user) {
     $("#tab-trades").hidden = false; $("#tab-grading").hidden = false; $("#tab-defis").hidden = false; $("#tab-ref").hidden = false; $("#tab-market").hidden = false; $("#tab-albums").hidden = false; $("#tab-duels").hidden = false; $("#tab-pass").hidden = false; $("#navCommunity").hidden = false;
     unseatTable();                       // closes the opening table and puts the booster back on its shelf
     refreshViews();
-    pollOffers(); updateDefisBadge(); Online.loadPass?.(); claimReferral();
+    pollOffers(); updateDefisBadge(); Online.loadPass?.(); claimReferral(); Online.resetCheck?.();
   } catch (e) {
     me = null; toast(message(e));
   }
