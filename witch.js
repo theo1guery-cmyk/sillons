@@ -18,7 +18,7 @@ async function renderWitch() {
   try { W.st = await rpc("halloween_state"); } catch (e) { return toast(message(e)); }
   const st = W.st, box = views.witch;
   if (!st.active) { box.innerHTML = `<h2>Le chaudron est froid</h2><p class="sub">La sorcière revient au prochain événement.</p>`; return; }
-  box.innerHTML = `<h2>Chez la sorcière</h2>
+  box.innerHTML = `<h2>Chez la sorcière <button class="ps-link wz-replay" id="wzIntro">▶ Revoir l'annonce</button></h2>
     <p class="sub">Gagne des citrouilles avec les quêtes de la nuit, puis fais bouillir tes cartes dans le chaudron ou verse l'élixir sur tes cartes gradées. La magie ne dure que pendant l'événement.</p>
     <div class="wz-top">
       <div class="wz-purse"><span class="wz-pk" aria-hidden="true">🎃</span><b id="wzPk">${fmt(st.pumpkins)}</b><small>citrouilles</small></div>
@@ -47,6 +47,7 @@ async function renderWitch() {
   box.querySelectorAll("[data-q]").forEach(b => b.onclick = async () => {
     try { const n = await rpc("halloween_claim", { p_key: b.dataset.q }); toast(`+${n} 🎃 !`); renderWitch(); } catch (e) { toast(message(e)); }
   });
+  $("#wzIntro").onclick = () => window.halloweenIntro?.();
   box.querySelectorAll(".wz-rec").forEach(b => b.onclick = () => { W.tier = +b.dataset.t; W.sel = []; renderWitch(); });
   drawPot(); drawElixir();
 }

@@ -103,3 +103,4 @@
 .wz-screen.elixir .wz-stage{padding-top:0;margin-top:70px;width:min(260px,62vw)}
 .wz-screen.elixir .wz-bottle{top:-96px;right:-46px}
 .wz-screen.elixir .wz-drops{top:-30px}
+.wz-replay{margin-left:10px;font:600 .8rem var(--body);color:#ffb15a!important;vertical-align:middle}
