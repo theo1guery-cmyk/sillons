@@ -400,3 +400,17 @@ body.op-on{overflow:hidden}
 .ref-set input{padding:8px 10px;border-radius:10px;border:1px solid var(--line,rgba(255,255,255,.12));background:rgba(0,0,0,.3);color:#fff}
 .ref-rule{margin:0;font-size:.76rem;color:var(--muted)}
 @media (max-width:760px){.ref-head{grid-template-columns:minmax(0,1fr)}.ref-dot{width:32px;height:32px;font-size:.9rem}.ref-bar{top:19px}.ref-track li{padding:0 1px}.ref-track li b{font-size:.6rem;letter-spacing:.02em}.ref-track li small{font-size:.6rem}}
+
+/* Discord: always at hand in the top bar; buying goes through it while card payments are set up */
+.discord-btn{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;background:#5865f2;color:#fff;text-decoration:none;
+  font:700 .85rem var(--body,inherit);box-shadow:0 0 0 1px rgba(255,255,255,.12) inset,0 4px 18px rgba(88,101,242,.55);flex:none;transition:transform .15s,box-shadow .15s}
+.discord-btn svg{width:20px;height:20px}
+.discord-btn:hover{transform:translateY(-1px);box-shadow:0 0 0 1px rgba(255,255,255,.2) inset,0 6px 24px rgba(88,101,242,.75)}
+@media (max-width:760px){.discord-btn{padding:8px 10px}.discord-btn span{display:none}}
+.pay-dc{text-align:center}
+.pay-dc-ico{width:64px;height:64px;margin:0 auto 10px;border-radius:50%;display:grid;place-items:center;background:#5865f2;color:#fff;box-shadow:0 0 30px rgba(88,101,242,.6)}
+.pay-dc-ico svg{width:36px;height:36px}
+.pay-dc p{line-height:1.55}
+.pay-dc-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:14px}
+.btn.discord-cta{background:#5865f2;border-color:#5865f2;color:#fff;text-decoration:none}
+.btn.discord-cta:hover{background:#4752c4}
