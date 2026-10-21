@@ -866,7 +866,7 @@ async function opGo() {
   try { await s(); } finally { OP.busy = false; }
 }
 function opCards(pulls) {
-  OP.pulls = pulls; OP.i = -1;
+  OP.pulls = pulls; OP.i = -1; OP.seen = -1;
   opPhase("cards");
   const best = Math.max(...pulls.map(pl => pl.c.tier));
   op.style.setProperty("--best", RCOL[best]);
@@ -889,28 +889,40 @@ function opNext() {
   opHint("Touche la carte pour la retourner");
   OP.step = async () => {
     opHint("");
-    await f.reveal();
+    await f.reveal(); OP.seen = OP.i;
     opHint(OP.i + 1 < pulls.length ? "Touche pour la carte suivante" : "Touche pour voir tout le booster");
     OP.step = async () => opNext();
   };
 }
 function opSkip() {
   if (op.dataset.phase !== "cards" || OP.busy) return;
-  OP.step = null; OP.i = OP.pulls.length; opRecap();
+  const from = OP.seen + 1;                      // the cards not seen yet turn over one by one on the layout
+  OP.step = null; OP.i = OP.pulls.length; opRecap(from);
 }
-function opRecap() {
+async function opRecap(from) {
   const pulls = OP.pulls;
+  from ??= pulls.length;
   OP.step = null;
   $o(".op-cards").innerHTML = ""; $o(".op-tray").innerHTML = "";
   const rc = $o(".op-recap"); rc.innerHTML = ""; rc.classList.toggle("many", pulls.length > 6);
-  pulls.forEach((pl, i) => {
+  const flips = pulls.map((pl, i) => {
     const slot = slotEl(pl, i); rc.appendChild(slot);
-    slot.querySelector(".flip").reveal(true);
+    const f = slot.querySelector(".flip");
+    if (i < from) f.reveal(true);
+    return f;
   });
+  opPhase("recap");
+  if (from < pulls.length) {                     // "Tout révéler": the rest flips one after the other, with their effects
+    OP.busy = true; op.classList.add("flipping");
+    $o(".op-sub").textContent = "Révélation…"; opHint("");
+    await wait(450);
+    try { for (let i = from; i < pulls.length; i++) { await flips[i].reveal(); await wait(pulls[i].c.tier >= 3 ? 320 : 180); } }
+    finally { OP.busy = false; op.classList.remove("flipping"); }
+  }
   const fresh = pulls.filter(pl => pl.isNew).length, best = pulls.reduce((a, b) => b.c.tier > a.c.tier ? b : a);
   $o(".op-title").textContent = "Booster ouvert";
   $o(".op-sub").textContent = `${fresh} nouvelle${fresh > 1 ? "s" : ""} carte${fresh > 1 ? "s" : ""} · meilleure : ${rarName(best.c)}`;
-  opPhase("recap"); opHint("Touche une carte pour la voir en grand");
+  opHint("Touche une carte pour la voir en grand");
   $o(".op-again").disabled = !canOpen(OP.p) && !(OP.p.g < 0 && TEST_MODE);
 }
 // a booster that could not be opened: the sachet comes back whole

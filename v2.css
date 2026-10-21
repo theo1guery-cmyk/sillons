@@ -362,3 +362,4 @@ body.op-on{overflow:hidden}
 .op[data-phase=cards] .op-skip,.op[data-phase=recap] .op-done,.op[data-phase=recap] .op-again{display:inline-flex}
 @media (max-width:600px){.op{padding:14px 10px 18px}.op-pack{height:min(56vh,480px)}.op-recap{gap:10px}.op-recap .slot{width:calc(33% - 10px)}.op-recap.many .slot{width:calc(25% - 10px)}.op-recap .slot .tag{font-size:.56rem}}
 @media (prefers-reduced-motion:reduce){.op .solo-card,.op .solo-card.leave,.op-mini,.op-pack.in,.op[data-phase=load] .op-pack,.op-hint{animation:none!important}}
+.op.flipping .op-actions,.op.flipping .op-x{visibility:hidden}
