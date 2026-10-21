@@ -414,3 +414,7 @@ body.op-on{overflow:hidden}
 .pay-dc-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:14px}
 .btn.discord-cta{background:#5865f2;border-color:#5865f2;color:#fff;text-decoration:none}
 .btn.discord-cta:hover{background:#4752c4}
+.op-head{position:relative}
+.op-xp{position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:6px;padding:4px 12px;border-radius:999px;white-space:nowrap;
+  font:700 .85rem var(--mono);color:#2a1300;background:linear-gradient(90deg,#e8bf62,#ffe2a0);box-shadow:0 0 18px rgba(240,190,90,.6);animation:opXp 2.6s ease-out forwards;pointer-events:none}
+@keyframes opXp{0%{opacity:0;transform:translate(-50%,10px) scale(.8)}12%{opacity:1;transform:translate(-50%,0) scale(1.05)}20%{transform:translate(-50%,0) scale(1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-14px)}}

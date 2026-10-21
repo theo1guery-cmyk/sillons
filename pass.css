@@ -415,3 +415,21 @@
 .name-gold:before{content:"✦ ";font-size:.7em;vertical-align:.12em}
 @keyframes nameGold{to{background-position:-220% 0}}
 @media (prefers-reduced-motion:reduce){.name-gold{animation:none}}
+
+/* XP of the day and how XP is won */
+.ps-xpbox{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:16px;margin:18px 0 6px}
+.ps-xpbox>*{padding:16px 18px;border-radius:16px;border:1px solid var(--edge,rgba(255,255,255,.1));background:rgba(255,255,255,.03)}
+.ps-xpbox h3{margin:0 0 10px}
+.ps-xpday .ps-meter{height:10px}
+.ps-xpday small{display:block;margin-top:8px;color:var(--muted)}
+.ps-xpday small b{color:#ffe2a0;font-size:1.05rem}
+.ps-xptags{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.ps-xptags span{padding:5px 10px;border-radius:999px;font:600 .75rem var(--mono);letter-spacing:.04em}
+.ps-boost{background:linear-gradient(90deg,#ff7a3d,#ffcb52);color:#2a1300;box-shadow:0 0 16px rgba(255,160,70,.5);animation:soloHint 2.2s ease-in-out infinite}
+.ps-vipx{background:rgba(245,210,122,.15);color:#ffe2a0;border:1px solid rgba(245,210,122,.5)}
+.ps-vipno{background:rgba(255,255,255,.05);color:var(--muted);border:1px dashed rgba(255,255,255,.2)}
+.ps-how ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 18px}
+.ps-how li{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:.86rem}
+.ps-how li b{color:#ffe2a0;white-space:nowrap}
+.ps-how small{display:block;margin-top:10px;color:var(--muted);font-size:.75rem}
+@media (max-width:760px){.ps-xpbox{grid-template-columns:minmax(0,1fr)}.ps-how ul{grid-template-columns:minmax(0,1fr)}}
