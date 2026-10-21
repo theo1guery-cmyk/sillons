@@ -89,12 +89,12 @@ const sleepG = ms => new Promise(r => setTimeout(r, ms));
 // the 3D lab: its own file, fetched the first time a card is graded; null if WebGL or the CDN fails
 let lab = null, labP = null;
 const loadLab = host => labP ??= Promise.all(['900 40px "Unbounded"', '800 40px "Instrument Sans"', '700 40px "Instrument Sans"', '500 20px "DM Mono"'].map(f => document.fonts.load(f)))
-  .then(() => import("./grade3d.js?v=15")).then(m => m.create(host)).then(async x => { await x.warmup(); return lab = x; })
+  .then(() => import("./grade3d.js?v=16")).then(m => m.create(host)).then(async x => { await x.warmup(); return lab = x; })
   .catch(e => { console.warn("Labo 3D indisponible", e); labP = null; return null; });
 const labelOf = (c, holo, g) => ({
   l1: isArtist(c) ? "ZIK HUNTER · ARTISTE" : `${c.y ? c.y + " " : ""}ZIK HUNTER`, l2: c.t.toUpperCase(),
   l3: ((isArtist(c) ? CERT[c.tier] : `${c.a} · ${RAR[c.tier]}`) + (holo ? " · SHINY" : "")).toUpperCase(),
-  l4: `#${String(g.pop).padStart(3, "0")}${g.pop === 1 ? " · 1RE AUTHENTIFIÉE" : ""}`, gname: GRADE_NAME[g.grade], grade: g.grade, cert: g.cert });
+  l4: `#${String(g.pop).padStart(3, "0")}${g.pop === 1 ? " · 1RE AUTHENTIFIÉE" : ""}`, first: g.pop === 1, gname: GRADE_NAME[g.grade], grade: g.grade, cert: g.cert });
 const cssColor = v => v.startsWith("var(") ? getComputedStyle(document.documentElement).getPropertyValue(v.slice(4, -1)).trim() : v;
 
 async function gradeReveal(c, holo, g) {
@@ -120,7 +120,7 @@ async function gradeReveal(c, holo, g) {
   L3?.stop(); scr.remove(); document.body.classList.remove("fx-on");
 }
 const gradeTitle = (scr, g) => { scr.classList.add("g" + g.grade);
-  scr.querySelector(".g-title").innerHTML = `<b>${GRADE_NAME[g.grade]} ${g.grade}</b><small>${g.pop === 1 ? "1re carte authentifiée · " : ""}n° #${String(g.pop).padStart(3, "0")} · certificat ${g.cert}</small>`; };
+  scr.querySelector(".g-title").innerHTML = `<b>${GRADE_NAME[g.grade]} ${g.grade}</b>${g.pop === 1 ? `<em class="g-first">#001 · la toute première authentifiée</em>` : `<span class="g-pop">#${String(g.pop).padStart(3, "0")}</span>`}<small>certificat ${g.cert}</small>`; };
 
 // the film in 3D, then the real case (HTML) takes its place
 async function labReveal(scr, L3, c, holo, g) {

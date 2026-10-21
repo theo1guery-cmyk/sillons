@@ -141,7 +141,7 @@ export async function create(host) {
     g.font = "700 48px 'Instrument Sans', Arial"; g.fillText(fit(L.l1, g.font, 760), 70, 118);
     g.font = "800 66px 'Instrument Sans', Arial"; g.fillText(fit(L.l2, g.font, 760), 70, 196);
     g.font = "700 48px 'Instrument Sans', Arial"; g.fillText(fit(L.l3, g.font, 760), 70, 264);
-    g.fillStyle = "#8a6516"; g.font = "500 38px 'DM Mono', monospace"; g.fillText(L.l4, 70, 334);
+    g.fillStyle = L.first ? "#b07a12" : "#7a5410"; g.font = "700 44px 'DM Mono', monospace"; g.fillText(L.l4, 70, 334);
     if (logo) g.drawImage(logo, 860, 115, 190, 190);
     g.textAlign = "right"; g.fillStyle = "#141016"; g.font = "800 52px 'Instrument Sans', Arial"; g.fillText(L.gname, W - 70, 108);
     g.font = "800 210px 'Instrument Sans', Arial";
