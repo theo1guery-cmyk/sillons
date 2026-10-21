@@ -17,6 +17,10 @@ const backHere = () => location.origin + location.pathname;
 
 const MESSAGES = {
   account_banned: "Ton compte est suspendu.",
+  already_referred: "Tu as déjà un parrain.",
+  referral_too_late: "Le parrainage se choisit dans les 7 jours qui suivent l'inscription.",
+  referrer_not_found: "Aucun joueur avec ce pseudo.",
+  referral_self: "Tu ne peux pas être ton propre parrain.",
   maintenance: "Le jeu est en maintenance. On revient très vite !",
   not_admin: "Réservé aux admins.",
   cannot_ban_admin: "Impossible de bannir un admin.",
@@ -245,10 +249,10 @@ async function enterAccount(user) {
   try {
     await loadAll();
     Online.active = true;
-    $("#tab-trades").hidden = false; $("#tab-grading").hidden = false; $("#tab-defis").hidden = false; $("#tab-market").hidden = false; $("#tab-albums").hidden = false; $("#tab-duels").hidden = false; $("#tab-pass").hidden = false; $("#navCommunity").hidden = false;
+    $("#tab-trades").hidden = false; $("#tab-grading").hidden = false; $("#tab-defis").hidden = false; $("#tab-ref").hidden = false; $("#tab-market").hidden = false; $("#tab-albums").hidden = false; $("#tab-duels").hidden = false; $("#tab-pass").hidden = false; $("#navCommunity").hidden = false;
     unseatTable();                       // closes the opening table and puts the booster back on its shelf
     refreshViews();
-    pollOffers(); updateDefisBadge(); Online.loadPass?.();
+    pollOffers(); updateDefisBadge(); Online.loadPass?.(); claimReferral();
   } catch (e) {
     me = null; toast(message(e));
   }
@@ -262,7 +266,7 @@ function leaveAccount() {
   catch (e) { S = guestS; }
   TEST_MODE = true;
   $("#tab-trades").hidden = true; $("#tradeBadge").hidden = true; $("#tab-grading").hidden = true;
-  $("#tab-defis").hidden = true; $("#defisBadge").hidden = true; $("#tab-market").hidden = true; $("#tab-albums").hidden = true; $("#albumsBadge").hidden = true;
+  $("#tab-defis").hidden = true; $("#tab-ref").hidden = true; $("#defisBadge").hidden = true; $("#tab-market").hidden = true; $("#tab-albums").hidden = true; $("#albumsBadge").hidden = true;
   $("#tab-duels").hidden = true; $("#duelsBadge").hidden = true; $("#navCommunity").hidden = true;
   $("#tab-pass").hidden = true; $("#tab-grading").hidden = true; $("#passBadge").hidden = true;
   if (!views.grading.hidden || !views.trades.hidden || !views.defis.hidden || !views.market.hidden || !views.albums.hidden || !views.duels.hidden || !views.pass.hidden) show("shop");
@@ -397,6 +401,7 @@ Object.assign(Online, {
   },
   renderTrades: () => renderTrades(),
   renderDefis: () => renderDefis(),
+  renderReferral: () => renderReferral(),
   renderDiscard: () => renderDiscard(),
   modalExtras: c => { modalExtras(c); marketExtras(c); wishExtras(c); tagExtras(c); },
   tagsOf: c => tagsOf(c),
@@ -849,6 +854,77 @@ async function claim(fn, args, okText) {
     renderDefis(); updateDefisBadge();
   } catch (e) { toast(message(e)); }
 }
+/* ---------- referrals: the link of each player, and what the friend and the referrer get ---------- */
+const REF_KEY = "zh-ref";
+(function catchReferral() {                     // ?parrain=pseudo: kept until the account is made, then sent once
+  const q = new URLSearchParams(location.search), who = (q.get("parrain") || "").trim().slice(0, 40);
+  if (!who) return;
+  try { localStorage.setItem(REF_KEY, who); } catch (e) {}
+  q.delete("parrain"); history.replaceState(null, "", location.pathname + (q.toString() ? "?" + q : "") + location.hash);
+})();
+(function referralWelcome() {
+  let who = null; try { who = localStorage.getItem(REF_KEY); } catch (e) {}
+  if (!who) return;
+  const el = $("#landRef"); el.hidden = false;
+  el.innerHTML = `🎁 <b>${esc(who)}</b> t'invite : à l'inscription, <b>10 boosters, 500 Streams et une Édition Deluxe (15 cartes, toutes Rare ou mieux)</b> offerts.`;
+})();
+async function claimReferral() {
+  let who = null; try { who = localStorage.getItem(REF_KEY); } catch (e) {}
+  if (!who || !me) return;
+  try {
+    const r = await rpc("set_referrer", { p_pseudo: who });
+    await loadProfile(); renderCounters(); renderStock?.();
+    toast(`🎁 Bienvenue ! Cadeau de ${r.referrer} : 10 boosters, 500 Streams et une Édition Deluxe (15 cartes, toutes Rare ou mieux).`);
+  } catch (e) {
+    if (!["already_referred", "referral_too_late", "referrer_not_found", "referral_self"].includes(e.message)) return;   // try again later
+  }
+  try { localStorage.removeItem(REF_KEY); } catch (e) {}
+}
+const REF_ICON = { deluxe: "🎁", mythic: "💎", legend: "🏆", vip: "🎟️", shiny: "✨", vip_next: "🎟️" };
+async function renderReferral() {
+  const box = $("#refBox");
+  let d; try { d = await rpc("my_referral"); } catch (e) { box.hidden = true; return; }
+  if (!d?.code) { box.hidden = true; return; }
+  const link = location.origin + location.pathname + "?parrain=" + encodeURIComponent(d.code);
+  const next = d.steps.find(s => !s.done), st = d.steps;
+  // the bar runs between the steps, evenly spaced: how far between the last step reached and the next one
+  let k = st.findIndex(s => s.n > d.active); if (k < 0) k = st.length;
+  const prev = k > 0 ? st[k - 1].n : 0, frac = k >= st.length ? 0 : (d.active - prev) / (st[k].n - prev);
+  const fill = Math.min(1, Math.max(0, (k - 1 + frac) / (st.length - 1)));
+  box.hidden = false;
+  box.innerHTML = `<div class="ref-head">
+      <div><h3 class="ref-title" id="refTitle">Parraine tes amis</h3>
+        <p>Ton ami reçoit <b>10 boosters, 500 Streams et une Édition Deluxe (15 cartes, toutes Rare ou mieux)</b>. Toi, <b>500 Streams par ami actif</b> et des cadeaux jusqu'au <b>Pass VIP</b>.</p></div>
+      <div class="ref-link"><input id="refLink" readonly value="${esc(link)}" aria-label="Ton lien de parrainage">
+        <button class="btn primary" id="refShare">Inviter</button><button class="btn" id="refCopy">Copier</button></div>
+    </div>
+    <div class="ref-track" style="--p:${fill};--k:${st.length}">
+      <div class="ref-bar"><i></i></div>
+      <ol>${d.steps.map(s => `<li class="${s.done ? "done" : s === next ? "next" : ""}">
+        <span class="ref-dot" aria-hidden="true">${REF_ICON[s.kind] || "★"}</span><b>${s.n} ami${s.n > 1 ? "s" : ""}</b><small>${esc(s.label)}</small></li>`).join("")}</ol>
+    </div>
+    <p class="ref-count"><b>${d.active}</b> ami${d.active > 1 ? "s" : ""} actif${d.active > 1 ? "s" : ""}${next ? ` · prochain cadeau à ${next.n} : ${esc(next.label.charAt(0).toLowerCase() + next.label.slice(1))}` : " · tous les paliers sont atteints, bravo !"}${d.vip_next ? " · ton Pass VIP de la saison suivante t'attend" : ""}</p>
+    ${d.friends.length ? `<ul class="ref-friends">${d.friends.map(f => `<li class="${f.active ? "on" : ""}"><b>${esc(f.pseudo || "?")}</b>
+      ${f.active ? `<span class="ok">✓ Actif</span>` : `<span>${f.opened} / 50 boosters · ${f.days} / 3 jours</span><span class="ref-mini"><i style="width:${Math.min(f.opened / 50, f.days / 3) * 100}%"></i></span>`}</li>`).join("")}</ul>`
+      : `<p class="empty-line">Personne pour l'instant : envoie ton lien à tes amis !</p>`}
+    ${d.referrer ? `<p class="ref-rule">Ton parrain : <b>${esc(d.referrer)}</b>.</p>` : d.can_set ? `<form class="ref-set" id="refSet"><label for="refWho">Un ami t'a invité ?</label>
+      <input id="refWho" placeholder="Son pseudo" autocomplete="off" maxlength="40"><button class="btn">Valider</button></form>` : ""}
+    <p class="ref-rule">Un ami compte comme actif après 50 boosters ouverts sur 3 jours différents.</p>`;
+  $("#refCopy").onclick = async () => { try { await navigator.clipboard.writeText(link); toast("Lien copié !"); } catch (e) { $("#refLink").select(); } };
+  $("#refShare").onclick = async () => {
+    const text = "Viens jouer à Zik Hunter, le jeu de cartes musicales : avec mon lien tu reçois 10 boosters, 500 Streams et une Édition Deluxe (15 cartes, toutes Rare ou mieux) !";
+    if (navigator.share) { try { await navigator.share({ title: "Zik Hunter", text, url: link }); } catch (e) {} }
+    else { try { await navigator.clipboard.writeText(text + " " + link); toast("Message et lien copiés : colle-les à tes amis !"); } catch (e) { $("#refLink").select(); } }
+  };
+  const form = $("#refSet");
+  if (form) form.onsubmit = async e => {
+    e.preventDefault();
+    const who = $("#refWho").value.trim(); if (!who) return;
+    try { const r = await rpc("set_referrer", { p_pseudo: who }); await loadProfile(); renderCounters(); renderStock?.(); toast(`🎁 Cadeau de ${r.referrer} : 10 boosters, 500 Streams et une Édition Deluxe (15 cartes, toutes Rare ou mieux) !`); renderReferral(); }
+    catch (err) { toast(message(err)); }
+  };
+}
+
 async function renderDefis() {
   if (!me) return;
   $("#walletStreams").textContent = fmt(S.streams || 0);
@@ -1469,6 +1545,7 @@ async function checkNotifications() {
     else if (x.type === "duel_result") toast(`⚔️ ${x.title} a joué votre clash : le résultat est dans l'onglet Clashs.`);
     else if (x.type === "duel_declined") toast(`${x.title} a refusé ton clash.`);
     else if (x.type === "prank") showPrank(x);
+    else if (x.type === "referral") { toast("🤝 " + x.title); rpc("notification_seen", { p_id: x.id }).catch(() => {}); }
     else if (x.type === "admin_warning" || x.type === "admin_message") Online.showNotice?.(x);
   }
   if ((data || []).some(x => x.type.startsWith("duel"))) Online.updateDuelsBadge?.();
