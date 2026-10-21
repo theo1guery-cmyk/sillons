@@ -91,16 +91,16 @@ async function resetRun(ids) {
   const el = rsScreen();
   el.innerHTML = `<div class="rs-box rs-run"><p class="rs-kick">Grand ménage</p><h2>On range ta collection…</h2>
     <div class="meter"><s id="rsBar" style="width:0%"></s></div><p id="rsLeft">Préparation…</p><p class="rs-note">Ne ferme pas la page.</p></div>`;
-  let left, total;
+  let left, total, pops = 0;
   try { const r = await rpc("collection_reset_start", { p_keep: ids || [] }); left = total = r.left; }
   catch (e) { el.remove(); return toast(message(e)); }
   for (let tries = 0; ;) {
     $("#rsBar").style.width = total ? Math.round(100 * (total - left) / total) + "%" : "100%";
-    $("#rsLeft").textContent = `${fmt(total - left)} / ${fmt(total)} cartes supprimées`;
+    $("#rsLeft").textContent = pops ? `Dernières finitions : renumérotation des cartes gradées (${fmt(pops)} restantes)…` : `${fmt(total - left)} / ${fmt(total)} cartes supprimées`;
     let r;
     try { r = await rpc("collection_reset_step"); tries = 0; }
-    catch (e) { if (++tries > 4) { $("#rsLeft").textContent = "Le serveur est lent : recharge la page pour continuer, rien n'est perdu."; return; } await new Promise(k => setTimeout(k, 2000)); continue; }
-    left = r.left;
+    catch (e) { if (++tries > 8) { $("#rsLeft").textContent = "Le serveur est lent : recharge la page pour continuer, rien n'est perdu."; return; } await new Promise(k => setTimeout(k, 1500 * tries)); continue; }
+    left = r.left; pops = r.pops || 0;
     if (r.done) break;
   }
   $("#rsBar").style.width = "100%";
