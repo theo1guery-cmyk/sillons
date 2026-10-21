@@ -52,6 +52,7 @@ const MESSAGES = {
   album_buy_closed: "Les titres d'un album ne s'achètent plus : tire-les, échange-les ou trouve-les au marché.",
   payments_maintenance: "Achats via Discord pour le moment : rejoins le Discord et envoie un message privé à tyt23.",
   bad_switch: "Réglage inconnu.",
+  bad_event: "Événement inconnu.",
   payments_off: "Le paiement n'est pas encore disponible. Réessaie un peu plus tard.",
   bad_pack: "Cette offre n'existe plus.",
   stock_not_empty: "Tu as encore des boosters : ouvre-les d'abord.",

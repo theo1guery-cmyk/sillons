@@ -126,6 +126,8 @@ function buildAdmin() {
         <div class="adm-row"><button class="btn" id="admSwTestBtn">…</button></div>
         <p class="adm-small" id="admSwPay">…</p>
         <div class="adm-row"><button class="btn" id="admSwPayBtn">…</button></div>
+        <form class="adm-row" id="admEv"><label>Événement <select id="admEvSel" aria-label="Événement du site">
+            <option value="">Aucun</option><option value="halloween">🎃 Halloween</option></select></label><button class="btn">Appliquer</button></form>
         <p class="adm-small" id="admXpState">…</p>
         <form class="adm-row" id="admXp"><label>XP du pass <select id="admXpMult" aria-label="Multiplicateur d'XP">
             <option value="1">×1 (normal)</option><option value="1.5">×1,5</option><option value="2">×2</option><option value="3">×3</option></select></label>
@@ -170,6 +172,13 @@ function buildAdmin() {
   };
   $("#admSwTestBtn").onclick = () => flip("test_mode", on => on ? "Remettre le mode test (boosters illimités pour tout le monde) ?" : "Terminer le mode test ? Chaque joueur aura 10 boosters, puis 1 toutes les 10 min.",
     on => on ? "Mode test activé : boosters illimités." : "Mode test terminé : le stock de boosters est actif.");
+  $("#admEv").onsubmit = async e => {
+    e.preventDefault();
+    const ev = $("#admEvSel").value;
+    try { await rpc("admin_event_set", { p_event: ev || null }); Online.eventApply?.(ev || null);
+      toast(ev ? "Événement Halloween lancé : tout le monde le voit dans les 2 minutes (ou en rechargeant)." : "Événement terminé."); loadLog(); }
+    catch (err) { toast(message(err)); }
+  };
   $("#admXp").onsubmit = async e => {
     e.preventDefault();
     const mult = +$("#admXpMult").value, u = $("#admXpUntil").value;
@@ -192,6 +201,9 @@ function buildAdmin() {
   };
 }
 
+async function loadEvent() {
+  try { const { data } = await sb.from("settings").select("event").single(); $("#admEvSel").value = data?.event || ""; } catch (e) {}
+}
 async function loadXpBoost() {
   let x; try { x = await rpc("admin_xp_boost_get"); } catch (e) { $("#admXpState").textContent = message(e); return; }
   const on = x.active > 1, until = x.until ? new Date(x.until) : null;
@@ -228,7 +240,7 @@ async function loadDiscord() {
 async function renderAdmin() {
   if (!me || !ADM.admin) return show("shop");
   buildAdmin();
-  await Promise.all([loadStats(), loadUsers(), loadLog(), loadDiscord(), loadMaint(), loadSwitches(), loadXpBoost()]);
+  await Promise.all([loadStats(), loadUsers(), loadLog(), loadDiscord(), loadMaint(), loadSwitches(), loadXpBoost(), loadEvent()]);
   clearInterval(ADM.timer);
   ADM.timer = setInterval(() => {
     if (views.admin.hidden || !ADM.admin) return clearInterval(ADM.timer);
@@ -385,7 +397,7 @@ async function showUser(u) {
 const GIFTS = [["track", 4], ["track", 5], ["track", 4, true], ["track", 5, true], ["artist", 4], ["artist", 5], ["artist", 4, true], ["artist", 5, true]]
   .map(([kind, tier, shiny = false]) => ({ kind, tier, shiny }));
 const giftName = g => (g.kind === "artist" ? (g.tier === 5 ? "Artiste Diamant" : "Artiste Platine") : (g.tier === 5 ? "Légendaire" : "Mythique")) + (g.shiny ? " Shiny" : "");
-const ACTIONS = { vinyls: "Vinyles", pass: "Pass Tournée", ban: "Banni", unban: "Débanni", warn: "Averti", broadcast: "Message à tous", maintenance: "Maintenance", test_mode: "Mode test", payments_off: "Paiements en maintenance", xp_boost: "Boost d'XP", streams: "Streams", boosters: "Boosters", discord: "Discord", god: "GOD pack", gift: "Cadeau" };
+const ACTIONS = { vinyls: "Vinyles", pass: "Pass Tournée", ban: "Banni", unban: "Débanni", warn: "Averti", broadcast: "Message à tous", maintenance: "Maintenance", test_mode: "Mode test", payments_off: "Paiements en maintenance", xp_boost: "Boost d'XP", event: "Événement", streams: "Streams", boosters: "Boosters", discord: "Discord", god: "GOD pack", gift: "Cadeau" };
 const actionTxt = a => ACTIONS[a] || a;
 async function loadLog() {
   let l;
