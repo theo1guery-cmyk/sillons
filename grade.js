@@ -60,7 +60,9 @@ async function gradeCopy(c, copy) {
   G.busy = false;
 }
 async function crackSlab(c, copy) {
-  if (!confirm(`Casser la boîte ? Ta carte « ${c.t} » redevient une carte normale. Sa note ${copy.grade} et son n° #${String(copy.pop).padStart(3, "0")} sont perdus pour toujours.`)) return;
+  if (!confirm(copy.pop === 1
+    ? `⚠️ C'est la #001 : la toute première « ${c.t} » authentifiée, dans sa boîte Première authentification.\n\nSi tu casses la boîte, ce numéro disparaît pour toujours : personne ne pourra plus jamais avoir la #001 de cette carte. Casser quand même ?`
+    : `Casser la boîte ? Ta carte « ${c.t} » redevient une carte normale. Sa note ${copy.grade} et son n° #${String(copy.pop).padStart(3, "0")} sont perdus pour toujours.`)) return;
   try {
     await rpc("crack_slab", { p_card: copy.id });
     copy.grade = copy.cert = copy.pop = null;

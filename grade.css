@@ -154,8 +154,32 @@
 .g-res b{font-family:var(--display);color:var(--ink)}.g-res b.g10{color:#f5c24d}.g-res b.g9{color:#e3e7ef}
 .g-tags{display:flex;flex-wrap:wrap;gap:8px;width:100%}
 
-/* the #001: the first copy of a card ever graded. A warm halo around the case */
-.slab-box.first{filter:drop-shadow(0 0 2.6cqw rgba(240,190,90,.45))}
+/* the #001: the first copy of a card ever graded gets the "first edition" case: a gold rim on the acrylic, the grip
+   replaced by an engraved gold band, a gold rim around the card and a holographic seal of authenticity on the label */
+.slab-box.first{filter:drop-shadow(0 0 2.6cqw rgba(240,190,90,.4))}
+.slab.first{
+  background:
+    linear-gradient(180deg,rgba(255,236,190,.2),rgba(255,236,190,.06) 18%,rgba(255,236,190,.04) 70%,rgba(255,236,190,.12)),
+    linear-gradient(90deg,rgba(242,210,126,.16),rgba(242,210,126,.04) 12%,rgba(242,210,126,.04) 88%,rgba(242,210,126,.16));
+  box-shadow:
+    inset 0 0 0 .35cqw #f2d27e,inset 0 0 0 .7cqw rgba(120,80,10,.55),inset 0 0 0 1.05cqw rgba(242,210,126,.35),
+    inset .9cqw .9cqw 1.4cqw rgba(255,240,200,.25),inset -.9cqw -.9cqw 1.6cqw rgba(0,0,0,.35),
+    0 .5cqw .8cqw rgba(0,0,0,.45),0 4cqw 9cqw rgba(0,0,0,.55)}
+.slab.first .grip{height:4.8cqw;margin:1.4cqw 2.4cqw;opacity:1;display:grid;place-items:center;border-radius:.8cqw;
+  background:linear-gradient(180deg,#fff2c6,#e8bf62 45%,#b8861f 55%,#e9c56a);
+  box-shadow:inset 0 0 0 .2cqw rgba(255,255,255,.6),inset 0 -.4cqw .6cqw rgba(90,55,0,.35),0 .3cqw .6cqw rgba(0,0,0,.35)}
+.slab.first .grip::before{content:"✦ PREMIÈRE AUTHENTIFICATION · N° 001 ✦";font:800 2.05cqw/1 var(--body);letter-spacing:.12em;color:#5a3a06;
+  text-shadow:0 .12cqw 0 rgba(255,245,210,.8);white-space:nowrap}
+.slab.first .well{box-shadow:inset 0 0 0 .3cqw #e8bf62,inset 0 0 0 .9cqw rgba(242,210,126,.08),inset 0 0 0 1.15cqw rgba(242,210,126,.3),
+    inset .6cqw .8cqw 1.6cqw rgba(0,0,0,.5)}
+.slab.first .lbl .mark{position:relative}
+.slab.first .lbl .mark::after{content:"";position:absolute;inset:-1.2cqw;border-radius:50%;pointer-events:none;mix-blend-mode:multiply;opacity:.75;
+  background:conic-gradient(from var(--holo,0deg),#ff9ad5,#ffe48a,#9dffb0,#8ad8ff,#c89bff,#ff9ad5);
+  -webkit-mask:radial-gradient(circle,transparent 58%,#000 60%,#000 72%,transparent 74%);mask:radial-gradient(circle,transparent 58%,#000 60%,#000 72%,transparent 74%);
+  animation:holoSpin 6s linear infinite}
+@property --holo{syntax:"<angle>";inherits:false;initial-value:0deg}
+@keyframes holoSpin{to{--holo:360deg}}
+@media (prefers-reduced-motion:reduce){.slab.first .lbl .mark::after{animation:none}}
 .g-title .g-pop{font:800 1.1rem var(--mono);letter-spacing:.08em;color:#ffe2a0;animation:checkIn .5s .1s ease both}
 .g-title .g-first{font:900 clamp(1rem,2.6vw,1.3rem)/1.1 var(--display);font-style:normal;padding:6px 14px;border-radius:999px;color:#2a1700;
   background:linear-gradient(90deg,#c9952f,#fff2c6,#e8bf62,#c9952f);background-size:200% 100%;box-shadow:0 0 24px rgba(240,190,90,.6);
