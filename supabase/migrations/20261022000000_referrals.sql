@@ -1,6 +1,6 @@
 -- Referrals. Every player has a link (…/?parrain=pseudo). A friend who signs up with it (or types the pseudo within
 -- 7 days of signing up) gets 10 boosters, 500 Streams and an Édition Deluxe at once. The referrer is rewarded when the
--- friend really plays: 50 boosters opened on at least 5 different days (so fake accounts are not worth it). Then the
+-- friend really plays: 50 boosters opened on at least 3 different days (so fake accounts are not worth it). Then the
 -- referrer gets 500 Streams per active friend (up to 50), and steps: 1 Édition Deluxe, 2 a Mythique, 3 a Légendaire,
 -- 5 the VIP pass of the season, 10 a Shiny surprise (as at the end of the pass), 20 the VIP pass of the next season.
 
@@ -92,7 +92,7 @@ create or replace function public.referral_on_open() returns trigger
 language plpgsql security definer set search_path = public as $$
 begin
   if exists (select 1 from referrals where referee = new.id and active_at is null)
-     and (select count(distinct (created_at at time zone 'Europe/Paris')::date) from packs where owner = new.id and done) >= 5 then
+     and (select count(distinct (created_at at time zone 'Europe/Paris')::date) from packs where owner = new.id and done) >= 3 then
     perform referral_activate(new.id);
   end if;
   return new;
@@ -116,7 +116,7 @@ begin
   insert into referrals (referee, referrer) values (uid, r.id);
   update profiles set stock = stock + 10, big_packs = big_packs + 1 where id = uid;
   perform add_streams(uid, 500, 'parrainage : bienvenue de la part de ' || r.pseudo);
-  insert into notifications (owner, type, title) values (r.id, 'referral', coalesce(mine.pseudo, 'Un ami') || ' s''est inscrit avec ton lien ! Il compte dès 50 boosters ouverts sur 5 jours.');
+  insert into notifications (owner, type, title) values (r.id, 'referral', coalesce(mine.pseudo, 'Un ami') || ' s''est inscrit avec ton lien ! Il compte dès 50 boosters ouverts sur 3 jours.');
   return jsonb_build_object('referrer', r.pseudo);
 end $$;
 
@@ -137,7 +137,7 @@ begin
     'steps', (select jsonb_agg(jsonb_build_object('n', d.n, 'kind', d.kind, 'label', d.label,
                 'done', exists (select 1 from referral_steps k where k.owner = uid and k.step = d.n)) order by d.n) from referral_steps_def() d),
     'friends', coalesce((select jsonb_agg(jsonb_build_object('pseudo', p.pseudo, 'opened', least(p.opened, 50), 'active', x.active_at is not null,
-                'days', least(5, (select count(distinct (k.created_at at time zone 'Europe/Paris')::date) from packs k where k.owner = x.referee and k.done)))
+                'days', least(3, (select count(distinct (k.created_at at time zone 'Europe/Paris')::date) from packs k where k.owner = x.referee and k.done)))
                 order by x.active_at is null, x.created_at desc)
               from (select * from referrals where referrer = uid order by created_at desc limit 100) x join profiles p on p.id = x.referee), '[]'));
 end $$;

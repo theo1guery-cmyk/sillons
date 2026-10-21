@@ -905,11 +905,11 @@ async function renderReferral() {
     </div>
     <p class="ref-count"><b>${d.active}</b> ami${d.active > 1 ? "s" : ""} actif${d.active > 1 ? "s" : ""}${next ? ` · prochain cadeau à ${next.n} : ${esc(next.label.charAt(0).toLowerCase() + next.label.slice(1))}` : " · tous les paliers sont atteints, bravo !"}${d.vip_next ? " · ton Pass VIP de la saison suivante t'attend" : ""}</p>
     ${d.friends.length ? `<ul class="ref-friends">${d.friends.map(f => `<li class="${f.active ? "on" : ""}"><b>${esc(f.pseudo || "?")}</b>
-      ${f.active ? `<span class="ok">✓ Actif</span>` : `<span>${f.opened} / 50 boosters · ${f.days} / 5 jours</span><span class="ref-mini"><i style="width:${Math.min(f.opened / 50, f.days / 5) * 100}%"></i></span>`}</li>`).join("")}</ul>`
+      ${f.active ? `<span class="ok">✓ Actif</span>` : `<span>${f.opened} / 50 boosters · ${f.days} / 3 jours</span><span class="ref-mini"><i style="width:${Math.min(f.opened / 50, f.days / 3) * 100}%"></i></span>`}</li>`).join("")}</ul>`
       : `<p class="empty-line">Personne pour l'instant : envoie ton lien à tes amis !</p>`}
     ${d.referrer ? `<p class="ref-rule">Ton parrain : <b>${esc(d.referrer)}</b>.</p>` : d.can_set ? `<form class="ref-set" id="refSet"><label for="refWho">Un ami t'a invité ?</label>
       <input id="refWho" placeholder="Son pseudo" autocomplete="off" maxlength="40"><button class="btn">Valider</button></form>` : ""}
-    <p class="ref-rule">Un ami compte comme actif après 50 boosters ouverts sur 5 jours différents.</p>`;
+    <p class="ref-rule">Un ami compte comme actif après 50 boosters ouverts sur 3 jours différents.</p>`;
   $("#refCopy").onclick = async () => { try { await navigator.clipboard.writeText(link); toast("Lien copié !"); } catch (e) { $("#refLink").select(); } };
   $("#refShare").onclick = async () => {
     const text = "Viens jouer à Zik Hunter, le jeu de cartes musicales : avec mon lien tu reçois 10 boosters, 500 Streams et une Édition Deluxe (15 cartes, toutes Rare ou mieux) !";
