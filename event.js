@@ -10,11 +10,30 @@ async function eventCheck() {
 function eventApply(e) {
   if (e === EVENT.on) return;
   EVENT.on = e;
-  document.getElementById("evLayer")?.remove(); clearInterval(EVENT.timer);
+  document.querySelectorAll("#evLayer,.ev-side,.ev-banner").forEach(x => x.remove()); clearInterval(EVENT.timer);
   if (e) document.documentElement.dataset.event = e; else delete document.documentElement.dataset.event;
   if (e === "halloween") halloween();
 }
 const BAT = `<svg viewBox="0 0 64 34" aria-hidden="true"><path d="M32 13c-1.6-2.6-3.4-3.6-5-3.4.9 1.2 1 2.6.4 3.8C24 10 19.5 8.4 14 9.3c2.7 1.3 4.4 3.3 4.6 5.6-3.8-1.7-8.7-1.8-13.6.3 3.9.8 6.6 2.9 7.6 5.8 4-2.3 9-2.6 13-.7 1.3.7 2.9 2.2 4.4 4.2 1.5-2 3.1-3.5 4.4-4.2 4-1.9 9-1.6 13 .7 1-2.9 3.7-5 7.6-5.8-4.9-2.1-9.8-2-13.6-.3.2-2.3 1.9-4.3 4.6-5.6-5.5-.9-10 .7-13.4 4.1-.6-1.2-.5-2.6.4-3.8-1.6-.2-3.4.8-5 3.4z"/></svg>`;
+const PUMPKIN = (x, y, k) => `<g class="ev-pk" transform="translate(${x} ${y}) scale(${k})">
+  <ellipse cx="-8" cy="0" rx="9" ry="10.5" fill="#c94f12"/><ellipse cx="8" cy="0" rx="9" ry="10.5" fill="#c94f12"/><ellipse cx="0" cy="0" rx="10.5" ry="11.5" fill="#e8661c"/>
+  <path d="M-1 -11 q1 -5 4 -6" stroke="#3b5a1e" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+  <g class="ev-face" fill="#ffd36b"><path d="M-8 -4 l3 -5 l3 5z"/><path d="M2 -4 l3 -5 l3 5z"/><path d="M-1.2 -1 l1.2 -2.4 l1.2 2.4z"/>
+  <path d="M-9 3 q9 7 18 0 l-2 1 l-1.5 -2 l-2 2.4 l-2.5 -2.4 l-2.5 2.4 l-2 -2.4 l-1.5 2z"/></g></g>`;
+const GRAVEYARD = `<svg viewBox="0 0 236 160" preserveAspectRatio="xMidYMax meet">
+  <defs><radialGradient id="evGlow"><stop offset="0" stop-color="#ff9a3a" stop-opacity=".55"/><stop offset="1" stop-color="#ff9a3a" stop-opacity="0"/></radialGradient></defs>
+  <g fill="none" stroke="#08050c" stroke-linecap="round">
+    <path d="M38 160 C38 128 33 104 40 80 C45 64 38 52 26 42" stroke-width="7"/>
+    <path d="M39 96 C50 86 62 82 72 70 M70 72 C76 66 78 60 84 58 M36 112 C24 104 15 101 6 92 M41 80 C45 70 54 63 56 50 M28 46 C20 42 16 34 18 26 M56 52 C62 46 66 40 64 32" stroke-width="3"/>
+    <path d="M72 70 C80 72 86 70 92 64 M18 26 C14 22 12 16 14 12 M6 92 C2 90 -2 88 -4 84" stroke-width="1.6"/></g>
+  <circle cx="104" cy="138" r="26" fill="url(#evGlow)" class="ev-glow"/><circle cx="196" cy="142" r="20" fill="url(#evGlow)" class="ev-glow g2"/>
+  <path d="M0 160 V134 Q50 122 110 130 T236 126 V160 Z" fill="#07040a"/>
+  <path d="M138 134 v-26 a13 13 0 0 1 26 0 v26 z" fill="#120b19" stroke="rgba(233,222,247,.12)"/>
+  <path d="M146 118 h10 M151 113 v12" stroke="rgba(233,222,247,.18)" stroke-width="1.6"/>
+  <path d="M172 136 v-16 h-6 v-5 h6 v-6 h5 v6 h6 v5 h-6 v16 z" fill="#120b19" stroke="rgba(233,222,247,.1)"/>
+  <path d="M212 134 v-18 a9 9 0 0 1 18 0 v18 z" fill="#100a16" stroke="rgba(233,222,247,.08)"/>
+  ${PUMPKIN(104, 140, 1.15)}${PUMPKIN(196, 143, .9)}
+</svg>`;
 function web(size, flip) {           // a cobweb in a corner: threads from the corner, and sagging rings between them
   const n = 7, R = size, rings = [.22, .42, .62, .82, .98], ang = i => (Math.PI / 2) * (i / (n - 1));
   const pt = (r, i) => [Math.cos(ang(i)) * r * R, Math.sin(ang(i)) * r * R];
@@ -33,6 +52,12 @@ function halloween() {
   L.innerHTML = `<div class="ev-moon"></div><div class="ev-fog f1"></div><div class="ev-fog f2"></div><div class="ev-embers">${embers}</div>
     ${web(170, false)}${web(130, true)}<div class="ev-bats"></div>`;
   document.body.appendChild(L);
+  // the sidebar: a banner under the logo, and a graveyard at the bottom with two lit pumpkins
+  const side = document.querySelector(".sidebar");
+  if (side) {
+    side.querySelector(".side-logo")?.insertAdjacentHTML("afterend", `<div class="ev-banner"><span aria-hidden="true">🎃</span><div><b>Nuit des Sillons hantés</b><small>Événement Halloween</small></div></div>`);
+    side.insertAdjacentHTML("beforeend", `<div class="ev-side" aria-hidden="true">${GRAVEYARD}</div>`);
+  }
   const bats = L.querySelector(".ev-bats");
   const flock = () => {                 // a few bats cross the screen now and then
     if (document.hidden || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
