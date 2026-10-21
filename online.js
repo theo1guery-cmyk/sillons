@@ -852,12 +852,11 @@ async function claim(fn, args, okText) {
 async function renderDefis() {
   if (!me) return;
   $("#walletStreams").textContent = fmt(S.streams || 0);
-  let daily, ach;
-  try {
-    [daily, ach] = await Promise.all([rpc("daily_state"), rpc("achievements_state")]);
-    achReady = ach.filter(a => a.goals.some((g, i) => a.value >= g && !a.claimed.includes(i + 1))).length;
-  }
-  catch (e) { return toast(message(e)); }
+  // the daily part shows even if the achievements are slow to come (big collections)
+  const [d, a] = await Promise.allSettled([rpc("daily_state"), rpc("achievements_state")]);
+  if (d.status !== "fulfilled") return toast(message(d.reason));
+  const daily = d.value, ach = a.status === "fulfilled" ? a.value : [];
+  achReady = ach.filter(a => a.goals.some((g, i) => a.value >= g && !a.claimed.includes(i + 1))).length;
 
   // login streak
   const L = daily.login, lb = $("#loginBox");
@@ -888,6 +887,8 @@ async function renderDefis() {
 
   // achievements, grouped by category
   const box = $("#achievements"); box.innerHTML = "";
+  if (a.status !== "fulfilled") box.innerHTML = `<p class="empty-line">Les succès n'ont pas pu être calculés (grosse collection). Réessaie dans un instant. <button class="btn" id="achRetry">Réessayer</button></p>`;
+  $("#achRetry")?.addEventListener("click", () => renderDefis());
   const earnedTitles = [];
   let cat = null, grid = null;
   for (const a of ach) {
