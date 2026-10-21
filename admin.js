@@ -126,6 +126,11 @@ function buildAdmin() {
         <div class="adm-row"><button class="btn" id="admSwTestBtn">…</button></div>
         <p class="adm-small" id="admSwPay">…</p>
         <div class="adm-row"><button class="btn" id="admSwPayBtn">…</button></div>
+        <p class="adm-small" id="admXpState">…</p>
+        <form class="adm-row" id="admXp"><label>XP du pass <select id="admXpMult" aria-label="Multiplicateur d'XP">
+            <option value="1">×1 (normal)</option><option value="1.5">×1,5</option><option value="2">×2</option><option value="3">×3</option></select></label>
+          <label>jusqu'au <input type="datetime-local" id="admXpUntil" aria-label="Fin du boost (vide = sans fin)"></label>
+          <button class="btn">Appliquer</button></form>
         <h3 class="adm-sep" id="admBcT">Message à tous les joueurs</h3>
         <p class="adm-small">Chaque joueur le verra une fois, dans une fenêtre, à sa prochaine connexion (ou dans les 30 secondes s'il joue).</p>
         <textarea id="admBc" maxlength="500" rows="3" placeholder="Ex. : maintenance ce soir à 22 h, le jeu sera coupé 10 minutes."></textarea>
@@ -165,6 +170,14 @@ function buildAdmin() {
   };
   $("#admSwTestBtn").onclick = () => flip("test_mode", on => on ? "Remettre le mode test (boosters illimités pour tout le monde) ?" : "Terminer le mode test ? Chaque joueur aura 10 boosters, puis 1 toutes les 10 min.",
     on => on ? "Mode test activé : boosters illimités." : "Mode test terminé : le stock de boosters est actif.");
+  $("#admXp").onsubmit = async e => {
+    e.preventDefault();
+    const mult = +$("#admXpMult").value, u = $("#admXpUntil").value;
+    if (mult > 1 && u && Date.parse(u) <= Date.now()) return toast("La date de fin est déjà passée.");
+    try { await rpc("admin_xp_boost_set", { p_mult: mult, p_until: mult > 1 && u ? new Date(u).toISOString() : null });
+      toast(mult > 1 ? `XP ×${String(mult).replace(".", ",")} activée${u ? "" : " sans date de fin"}.` : "Boost d'XP coupé."); loadXpBoost(); loadLog(); }
+    catch (err) { toast(message(err)); }
+  };
   $("#admSwPayBtn").onclick = () => flip("payments_off", on => on ? "Mettre les paiements en maintenance ?" : "",
     on => on ? "Paiements en maintenance." : "Paiements rouverts.");
   $("#admMtToggle").onclick = async () => {
@@ -179,6 +192,15 @@ function buildAdmin() {
   };
 }
 
+async function loadXpBoost() {
+  let x; try { x = await rpc("admin_xp_boost_get"); } catch (e) { $("#admXpState").textContent = message(e); return; }
+  const on = x.active > 1, until = x.until ? new Date(x.until) : null;
+  $("#admXpState").innerHTML = on ? `<b>Boost d'XP ×${String(x.active).replace(".", ",")}</b> actif${until ? ` jusqu'au ${until.toLocaleString("fr-FR", { dateStyle: "long", timeStyle: "short" })}` : ", sans date de fin"} : gains et plafond du jour multipliés.`
+    : "<b>XP du pass normale</b> (pas de boost en cours).";
+  $("#admXpMult").value = String(on ? x.mult : 1);
+  const pad = n => String(n).padStart(2, "0");
+  $("#admXpUntil").value = on && until ? `${until.getFullYear()}-${pad(until.getMonth() + 1)}-${pad(until.getDate())}T${pad(until.getHours())}:${pad(until.getMinutes())}` : "";
+}
 async function loadSwitches() {
   try { ADM.sw = await rpc("admin_switches_get"); } catch (e) { $("#admSwTest").textContent = message(e); return; }
   const t = !!ADM.sw?.test_mode, p = !!ADM.sw?.payments_off;
@@ -206,7 +228,7 @@ async function loadDiscord() {
 async function renderAdmin() {
   if (!me || !ADM.admin) return show("shop");
   buildAdmin();
-  await Promise.all([loadStats(), loadUsers(), loadLog(), loadDiscord(), loadMaint(), loadSwitches()]);
+  await Promise.all([loadStats(), loadUsers(), loadLog(), loadDiscord(), loadMaint(), loadSwitches(), loadXpBoost()]);
   clearInterval(ADM.timer);
   ADM.timer = setInterval(() => {
     if (views.admin.hidden || !ADM.admin) return clearInterval(ADM.timer);
@@ -363,7 +385,7 @@ async function showUser(u) {
 const GIFTS = [["track", 4], ["track", 5], ["track", 4, true], ["track", 5, true], ["artist", 4], ["artist", 5], ["artist", 4, true], ["artist", 5, true]]
   .map(([kind, tier, shiny = false]) => ({ kind, tier, shiny }));
 const giftName = g => (g.kind === "artist" ? (g.tier === 5 ? "Artiste Diamant" : "Artiste Platine") : (g.tier === 5 ? "Légendaire" : "Mythique")) + (g.shiny ? " Shiny" : "");
-const ACTIONS = { vinyls: "Vinyles", pass: "Pass Tournée", ban: "Banni", unban: "Débanni", warn: "Averti", broadcast: "Message à tous", maintenance: "Maintenance", test_mode: "Mode test", payments_off: "Paiements en maintenance", streams: "Streams", boosters: "Boosters", discord: "Discord", god: "GOD pack", gift: "Cadeau" };
+const ACTIONS = { vinyls: "Vinyles", pass: "Pass Tournée", ban: "Banni", unban: "Débanni", warn: "Averti", broadcast: "Message à tous", maintenance: "Maintenance", test_mode: "Mode test", payments_off: "Paiements en maintenance", xp_boost: "Boost d'XP", streams: "Streams", boosters: "Boosters", discord: "Discord", god: "GOD pack", gift: "Cadeau" };
 const actionTxt = a => ACTIONS[a] || a;
 async function loadLog() {
   let l;
