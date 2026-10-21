@@ -291,6 +291,13 @@ function tearable(it) {
     const outside = !h || h.uv.x < .03 || h.uv.x > .97;
     if (span() > .9 || (outside && span() > .75)) finish();
   });
+  // a tap instead of a swipe: the sachet tears by itself, along a slightly wavy line near its top
+  it.autoTear = () => {
+    if (it.peel || it.tearing || (it.canTear && !it.canTear())) return;
+    trailCanvas(); pts = [];
+    path = Array.from({ length: 64 }, (_, k) => new THREE.Vector2(k / 63, .86 + Math.sin(k / 63 * 11) * .006));
+    finish();
+  };
   const up = () => { if (!it.tearing) return; if (span() > .65) finish(); else { it.tearing = false; fadeOut(); } };   // not across: nothing happens
   c.addEventListener("pointerup", up); c.addEventListener("pointercancel", up);
   // the drawn points become a curve over the whole width: averaged per column, gaps joined, smoothed
@@ -354,6 +361,7 @@ window.Studio = {
   pack: (canvas, name, opts) => attach(canvas, "pack", name, opts),
   card: (canvas, name, opts) => attach(canvas, "card", name, opts),
   preload: name => material(name),
+  tearNow: canvas => canvas?.__studio?.autoTear?.(),
   lost: () => renderer.getContext().isContextLost(),
   still,
 };

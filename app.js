@@ -685,13 +685,13 @@ const packBtn = document.createElement("button");
 packBtn.className = "pack mix";
 packBtn.innerHTML = `<span class="pack-shine" aria-hidden="true"></span><canvas class="pack-gl" aria-hidden="true"></canvas><img class="pack-logo" src="brand/zikhunter-icon.svg" alt=""><span class="lbl"><b>Booster</b><span>5 cartes · tout Deezer</span></span>`;
 packBtn.setAttribute("aria-label", "Ouvrir un booster");
-packBtn.onclick = e => { if (e.detail && packBtn.classList.contains("gl")) return; openPack(BOOSTER); };   // the 3D pack is torn open, not clicked
+packBtn.onclick = () => startOpening(BOOSTER);   // the booster comes up big, full screen, to be torn open
 BOOSTER.el = packBtn;
 const stockEl = document.createElement("div"); stockEl.className = "stock"; stockEl.setAttribute("aria-live", "polite");
 const packStage = document.createElement("div"); packStage.className = "pack-stage";
 const openBig = document.createElement("button"); openBig.className = "btn primary big"; openBig.id = "openBig"; openBig.textContent = "Ouvrir un booster";
-openBig.onclick = () => openPack(BOOSTER);
-const tearHint = document.createElement("p"); tearHint.className = "tear-hint"; tearHint.textContent = "Déchire le haut du sachet pour l'ouvrir";
+openBig.onclick = () => startOpening(BOOSTER);
+const tearHint = document.createElement("p"); tearHint.className = "tear-hint"; tearHint.textContent = "Touche le booster pour l'ouvrir";
 packStage.append(packBtn, tearHint, openBig);
 // the big boosters of the VIP pass: 15 cards, all Rare or better
 const BIG = { g: -1, n: "Édition Deluxe", big: true, el: packBtn };
@@ -715,9 +715,9 @@ const backName = () => { const b = document.documentElement.dataset.back || "pla
 const worn = slot => { try { return (typeof me !== "undefined" && me && me.cosmetics && me.cosmetics[slot]) || null; } catch (e) { return null; } };
 const classicName = () => worn("pack") || "pack-wall";
 let tornCut = null;                       // the shape of the last tear, so the pack in the opening is torn the same way
-skin(packBtn, classicName, { sway: true, canTear: () => !busy && !packBtn.disabled, tear: cut => { tornCut = cut; openPack(BOOSTER); } });
+skin(packBtn, classicName, { sway: true });
 document.documentElement.dataset.back = "plain";
-const studioScript = document.createElement("script"); studioScript.type = "module"; studioScript.src = "studio.js?v=19"; document.head.appendChild(studioScript);
+const studioScript = document.createElement("script"); studioScript.type = "module"; studioScript.src = "studio.js?v=20"; document.head.appendChild(studioScript);
 function renderStock() {
   bigBtn.hidden = !S.big;                // the big boosters won with the VIP pass
   bigBtn.innerHTML = `<b>Ouvrir une Édition Deluxe</b><small>15 cartes, toutes Rare ou mieux · ${S.big || 0} à ouvrir</small>`;
@@ -780,43 +780,151 @@ for (const p of STORE_PACKS) {
 }
 
 // buying a genre booster brings it up big, centre screen: it is torn open there (nothing is paid until then)
-const tearStage = document.createElement("div"); tearStage.className = "tear-stage"; tearStage.hidden = true;
-tearStage.setAttribute("role", "dialog"); tearStage.setAttribute("aria-modal", "true"); tearStage.setAttribute("aria-label", "Ouvrir le booster");
-tearStage.innerHTML = `<div class="ts-head"><b></b><small></small></div>
-  <div class="pack stage-pack"><canvas class="pack-gl" aria-hidden="true"></canvas></div>
-  <p class="ts-hint">Déchire le haut du sachet pour l'ouvrir</p>
-  <button class="btn" type="button">Annuler</button>`;
-document.body.appendChild(tearStage);
-let stagePack = null;
-const stageHost = tearStage.querySelector(".stage-pack");
-function closeStage() { tearStage.hidden = true; document.removeEventListener("keydown", stageKeys); }
-const stageKeys = e => { if (e.key === "Escape") closeStage(); };
-tearStage.querySelector("button").onclick = closeStage;
-tearStage.addEventListener("click", e => { if (e.target === tearStage) closeStage(); });
-let stageReady = false;
+/* ---------- the opening, full screen: the booster big in the middle, torn open (swipe across its top, or a tap),
+   then its cards one by one, then the whole booster laid out. Every booster goes through it. ---------- */
+const OP = { p: null, pulls: null, step: null, busy: false, i: 0 };
+const op = document.createElement("div"); op.className = "op"; op.hidden = true;
+op.setAttribute("role", "dialog"); op.setAttribute("aria-modal", "true"); op.setAttribute("aria-label", "Ouverture du booster");
+op.innerHTML = `<div class="op-head"><b class="op-title"></b><small class="op-sub"></small></div>
+  <button class="op-x" type="button" aria-label="Fermer">✕</button>
+  <div class="op-stage">
+    <div class="op-glow" aria-hidden="true"></div>
+    <div class="pack stage-pack op-pack"><canvas class="pack-gl" aria-hidden="true"></canvas></div>
+    <div class="op-cards"></div>
+    <div class="op-recap"></div>
+  </div>
+  <p class="op-hint" aria-live="polite"></p>
+  <div class="op-tray" aria-hidden="true"></div>
+  <div class="op-actions"><button class="btn op-skip" type="button">Tout révéler</button>
+    <button class="btn op-done" type="button">Terminer</button><button class="btn primary op-again" type="button">Ouvrir un autre booster</button></div>`;
+document.body.appendChild(op);
+const $o = q => op.querySelector(q);
+const opHost = $o(".op-pack");
+const opPhase = ph => { op.dataset.phase = ph; };
+const opHint = t => { $o(".op-hint").textContent = t; };
+let opReady = false;
+const packDesign = p => p.big ? "pack-big" : p.g >= 0 ? "pack-" + TYPES[p.g].k : classicName();
+const packLabel = p => p === BIG ? ["Édition Deluxe", "15 cartes · toutes Rare ou mieux"]
+  : p.g >= 0 ? ["Booster " + p.n, (p.pay === "vinyls" ? STORE_VINYLS + " Vinyles" : STORE_PRICE + " Streams") + " · 5 cartes"]
+  : ["Booster", "5 cartes · tout Deezer"];
+// can this booster be opened right now? (if not, openPack says why)
+function canOpen(p) {
+  if (busy || !Online.active || !window.Studio) return false;
+  if (p === BIG) return (S.big || 0) > 0;
+  if (p.g >= 0) return canPay(p);
+  refill();
+  return TEST_MODE || (S.stock || 0) > 0;
+}
+function startOpening(p) {
+  if (!canOpen(p)) return openPack(p);
+  OP.p = p; OP.pulls = null; OP.step = null; OP.busy = false;
+  const [t, sub] = packLabel(p);
+  $o(".op-title").textContent = t; $o(".op-sub").textContent = sub;
+  $o(".op-cards").innerHTML = ""; $o(".op-recap").innerHTML = ""; $o(".op-tray").innerHTML = "";
+  op.classList.remove("god", "err");
+  opPhase("pack"); opHint("Glisse le long du haut du sachet pour le déchirer · ou touche-le");
+  if (!opReady) {
+    opReady = true;
+    skin(opHost, () => packDesign(OP.p), { sway: true, canTear: () => op.dataset.phase === "pack" && !busy && !op.hidden,
+      tear: cut => { tornCut = cut; opPhase("load"); openPack(OP.p); } });
+  }
+  opHost.classList.remove("in"); void opHost.offsetWidth; opHost.classList.add("in");
+  if (op.hidden) { op.hidden = false; document.body.classList.add("op-on"); addEventListener("keydown", opKeys, true); }
+}
+function closeOpening() {
+  if (busy || OP.busy) return;
+  op.hidden = true; document.body.classList.remove("op-on"); removeEventListener("keydown", opKeys, true);
+  opPhase("pack"); OP.step = null;
+  renderStock(); refreshViews?.();
+}
+// a tap on the sachet (no swipe) tears it by itself
+let opDown = null;
+opHost.addEventListener("pointerdown", e => { opDown = { x: e.clientX, y: e.clientY, t: Date.now() }; });
+opHost.addEventListener("pointerup", e => {
+  if (!opDown || op.dataset.phase !== "pack") return;
+  const still = Math.hypot(e.clientX - opDown.x, e.clientY - opDown.y) < 12 && Date.now() - opDown.t < 500; opDown = null;
+  if (still) withStudio(S => S.tearNow?.(opHost.querySelector(".pack-gl")));
+});
+const opKeys = e => {
+  if (op.hidden || document.body.classList.contains("fx-on")) return;
+  if (e.key === "Escape") { e.preventDefault(); if (op.dataset.phase === "pack" || op.dataset.phase === "recap") closeOpening(); else opSkip(); return; }
+  if (![" ", "Enter", "ArrowRight"].includes(e.key) || e.target.closest?.("button")) return;
+  e.preventDefault();
+  if (op.dataset.phase === "pack") withStudio(S => S.tearNow?.(opHost.querySelector(".pack-gl")));
+  else opGo();
+};
+$o(".op-x").onclick = () => op.dataset.phase === "cards" ? opSkip() : closeOpening();
+$o(".op-done").onclick = closeOpening;
+$o(".op-skip").onclick = () => opSkip();
+$o(".op-again").onclick = () => { if (OP.p) startOpening(OP.p); };
+op.addEventListener("click", e => { if (op.dataset.phase === "cards" && !e.target.closest(".op-actions, .op-x")) opGo(); });
+
+// the cards, one by one: a tap turns the card over, the next tap sends it to the tray and brings the next one
+async function opGo() {
+  if (OP.busy || !OP.step) return;
+  OP.busy = true; const s = OP.step; OP.step = null;
+  try { await s(); } finally { OP.busy = false; }
+}
+function opCards(pulls) {
+  OP.pulls = pulls; OP.i = -1;
+  opPhase("cards");
+  const best = Math.max(...pulls.map(pl => pl.c.tier));
+  op.style.setProperty("--best", RCOL[best]);
+  opNext();
+}
+function opNext() {
+  const pulls = OP.pulls, box = $o(".op-cards");
+  const old = box.querySelector(".solo-card:not(.leave)");
+  if (old) {                                   // the card goes down into the tray
+    old.classList.add("leave"); setTimeout(() => old.remove(), 380);
+    const pl = pulls[OP.i], mini = document.createElement("div"); mini.className = "op-mini"; mini.style.setProperty("--rc", RCOL[pl.c.tier]);
+    mini.appendChild(cardEl(pl.c, pl.holo)); $o(".op-tray").appendChild(mini);
+  }
+  OP.i++;
+  if (OP.i >= pulls.length) return opRecap();
+  const pl = pulls[OP.i], slot = slotEl(pl, OP.i); slot.classList.add("solo-card");
+  const f = slot.querySelector(".flip"); f.onclick = null; f.tabIndex = -1;
+  box.appendChild(slot);
+  $o(".op-sub").textContent = `Carte ${OP.i + 1} / ${pulls.length}`;
+  opHint("Touche la carte pour la retourner");
+  OP.step = async () => {
+    opHint("");
+    await f.reveal();
+    opHint(OP.i + 1 < pulls.length ? "Touche pour la carte suivante" : "Touche pour voir tout le booster");
+    OP.step = async () => opNext();
+  };
+}
+function opSkip() {
+  if (op.dataset.phase !== "cards" || OP.busy) return;
+  OP.step = null; OP.i = OP.pulls.length; opRecap();
+}
+function opRecap() {
+  const pulls = OP.pulls;
+  OP.step = null;
+  $o(".op-cards").innerHTML = ""; $o(".op-tray").innerHTML = "";
+  const rc = $o(".op-recap"); rc.innerHTML = ""; rc.classList.toggle("many", pulls.length > 6);
+  pulls.forEach((pl, i) => {
+    const slot = slotEl(pl, i); rc.appendChild(slot);
+    slot.querySelector(".flip").reveal(true);
+  });
+  const fresh = pulls.filter(pl => pl.isNew).length, best = pulls.reduce((a, b) => b.c.tier > a.c.tier ? b : a);
+  $o(".op-title").textContent = "Booster ouvert";
+  $o(".op-sub").textContent = `${fresh} nouvelle${fresh > 1 ? "s" : ""} carte${fresh > 1 ? "s" : ""} · meilleure : ${rarName(best.c)}`;
+  opPhase("recap"); opHint("Touche une carte pour la voir en grand");
+  $o(".op-again").disabled = !canOpen(OP.p) && !(OP.p.g < 0 && TEST_MODE);
+}
+// a booster that could not be opened: the sachet comes back whole
+function opFail(msg) {
+  opPhase("pack"); op.classList.add("err"); opHint(msg);
+  setTimeout(() => { if (op.dataset.phase === "pack") op.classList.remove("err"); }, 4000);
+}
+
 function buyPack(p, pay = "streams") {
   p.pay = pay;
-  // the checks of the opening come first (account, Streams or Vinyles), so a pack you can't open is never shown torn
-  if (busy || !Online.active || !canPay(p) || !window.Studio) return openPack(p);
-  showStage(p, "Booster " + p.n, (pay === "vinyls" ? STORE_VINYLS + " Vinyles" : STORE_PRICE + " Streams") + " · 5 cartes");
+  startOpening(p);
 }
 // a big booster of the VIP pass comes up the same way, big and centre screen
-function bigStage() {
-  if (busy || !Online.active || !S.big || !window.Studio) return openPack(BIG);
-  if (views.shop.hidden) show("shop");             // it opens on the booster table
-  showStage(BIG, "Édition Deluxe", "15 cartes · toutes Rare ou mieux");
-}
-function showStage(p, title, sub) {
-  stagePack = p;
-  tearStage.querySelector(".ts-head b").textContent = title;
-  tearStage.querySelector(".ts-head small").textContent = sub;
-  if (!stageReady) {
-    stageReady = true;
-    skin(stageHost, () => stagePack.big ? "pack-big" : "pack-" + TYPES[stagePack.g].k, { sway: true, canTear: () => !busy && !tearStage.hidden,
-      tear: cut => { tornCut = cut; closeStage(); openPack(stagePack); } });
-  }
-  tearStage.hidden = false; document.addEventListener("keydown", stageKeys);
-}
+function bigStage() { startOpening(BIG); }
 
 /* ---------- drawing a booster (no UI) ---------- */
 async function drawPack(p, god = false, forced = null, artistTier = null) {   // artistTier: local previews only
@@ -874,7 +982,7 @@ async function openPack(p, opts = {}) {
   let serverPack = null;                 // with an account the server rolls the rarities (and the GOD pack)
   if (Online.active && !devHash) {
     try { serverPack = await Online.startPack(p); }
-    catch (e) { busy = false; renderStock(); toast(Online.message(e)); return; }
+    catch (e) { busy = false; renderStock(); if (!op.hidden) opFail(Online.message(e)); else toast(Online.message(e)); return; }
   }
   const paid = !Online.active && !TEST_MODE && p === BOOSTER;   // shop packs are free while testing
   if (paid) {
@@ -893,44 +1001,30 @@ async function openPack(p, opts = {}) {
   devShiny = devHash === "#shiny" || /-shiny$/.test(devHash);
   const god = serverPack ? serverPack.god : opts.god ?? (devHash === "#god" || (p === BOOSTER && Math.random() < GOD_CHANCE));
 
-  const table = $("#table"), deal = $("#deal");
   const plain = p === BOOSTER || p === BIG;
-  seatTable(plain ? $("#shelf") : $("#store"));
-  table.classList.toggle("god", god);
-  $("#tableTitle").textContent = god ? "GOD PACK" : p === BOOSTER ? "Booster" : p === BIG ? "Édition Deluxe · 15 cartes" : "Booster " + p.n;
-  deal.innerHTML = "";
-  const rip = document.createElement("div"); rip.className = "rip loading" + (god ? " god" : "");
-  const pk = p.el.cloneNode(true); pk.tabIndex = -1; pk.disabled = true; pk.removeAttribute("id");
   document.documentElement.dataset.back = worn("back") ? worn("back").replace(/^back-/, "") : plain ? "plain" : "eq";
-  skin(pk, p === BIG ? "pack-big" : plain ? classicName() : "pack-" + TYPES[p.g].k, { live: true, cut: tornCut });   // the copy in the opening
-  tornCut = null;
-  if (god) pk.classList.add("god");
-  const line = document.createElement("p"); line.textContent = god ? "GOD PACK ! 1 chance sur 3 000…" : pick(LOADING_LINES);
-  rip.append(pk, line); deal.appendChild(rip);
-  const lineTimer = setInterval(() => { if (!god) line.textContent = pick(LOADING_LINES); }, 1600);
+  tornCut = null;                                   // the torn sachet stays on the scene while the cards are found
+  op.classList.toggle("god", god); opPhase("load");
+  opHint(god ? "GOD PACK ! 1 chance sur 3 000…" : pick(LOADING_LINES));
+  const lineTimer = setInterval(() => { if (!god) opHint(pick(LOADING_LINES)); }, 1600);
   try {
     const pulls = serverPack ? await Online.drawPack(p, serverPack) : await drawPack(p, god, opts.slots, opts.artist);
     if (god && reduceMotion()) toast("GOD PACK ! Que des Mythiques et des Légendaires.");   // the GOD pack has its own announcement
     renderCounters();
     if (pulls.some(Stage.isHit)) Stage.prepare(pulls);
     for (const pl of pulls) if (Stage.isHit(pl)) Stage.warm(pl);   // the hits' tracks load while the first cards flip
-    deal.innerHTML = "";
-    const grid = document.createElement("div"); grid.className = "deal"; deal.appendChild(grid);
-    pulls.forEach((pl, i) => grid.appendChild(slotEl(pl, i)));
     window.V2?.pulls(pulls);
-    if (god && !reduceMotion()) {
-      const flips = [...grid.querySelectorAll(".flip")];
-      if (await Stage.god(pulls, flips)) for (const f of flips) await f.reveal(true);
-    } else soloReveal(pulls, [...grid.querySelectorAll(".flip")]);
+    if (god && !reduceMotion()) {                   // the GOD pack keeps its own film, then the booster laid out
+      OP.pulls = pulls; opRecap();
+      await Stage.god(pulls, [...$o(".op-recap").querySelectorAll(".flip")]);
+    } else opCards(pulls);
   } catch (err) {
     if (paid) { S.stock = Math.min(STOCK_MAX, S.stock + 1); save(); }   // a failed opening gives the booster back
     if (serverPack) await Online.abandon(serverPack);
-    rip.classList.remove("loading");
-    line.className = "err";
-    line.textContent = err.code === "network" || err.code === "timeout"
+    opFail(err.code === "network" || err.code === "timeout"
       ? "Deezer ne répond pas. Vérifie ta connexion puis réessaie. Ton booster t'a été rendu."
       : err.code === 4 ? "Deezer limite le nombre de demandes. Attends quelques secondes puis réessaie. Ton booster t'a été rendu."
-      : "Le booster n'a pas pu être rempli. Ton booster t'a été rendu, réessaie.";
+      : "Le booster n'a pas pu être rempli. Ton booster t'a été rendu, réessaie.");
   } finally {
     clearInterval(lineTimer);
     busy = false;
@@ -1336,51 +1430,11 @@ function slotEl(pl, i) {
   slot.append(f, tag);
   return slot;
 }
-/* ---------- the cards of a booster, one by one, big in the middle of the screen: a tap turns the card over, the
-   next tap brings the next one. The table keeps the whole booster, face up, for after. ---------- */
-function soloReveal(pulls, flips) {
-  const el = document.createElement("div"); el.className = "solo";
-  el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); el.setAttribute("aria-label", "Ouverture du booster");
-  el.innerHTML = `<div class="solo-head"><b class="solo-n"></b><button class="btn solo-skip" type="button">Tout révéler</button></div>
-    <div class="solo-stage"></div><p class="solo-hint" aria-live="polite"></p>`;
-  document.body.appendChild(el);
-  const stage = el.querySelector(".solo-stage"), hint = el.querySelector(".solo-hint"), count = el.querySelector(".solo-n");
-  let i = -1, cur = null, step = null, busyStep = false, done = false;
-  const finish = async () => {
-    if (done) return; done = true;
-    removeEventListener("keydown", keys, true);
-    for (const f of flips) await f.reveal(true);               // the table shows the whole booster
-    el.classList.add("out"); setTimeout(() => el.remove(), 260);
-  };
-  const next = () => {
-    i++;
-    if (i >= pulls.length) return finish();
-    if (cur) { const old = cur; old.classList.add("leave"); setTimeout(() => old.remove(), 320); }
-    cur = slotEl(pulls[i], i); cur.classList.add("solo-card");
-    const f = cur.querySelector(".flip"); f.onclick = null; f.tabIndex = -1;
-    stage.appendChild(cur);
-    count.textContent = `Carte ${i + 1} / ${pulls.length}`;
-    hint.textContent = "Touche la carte pour la retourner";
-    step = async () => {
-      hint.textContent = "";
-      await f.reveal();
-      flips[i]?.reveal(true);
-      hint.textContent = i + 1 < pulls.length ? "Touche pour la carte suivante" : "Touche pour voir tout le booster";
-      step = next;
-    };
-  };
-  const go = async () => { if (busyStep || done || !step) return; busyStep = true; const s = step; step = null; try { await s(); } finally { busyStep = false; } };
-  const keys = e => { if (!done && [" ", "Enter", "ArrowRight"].includes(e.key) && !document.body.classList.contains("fx-on")) { e.preventDefault(); go(); } };
-  el.addEventListener("click", e => { if (!e.target.closest(".solo-skip")) go(); });
-  el.querySelector(".solo-skip").onclick = finish;
-  addEventListener("keydown", keys, true);
-  next();
-}
 // one card after the other, so each big pull gets its own moment
 $("#flipAll").onclick = async () => {
   for (const f of document.querySelectorAll("#deal .flip:not(.on)")) { await f.reveal(); await wait(160); }
 };
-$("#again").onclick = () => openPack(lastPack);
+$("#again").onclick = () => startOpening(lastPack);
 $("#tableBack").onclick = unseatTable;
 
 /* ---------- binder ---------- */
