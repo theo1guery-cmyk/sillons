@@ -64,7 +64,7 @@ function drawPot() {
   const pick = $("#wzPick"); if (!pick) return;
   const list = potCopies(), chosen = new Set(W.sel.map(([, cp]) => cp.id));
   pick.innerHTML = list.length ? "" : `<p class="empty-line">Aucun titre ${RAR[W.tier]} disponible pour le chaudron.</p>`;
-  for (const [c, cp] of list.slice(0, 120)) {
+  for (const [c, cp] of list.slice(0, 400)) {
     const b = document.createElement("button"); b.className = "wz-card" + (chosen.has(cp.id) ? " on" : "");
     b.appendChild(cardEl(c, false));
     if ((c.n || 1) > 1) b.insertAdjacentHTML("beforeend", `<span class="wz-dup">×${c.n}</span>`);
@@ -85,16 +85,22 @@ function drawPot() {
 function drawElixir() {
   const box = $("#wzElix"); if (!box) return;
   const list = [];
-  for (const c of Object.values(S.c)) for (const cp of c.copies || []) if (cp.grade && cp.grade < 9) list.push([c, cp]);
-  list.sort((a, b) => b[1].grade - a[1].grade || b[0].tier - a[0].tier);
-  box.innerHTML = list.length ? "" : `<p class="empty-line">Aucune carte gradée à moins de 9. Fais grader une carte dans l'onglet Gradation.</p>`;
-  for (const [c, cp] of list.slice(0, 60)) {
-    const w = document.createElement("div"); w.className = "wz-gr";
+  // every graded card: those under 9 can drink the elixir, the others are shown at their maximum
+  for (const c of Object.values(S.c)) for (const cp of c.copies || []) if (cp.grade) list.push([c, cp]);
+  list.sort((a, b) => (a[1].grade >= 9) - (b[1].grade >= 9) || b[1].grade - a[1].grade || b[0].tier - a[0].tier);
+  box.innerHTML = list.length ? "" : `<p class="empty-line">Aucune carte gradée. Fais grader une carte dans l'onglet Gradation.</p>`;
+  for (const [c, cp] of list) {
+    const max = cp.grade >= 9;
+    const w = document.createElement("div"); w.className = "wz-gr" + (max ? " max" : "");
     w.appendChild(slabEl(c, !!cp.holo && c.tier >= MYTH, cp));
-    w.insertAdjacentHTML("beforeend", `<p><b>${cp.grade} → ${cp.grade + 1}</b> · ${ELIXIR(cp.grade)} % de chances</p>`);
-    const b = document.createElement("button"); b.className = "btn"; b.textContent = "Verser l'élixir · 30 🎃";
-    b.disabled = W.st.pumpkins < 30; b.onclick = () => pourElixir(c, cp);
-    w.appendChild(b); box.appendChild(w);
+    w.insertAdjacentHTML("beforeend", max ? `<p>${cp.grade === 10 ? "Gem Mint 10 : déjà parfaite" : "Déjà au maximum de l'élixir (9)"}</p>`
+      : `<p><b>${cp.grade} → ${cp.grade + 1}</b> · ${ELIXIR(cp.grade)} % de chances</p>`);
+    if (!max) {
+      const b = document.createElement("button"); b.className = "btn"; b.textContent = "Verser l'élixir · 30 🎃";
+      b.disabled = W.st.pumpkins < 30; b.onclick = () => pourElixir(c, cp);
+      w.appendChild(b);
+    }
+    box.appendChild(w);
   }
 }
 
