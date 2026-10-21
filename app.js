@@ -921,7 +921,7 @@ async function openPack(p, opts = {}) {
     if (god && !reduceMotion()) {
       const flips = [...grid.querySelectorAll(".flip")];
       if (await Stage.god(pulls, flips)) for (const f of flips) await f.reveal(true);
-    }
+    } else soloReveal(pulls, [...grid.querySelectorAll(".flip")]);
   } catch (err) {
     if (paid) { S.stock = Math.min(STOCK_MAX, S.stock + 1); save(); }   // a failed opening gives the booster back
     if (serverPack) await Online.abandon(serverPack);
@@ -1335,6 +1335,46 @@ function slotEl(pl, i) {
   f.onclick = () => f.classList.contains("on") ? openModal(pl.c, pl.holo) : f.reveal();
   slot.append(f, tag);
   return slot;
+}
+/* ---------- the cards of a booster, one by one, big in the middle of the screen: a tap turns the card over, the
+   next tap brings the next one. The table keeps the whole booster, face up, for after. ---------- */
+function soloReveal(pulls, flips) {
+  const el = document.createElement("div"); el.className = "solo";
+  el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); el.setAttribute("aria-label", "Ouverture du booster");
+  el.innerHTML = `<div class="solo-head"><b class="solo-n"></b><button class="btn solo-skip" type="button">Tout révéler</button></div>
+    <div class="solo-stage"></div><p class="solo-hint" aria-live="polite"></p>`;
+  document.body.appendChild(el);
+  const stage = el.querySelector(".solo-stage"), hint = el.querySelector(".solo-hint"), count = el.querySelector(".solo-n");
+  let i = -1, cur = null, step = null, busyStep = false, done = false;
+  const finish = async () => {
+    if (done) return; done = true;
+    removeEventListener("keydown", keys, true);
+    for (const f of flips) await f.reveal(true);               // the table shows the whole booster
+    el.classList.add("out"); setTimeout(() => el.remove(), 260);
+  };
+  const next = () => {
+    i++;
+    if (i >= pulls.length) return finish();
+    if (cur) { const old = cur; old.classList.add("leave"); setTimeout(() => old.remove(), 320); }
+    cur = slotEl(pulls[i], i); cur.classList.add("solo-card");
+    const f = cur.querySelector(".flip"); f.onclick = null; f.tabIndex = -1;
+    stage.appendChild(cur);
+    count.textContent = `Carte ${i + 1} / ${pulls.length}`;
+    hint.textContent = "Touche la carte pour la retourner";
+    step = async () => {
+      hint.textContent = "";
+      await f.reveal();
+      flips[i]?.reveal(true);
+      hint.textContent = i + 1 < pulls.length ? "Touche pour la carte suivante" : "Touche pour voir tout le booster";
+      step = next;
+    };
+  };
+  const go = async () => { if (busyStep || done || !step) return; busyStep = true; const s = step; step = null; try { await s(); } finally { busyStep = false; } };
+  const keys = e => { if (!done && [" ", "Enter", "ArrowRight"].includes(e.key) && !document.body.classList.contains("fx-on")) { e.preventDefault(); go(); } };
+  el.addEventListener("click", e => { if (!e.target.closest(".solo-skip")) go(); });
+  el.querySelector(".solo-skip").onclick = finish;
+  addEventListener("keydown", keys, true);
+  next();
 }
 // one card after the other, so each big pull gets its own moment
 $("#flipAll").onclick = async () => {
