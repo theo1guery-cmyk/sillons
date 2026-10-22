@@ -17,22 +17,8 @@ async function beat() {
   if (!r || !me) return;
   ADM.admin = !!r.admin;
   $("#tab-admin").hidden = !ADM.admin;
-  wvSwitch();
   if (r.ban) showBan(r.ban); else $("#banScreen")?.remove();
   showMaintenance(r.maintenance);
-}
-
-/* ---------- design preview for admins: the Shiny Légendaire with or without the gold contour lines ---------- */
-function wvSwitch() {
-  let b = $("#wvSwitch");
-  if (!ADM.admin) { b?.remove(); document.body.classList.remove("wv-off"); return; }
-  let off = false; try { off = localStorage.getItem("zh-wv") === "off"; } catch (e) {}
-  document.body.classList.toggle("wv-off", off);
-  if (b) return;
-  b = document.createElement("button"); b.id = "wvSwitch"; b.className = "wv-switch";
-  const label = () => { const o = document.body.classList.contains("wv-off"); b.innerHTML = `Shiny Légendaire · <b>${o ? "Actuelle" : "Lignes dorées"}</b>`; b.setAttribute("aria-pressed", !o); };
-  b.onclick = () => { const o = document.body.classList.toggle("wv-off"); try { localStorage.setItem("zh-wv", o ? "off" : "on"); } catch (e) {} label(); };
-  label(); document.body.appendChild(b);
 }
 
 /* ---------- maintenance: the whole game behind one screen (admins excepted, the server says who) ---------- */

@@ -79,8 +79,3 @@
 .adm-given{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
 .adm-given .linkish{flex:none;color:#ff9a8c}
 
-/* design preview switch (admins only, admin.js wvSwitch) */
-.wv-switch{position:fixed;left:16px;bottom:16px;z-index:80;padding:8px 14px;border-radius:999px;border:1px solid #e9c46a;background:rgba(10,8,14,.92);color:#f5d27a;font:500 .8rem var(--body);box-shadow:0 8px 24px rgba(0,0,0,.5);cursor:pointer}
-.wv-switch b{color:#fff}
-body.wv-off .card.legend.shiny .wv{display:none}
-@media (max-width:760px){.wv-switch{bottom:calc(84px + env(safe-area-inset-bottom));left:12px}}
