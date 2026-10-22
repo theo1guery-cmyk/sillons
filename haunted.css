@@ -78,3 +78,20 @@
 .hx-r-txt b{font:900 1.5rem var(--display);background:linear-gradient(180deg,#ffe2b0,#ff8a2a);-webkit-background-clip:text;background-clip:text;color:transparent}
 .hx-r-txt span{color:#c9a6e0}
 @media (prefers-reduced-motion:reduce){.hx-r-bats,.hx-r-fog{display:none}.hx-r-card{transition:opacity .3s}}
+
+/* the announcement (hauntedIntro, on the stories of event-intro.js) */
+.hxi-c{width:clamp(120px,22vw,190px);aspect-ratio:63/88;container-type:inline-size}
+.hxi-c .hcard{width:100%}
+.hxi-fan{display:flex;justify-content:center;margin:6px 0 4px}
+.hxi-fan .hxi-c{animation:hxiFan 1s cubic-bezier(.2,.9,.3,1.2) both}
+.hxi-fan .f1{--r:-12deg;--x:30%;animation-delay:.4s}
+.hxi-fan .f2{--r:0deg;--x:0;z-index:1;animation-delay:.55s;translate:0 -6%}
+.hxi-fan .f3{--r:12deg;--x:-30%;animation-delay:.7s}
+@keyframes hxiFan{from{opacity:0;transform:translateY(40%) rotate(0) scale(.7)}to{opacity:1;transform:translateX(var(--x)) rotate(var(--r))}}
+.hxi-count span{font-variant-numeric:tabular-nums}
+.hxi-nos{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}
+.hxi-nos span{padding:8px 14px;border-radius:12px;font:900 1.3rem var(--display);color:#ffd29a;background:rgba(255,138,42,.1);box-shadow:inset 0 0 0 1px rgba(255,138,42,.4);animation:siUp .6s calc(.6s + var(--i) * .12s) both}
+.hxi-nos em{font-style:normal;font-size:.8rem;color:#ff9a3c}
+.hxi-one{animation:hxiRise 1.4s cubic-bezier(.2,.9,.3,1.1) .3s both;filter:drop-shadow(0 0 50px rgba(255,140,40,.7))}
+.hxi-one .hxi-c{width:clamp(150px,30vw,230px)}
+@keyframes hxiRise{from{opacity:0;transform:translateY(30%) scale(.8);filter:brightness(0) drop-shadow(0 0 0 transparent)}to{opacity:1;transform:none}}
