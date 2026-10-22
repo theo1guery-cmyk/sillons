@@ -128,6 +128,7 @@ function buildAdmin() {
         <div class="adm-row"><button class="btn" id="admSwPayBtn">…</button></div>
         <form class="adm-row" id="admEv"><label>Événement <select id="admEvSel" aria-label="Événement du site">
             <option value="">Aucun</option><option value="halloween">🎃 Halloween</option></select></label><button class="btn">Appliquer</button></form>
+        <div class="adm-row"><button class="btn" id="admHxSim" type="button">🦇 Simuler un Pack Hanté (rien n'est enregistré)</button></div>
         <p class="adm-small" id="admXpState">…</p>
         <form class="adm-row" id="admXp"><label>XP du pass <select id="admXpMult" aria-label="Multiplicateur d'XP">
             <option value="1">×1 (normal)</option><option value="1.5">×1,5</option><option value="2">×2</option><option value="3">×3</option></select></label>
@@ -172,6 +173,7 @@ function buildAdmin() {
   };
   $("#admSwTestBtn").onclick = () => flip("test_mode", on => on ? "Remettre le mode test (boosters illimités pour tout le monde) ?" : "Terminer le mode test ? Chaque joueur aura 10 boosters, puis 1 toutes les 10 min.",
     on => on ? "Mode test activé : boosters illimités." : "Mode test terminé : le stock de boosters est actif.");
+  $("#admHxSim").onclick = () => window.Haunted?.simulate();
   $("#admEv").onsubmit = async e => {
     e.preventDefault();
     const ev = $("#admEvSel").value;
