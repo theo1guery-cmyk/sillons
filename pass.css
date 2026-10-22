@@ -433,3 +433,17 @@
 .ps-how li b{color:#ffe2a0;white-space:nowrap}
 .ps-how small{display:block;margin-top:10px;color:var(--muted);font-size:.75rem}
 @media (max-width:760px){.ps-xpbox{grid-template-columns:minmax(0,1fr)}.ps-how ul{grid-template-columns:minmax(0,1fr)}}
+
+/* the rarities of the season (rarityBox) */
+.ps-rar{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:18px;align-items:center;margin:16px 0 6px;padding:18px 20px;border-radius:16px;border:1px solid var(--edge,rgba(255,255,255,.1));background:linear-gradient(120deg,rgba(255,177,90,.07),rgba(140,90,255,.06))}
+.ps-rar h3{margin:2px 0 8px}
+.ps-rar p{margin:0 0 8px;line-height:1.5;color:var(--muted);font-size:.9rem}
+.ps-rar p b{color:#fff}
+.ps-rar-r{display:grid;gap:8px}
+.ps-rar-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;align-items:center;gap:8px;padding:8px 12px;border-radius:12px;background:rgba(0,0,0,.25);font-size:.8rem}
+.ps-rar-row b{font-weight:600;color:var(--muted)}
+.ps-rar-row>span{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.ps-rar-row i{width:8px;height:8px;transform:rotate(45deg);display:inline-block}
+.ps-rar-row em{font-style:normal;font-weight:800}
+.ps-rar-row.up em{color:#7fe0a4}.ps-rar-row.down em{color:#ff9a8c}.ps-rar-row.keep em{color:#ffe2a0}
+@media (max-width:760px){.ps-rar{grid-template-columns:minmax(0,1fr)}}
