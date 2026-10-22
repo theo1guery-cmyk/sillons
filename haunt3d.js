@@ -182,7 +182,7 @@ export async function play(host, card) {
   const REC_Z = P_TOP;
   // the shards it bursts into: wedges of the same record, their broken edges glowing
   const shards = [];
-  { let a0 = 0; const glowEdge = new THREE.MeshBasicMaterial({ color: 0x1fa85a });
+  { let a0 = 0; const glowEdge = new THREE.MeshBasicMaterial({ color: 0x0e5c33 });
     while (a0 < Math.PI * 2 - .01) {
       const a1 = Math.min(Math.PI * 2, a0 + .35 + Math.random() * .5), sh = new THREE.Shape();
       sh.moveTo(Math.cos(a0) * .012, Math.sin(a0) * .012);
@@ -352,6 +352,7 @@ export async function play(host, card) {
     camera.position.copy(path.p.getPointAt(u)); camera.lookAt(path.l.getPointAt(u));
     // candles: alive, then leaning and fluttering as the curse grows, then blown out
     const out = seg(t, 5.1, 5.35), wind = seg(t, 3.4, 5.1);
+    wax.color.setHex(0xe9dcc4).multiplyScalar(1 - out * .8); wax.emissiveIntensity = .25 * (1 - out);   // a blown-out candle sinks back into the dark
     candles.forEach((c, i) => {
       const f = .85 + .1 * Math.sin(t * 13 + c.seed) + .06 * Math.sin(t * 29 + c.seed * 3) + wind * .25 * Math.sin(t * 41 + i);
       const on = (1 - out) * ease.out(seg(t, 0, .6));
@@ -380,7 +381,7 @@ export async function play(host, card) {
     });
     greenLight.intensity = uCrackGlow.value * 1.2 + Math.max(0, 1 - Math.abs(t - 5.85) * 4) * 9 + seg(t, 6, 7) * 1.2;
     key.intensity = 6 * (1 - out * .6);
-    beamMat.uniforms.strength.value = seg(t, 5.8, 6.6) * .32 * (1 - seg(t, 7.6, 8.6) * .5); motes.material.opacity = seg(t, 5.9, 6.8) * .8;
+    beamMat.uniforms.strength.value = seg(t, 5.8, 6.6) * .2 * (1 - seg(t, 7.6, 8.6) * .6); motes.material.opacity = seg(t, 5.9, 6.8) * .8;
     for (let i = 0; i < DUST; i++) { dPos[i * 3 + 1] = (dBase[i * 3 + 1] + t * .25 * (1 + (dSeed[i] % 1))) % 3; dPos[i * 3] = dBase[i * 3] + Math.sin(t * .6 + dSeed[i]) * .04; }
     dGeo.attributes.position.needsUpdate = true;
     if (bloom) bloom.strength = .4 + uCrackGlow.value * .08 + Math.max(0, 1 - Math.abs(t - 5.85) * 3) * .8;
@@ -394,7 +395,7 @@ export async function play(host, card) {
     qa.copy(flat).slerp(new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().lookAt(endCam, cardEnd, Y)), Math.min(1, rise * 1.3));
     qs.setFromAxisAngle(Y, (1 - rise) * Math.PI * 4); cardG.quaternion.copy(qa).multiply(qs);
     cardG.scale.setScalar(CARD_S * lerp(.35, 1, rise));
-    halo.position.copy(cardG.position); halo.material.opacity = seg(t, 6.3, 7.2) * .12 + seg(t, 7.8, 8.4) * .12 * (1 - seg(t, 8.6, 9.4));
+    halo.position.copy(cardG.position); halo.material.opacity = seg(t, 6.3, 7.2) * .06 + seg(t, 7.8, 8.4) * .06 * (1 - seg(t, 8.6, 9.4));
     halo.scale.set(3.2 * CARD_S, 3.6 * CARD_S, 1);
     rimMesh.material.opacity = .6 + .4 * Math.sin(t * 9);
     uBurn.value = ease.inOut(seg(t, 7.7, 8.8)); sheetMat.emissiveIntensity = .8 + seg(t, 7.2, 7.7) * .5;
