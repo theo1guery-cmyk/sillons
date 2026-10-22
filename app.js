@@ -547,7 +547,7 @@ function cardEl(c, holo) {
     const sig = c.a === c.a.toUpperCase() ? c.a.toLowerCase().replace(/(^|[\s-])\p{L}/gu, m => m.toUpperCase()) : c.a;   // nobody signs in capitals
     const sfs = Math.min(13, fitCqw(sig, LEG_SIG_FONT, 0, 76));
     el.classList.add("legend");
-    el.innerHTML = `<div class="in"><img class="ext" src="${esc(c.cov.replace(/\/\d+x\d+-/, "/120x120-"))}" alt="" loading="lazy" decoding="async"><img class="art" src="${esc(c.cov.replace(/\/\d+x\d+-/, "/500x500-"))}" alt="Pochette de ${esc(c.al)}" loading="lazy" decoding="async"><div class="shade"></div>
+    el.innerHTML = `<div class="in"><img class="ext" src="${esc(c.cov.replace(/\/\d+x\d+-/, "/120x120-"))}" alt="" loading="lazy" decoding="async"><img class="art" src="${esc(c.cov.replace(/\/\d+x\d+-/, "/500x500-"))}" alt="Pochette de ${esc(c.al)}" loading="lazy" decoding="async"><div class="shade"></div>${holo ? '<div class="wv"></div>' : ""}
       <div class="lhead"><span>★ LÉGENDAIRE</span><span class="lpw" title="Puissance">${st.pw}</span></div>
       <div class="lfoot"><div class="sig" style="font-size:${sfs.toFixed(2)}cqw">${esc(sig)}</div><div class="lttl${size}" style="font-size:${tfs.toFixed(2)}cqw">${esc(title)}</div>
         <div class="lst"><span>${T.s.toUpperCase()} <b>${st.flow}</b></span><span>ENDUR. <b>${st.endu}</b></span><span>HYPE <b>${st.hype}</b></span></div></div>
