@@ -50,7 +50,7 @@ async function drawHaunted(box) {
   if (!d?.editions?.length) { box.remove(); return; }
   const out = d.editions.reduce((a, e) => a + e.copies.length, 0), all = d.editions.reduce((a, e) => a + e.of, 0);
   const pk = typeof W !== "undefined" ? W.st?.pumpkins || 0 : 0;
-  box.innerHTML = `<h3 id="hxT">Collection Hantée</h3>
+  box.innerHTML = `<h3 id="hxT">Collection Hantée <button class="ps-link wz-replay" id="hxIntro">▶ Revoir l'annonce</button></h3>
     <p class="sub">13 cartes à tirage limité, numérotées, qui n'existeront jamais ailleurs. Elles se cachent dans les boosters jusqu'au 2 novembre à minuit : toutes sortiront avant la fin, à toi de les trouver. <b>Thriller n'existe qu'en un seul exemplaire.</b></p>
     <div class="hx-bar"><div><b>${out}</b> / ${all} cartes sorties</div>
       <button class="btn primary hx-buy" id="hxPack"${pk < 100 ? " disabled" : ""}>🦇 Ouvrir un Pack Hanté · 100 🎃</button>
@@ -69,4 +69,46 @@ async function drawHaunted(box) {
     s.querySelector(".hx-card").appendChild(w);
   });
   box.querySelector("#hxPack").onclick = () => startOpening(HAUNTED);
+  box.querySelector("#hxIntro").onclick = () => hauntedIntro();
+}
+
+/* the announcement of the Collection Hantée: stories (event-intro.js), once per player, after the Halloween one */
+const HXI = { shown: false, KEY: "zh-haunted-intro-2026" };
+function hauntedIntroMaybe() {
+  if (HXI.shown || typeof EVENT === "undefined" || EVENT.on !== "halloween" || !Online.active || !me) return;
+  try { if (localStorage.getItem(HXI.KEY) || !localStorage.getItem("zh-event-intro-halloween-2026")) return; } catch (e) { return; }
+  if (document.querySelector(".op:not([hidden])") || document.body.classList.contains("fx-on") || document.querySelector(".adm-screen")) return;
+  hauntedIntro();
+}
+setInterval(hauntedIntroMaybe, 4500);
+async function hauntedIntro() {
+  HXI.shown = true;
+  let d = null; try { d = await rpc("haunted_collection"); } catch (e) {}
+  if (!d?.editions?.length) { HXI.shown = false; return; }
+  try { localStorage.setItem(HXI.KEY, "1"); } catch (e) {}
+  const ed = s => d.editions.find(e => e.slot === s) || d.editions[0];
+  const card = (e, no, cls = "") => { const w = hauntedCardEl({ t: e.title, a: e.artist, cov: e.cover || "", no, of: e.of }); return `<div class="hxi-c ${cls}">${w.innerHTML}</div>`; };
+  const word = s => { let k = 0; return s.split(" ").map(w => `<span class="w">${[...w].map(ch => `<span style="--k:${k++}">${esc(ch)}</span>`).join("")}</span>`).join(" "); };
+  const all = d.editions.reduce((a, e) => a + e.of, 0);
+  const slides = [
+    `<div class="si-s"><p class="si-kick">Nouveau · Halloween</p><h2 class="si-big">${word("La Collection")}<br>${word("Hantée")}</h2>
+      <div class="hxi-fan">${card(ed(3), 3, "f1")}${card(ed(6), 7, "f2")}${card(ed(13), 1, "f3")}</div>
+      <p class="si-line">13 cartes maudites, sur les sons les plus terrifiants. Un seul design, aucune rareté : <b>juste des cartes qui n'existeront jamais ailleurs</b>.</p></div>`,
+    `<div class="si-s"><p class="si-kick">Tirage limité</p><h2 class="si-big hxi-count"><span data-c="${all}">0</span></h2>
+      <p class="si-line"><b>${all} cartes dans tout le jeu</b>, pour tous les joueurs réunis. Chaque son n'existe qu'en <b>10 exemplaires numérotés</b>, de N° 01 à N° 10. Quand ils sont sortis, c'est fini pour toujours.</p>
+      <div class="hxi-nos">${[1, 2, 3, 4, 5].map((n, i) => `<span style="--i:${i}">N° ${String(n).padStart(2, "0")}<em>/10</em></span>`).join("")}</div></div>`,
+    `<div class="si-s"><p class="si-kick">L'exemplaire unique</p>
+      <div class="hxi-one">${card(ed(1), 1)}</div>
+      <p class="si-line"><b>Thriller n'existe qu'une seule fois.</b> Une seule personne l'aura dans sa collection. Il peut se cacher dans n'importe quel booster… mais il est bien caché.</p></div>`,
+    `<div class="si-s"><p class="si-kick">Où les trouver</p><h2>Elles hantent les boosters</h2>
+      <div class="si-chips">${[["Dans tous les boosters, jusqu'au 2 novembre", "🦇"], ["Le Pack Hanté chez la sorcière : 20 fois plus de chances", "100 🎃"], ["Des citrouilles cachées dans les boosters", "+2 à 4 🎃"], ["De nouvelles quêtes chaque nuit", "jusqu'à 120 🎃"]]
+        .map(([t, p], i) => `<span style="--i:${i}">${esc(t)} · <b>${p}</b></span>`).join("")}</div>
+      <p class="si-line">Toutes les cartes sortiront avant la fin de l'événement. <b>La question, c'est qui les aura.</b></p></div>`,
+    `<div class="si-s"><p class="si-kick">Jusqu'au 2 novembre, minuit</p><h2 class="si-big">${word("La chasse")}<br>${word("est ouverte")}</h2>
+      <div class="si-cta"><button class="btn primary" data-go="witch">Voir la collection</button><button class="btn" data-go="shop">Ouvrir un booster</button></div></div>`];
+  stories(slides, "ei hxi");
+  const counter = () => { const c = document.querySelector(".hxi-count [data-c]"); if (!c || c.dataset.done) return; c.dataset.done = 1;
+    const n = +c.dataset.c, t0 = performance.now() + 300; const step = t => { const p = Math.min(1, Math.max(0, (t - t0) / 1400)); c.textContent = Math.round(n * (1 - Math.pow(1 - p, 3))); if (p < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); };
+  const mo = new MutationObserver(counter); const st = document.querySelector(".hxi .si-stage"); if (st) mo.observe(st, { childList: true });
+  setTimeout(() => mo.disconnect(), 60000);
 }
