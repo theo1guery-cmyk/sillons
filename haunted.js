@@ -187,6 +187,21 @@ Haunted.demo = async () => {
   Haunted.inPack(OP);
 };
 
+/* admins: a whole Pack Hanté, for show — the sachet, 5 cards of my own collection, a haunted card and its film.
+   Nothing goes to the server: no booster used, no card added, no number given. */
+const HX_DEMO = { g: -1, n: "Pack Hanté", haunted: true, demo: true };
+Haunted.simulate = () => { if (typeof busy !== "undefined" && busy) return; startOpening(HX_DEMO); };
+Haunted.demoPulls = async () => {
+  let d = null; try { d = await rpc("haunted_collection"); } catch (e) {}
+  const eds = (d?.editions || []).filter(e => e.cover);
+  const mine = Object.values(S.c).filter(c => !isArtist(c) && c.tier >= 2 && c.tier <= 3);   // Rare and Épique: no hit film before the haunted one
+  const pick = [...(mine.length >= 5 ? mine : Object.values(S.c))].sort(() => Math.random() - .5).slice(0, 5);
+  const pulls = pick.map(c => ({ c, holo: false, isNew: false })).sort((a, b) => a.c.tier - b.c.tier);
+  if (eds.length) { const e = eds[Math.random() * eds.length | 0]; pulls.haunted = { title: e.title, artist: e.artist, cover: e.cover, preview: e.preview, no: 1, of: e.of }; }
+  await wait(900);                               // the time a booster takes to come
+  return pulls;
+};
+
 /* the collection page: my haunted cards on top (refreshed at most every 30 s) */
 const HXM = { at: 0, d: null, busy: false };
 async function drawMyHaunted() {

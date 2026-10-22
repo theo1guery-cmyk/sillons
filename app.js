@@ -817,6 +817,7 @@ const packLabel = p => p === BIG ? ["Édition Deluxe", "15 cartes · toutes Rare
 function canOpen(p) {
   if (busy || !Online.active || !window.Studio) return false;
   if (p === BIG) return (S.big || 0) > 0;
+  if (p.demo) return true;
   if (p.haunted) return (typeof W !== "undefined" && W.st?.pumpkins || 0) >= 100;
   if (p.g >= 0) return canPay(p);
   refill();
@@ -1002,7 +1003,7 @@ async function openPack(p, opts = {}) {
   // the server (with an account nothing is saved locally either, so the preview card is gone on reload)
   const devHash = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && p === BOOSTER && /^#(god|demo|shiny|platine|diamant)(-shiny)?$/.test(location.hash) ? location.hash : "";
   let serverPack = null;                 // with an account the server rolls the rarities (and the GOD pack)
-  if (Online.active && !devHash) {
+  if (Online.active && !devHash && !p.demo) {
     try { serverPack = await Online.startPack(p); }
     catch (e) { busy = false; renderStock(); if (!op.hidden) opFail(Online.message(e)); else toast(Online.message(e)); return; }
   }
@@ -1030,14 +1031,14 @@ async function openPack(p, opts = {}) {
   opHint(god ? "GOD PACK ! 1 chance sur 3 000…" : pick(LOADING_LINES));
   const lineTimer = setInterval(() => { if (!god) opHint(pick(LOADING_LINES)); }, 1600);
   try {
-    const pulls = serverPack ? await Online.drawPack(p, serverPack) : await drawPack(p, god, opts.slots, opts.artist);
+    const pulls = p.demo ? await window.Haunted.demoPulls() : serverPack ? await Online.drawPack(p, serverPack) : await drawPack(p, god, opts.slots, opts.artist);
     if (god && reduceMotion()) toast("GOD PACK ! Que des Mythiques et des Légendaires.");   // the GOD pack has its own announcement
     renderCounters();
     if (pulls.some(Stage.isHit)) Stage.prepare(pulls);
     for (const pl of pulls) if (Stage.isHit(pl)) Stage.warm(pl);   // the hits' tracks load while the first cards flip
     window.V2?.pulls(pulls);
     if (pulls.pumpkins) toast(`+${pulls.pumpkins} 🎃 cachées dans ce booster !`);
-    const xp = window.packXp?.(p, god);
+    const xp = p.demo ? 0 : window.packXp?.(p, god);
     if (xp) { const t = document.createElement("span"); t.className = "op-xp"; t.textContent = `+${xp} XP`; $o(".op-head").appendChild(t); setTimeout(() => t.remove(), 2600); }
     if (god && !reduceMotion()) {                   // the GOD pack keeps its own film, then the booster laid out
       OP.pulls = pulls; opRecap();
