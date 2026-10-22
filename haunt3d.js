@@ -205,7 +205,7 @@ export async function play(host, card) {
       camera.up.copy(UP); camera.position.set(Math.sin(t * .2) * .5, lerp(3.1, 2.4, app), lerp(far, near, app));
       target.set(0, .45, .1);
     } else if (t < SHOT3) {                                  // 2. straight above the card, slowly coming down, a slight turn
-      const k = ease.inOut(seg(t, SHOT2, SHOT3)), h = (portrait() ? 3.4 : 3.6) - k * .6;
+      const k = ease.inOut(seg(t, SHOT2, SHOT3)), h = (portrait() ? 5.2 : 3.6) - k * .6;
       camera.up.copy(DOWN_UP).applyAxisAngle(UP, .12 - k * .2);
       camera.position.set(0, CARD_Y + h, .1 + .001); target.set(0, CARD_Y, .1);
     } else {                                                 // 3. in front, low: the card rises and turns to us
