@@ -8,7 +8,7 @@ const G = { shiny: undefined, shown: 48, q: "", busy: false, r: -1, kind: "all",
 const MAX_BATCH = 5;
 const bestGraded = c => (c?.copies || []).filter(cp => cp.grade).sort((a, b) => b.grade - a.grade || a.pop - b.pop)[0] || null;
 const ungraded = c => (c?.copies || []).filter(cp => !cp.grade);
-const rarLabel = c => isArtist(c) ? CERT[c.tier] : RAR[c.tier];
+const rarLabel = c => c.ed ? "Collection Hantée" : isArtist(c) ? CERT[c.tier] : RAR[c.tier];
 
 /* ---------- the card sheet: the case instead of the bare card, and the buttons ---------- */
 const baseOpenModal = window.openModal;
@@ -94,9 +94,9 @@ const loadLab = host => labP ??= Promise.all(['900 40px "Unbounded"', '800 40px 
   .then(() => import("./grade3d.js?v=16")).then(m => m.create(host)).then(async x => { await x.warmup(); return lab = x; })
   .catch(e => { console.warn("Labo 3D indisponible", e); labP = null; return null; });
 const labelOf = (c, holo, g) => ({
-  l1: isArtist(c) ? "ZIK HUNTER · ARTISTE" : `${c.y ? c.y + " " : ""}ZIK HUNTER`, l2: c.t.toUpperCase(),
-  l3: ((isArtist(c) ? CERT[c.tier] : `${c.a} · ${RAR[c.tier]}`) + (holo ? " · SHINY" : "")).toUpperCase(),
-  l4: `#${String(g.pop).padStart(3, "0")}${g.pop === 1 ? " · 1RE AUTHENTIFIÉE" : ""}`, first: g.pop === 1, gname: GRADE_NAME[g.grade], grade: g.grade, cert: g.cert });
+  l1: c.ed ? "HALLOWEEN 2026 ZIK HUNTER" : isArtist(c) ? "ZIK HUNTER · ARTISTE" : `${c.y ? c.y + " " : ""}ZIK HUNTER`, l2: c.t.toUpperCase(),
+  l3: (c.ed ? `${c.a} · COLLECTION HANTÉE` : (isArtist(c) ? CERT[c.tier] : `${c.a} · ${RAR[c.tier]}`) + (holo ? " · SHINY" : "")).toUpperCase(),
+  l4: c.ed ? `N° ${String(g.pop).padStart(String(edOf(c.ed)).length, "0")}/${edOf(c.ed)}` : `#${String(g.pop).padStart(3, "0")}${g.pop === 1 ? " · 1RE AUTHENTIFIÉE" : ""}`, first: g.pop === 1 && !c.ed, gname: GRADE_NAME[g.grade], grade: g.grade, cert: g.cert });
 const cssColor = v => v.startsWith("var(") ? getComputedStyle(document.documentElement).getPropertyValue(v.slice(4, -1)).trim() : v;
 
 async function gradeReveal(c, holo, g) {
@@ -121,8 +121,8 @@ async function gradeReveal(c, holo, g) {
   scr.classList.remove("on"); await sleepG(350);
   L3?.stop(); scr.remove(); document.body.classList.remove("fx-on");
 }
-const gradeTitle = (scr, g) => { scr.classList.add("g" + g.grade);
-  scr.querySelector(".g-title").innerHTML = `<b>${GRADE_NAME[g.grade]} ${g.grade}</b>${g.pop === 1 ? `<em class="g-first">#001 · la toute première authentifiée</em>` : `<span class="g-pop">#${String(g.pop).padStart(3, "0")}</span>`}<small>certificat ${g.cert}</small>`; };
+const gradeTitle = (scr, g, c) => { scr.classList.add("g" + g.grade);
+  scr.querySelector(".g-title").innerHTML = `<b>${GRADE_NAME[g.grade]} ${g.grade}</b>${c?.ed ? `<span class="g-pop">N° ${String(g.pop).padStart(String(edOf(c.ed)).length, "0")}/${edOf(c.ed)}</span>` : g.pop === 1 ? `<em class="g-first">#001 · la toute première authentifiée</em>` : `<span class="g-pop">#${String(g.pop).padStart(3, "0")}</span>`}<small>certificat ${g.cert}</small>`; };
 
 // the film in 3D, then the real case (HTML) takes its place
 async function labReveal(scr, L3, c, holo, g) {
@@ -131,14 +131,14 @@ async function labReveal(scr, L3, c, holo, g) {
   const small = innerWidth <= 600, w = small ? Math.min(innerWidth * .66, 270) : Math.min((innerHeight - 230) * .63, 320);
   const art = isArtist(c) ? (c.cov || "").replace(/\/\d+x\d+-/, "/1000x1000-") : (c.cov || "").replace(/\/\d+x\d+-/, "/1000x1000-");
   const r = await L3.play({ w, cy: small ? .42 : .44,
-    card: { cover: art, title: c.t, artist: isArtist(c) ? "Artiste" : c.a, rarity: rarLabel(c), color: cssColor(isArtist(c) ? CCOL[c.tier] : RCOL[c.tier]), holo },
+    card: { cover: art, title: c.t, artist: isArtist(c) ? "Artiste" : c.a, rarity: rarLabel(c), color: c.ed ? ED_COL : cssColor(isArtist(c) ? CCOL[c.tier] : RCOL[c.tier]), holo },
     label: labelOf(c, holo, g),
     on: { start: () => scr.classList.add("lit"), check: i => checks.insertAdjacentHTML("beforeend", `<span>${["Bords", "Coins", "Surface", "Centrage"][i]} <b>✓</b></span>`),
           land: () => checks.classList.add("out") } });
   const stage = scr.querySelector(".g-stage"), slab = slabEl(c, holo, g);
   Object.assign(stage.style, { position: "absolute", left: r.left + "px", top: r.top + "px", width: r.width + "px", margin: 0 });
   stage.appendChild(slab); tiltSlab(slab); stage.classList.add("g-in");
-  gradeTitle(scr, g);                                            // the title comes with the real case, not over the 3D
+  gradeTitle(scr, g, c);                                            // the title comes with the real case, not over the 3D
   await sleepG(600);
 }
 
@@ -170,7 +170,7 @@ async function cssReveal(scr, c, holo, g) {
   num.textContent = g.grade; name.textContent = GRADE_NAME[g.grade]; inner.dataset.g = g.grade;
   inner.classList.add("landed"); thud(0, g.grade >= 9 ? .7 : .45);
   if (g.grade === 10) { tick(.05, 2600, .05, .25); tick(.15, 3300, .04, .35); }
-  gradeTitle(scr, g);
+  gradeTitle(scr, g, c);
   await sleepG(900);
 }
 
