@@ -6,10 +6,10 @@ alter table public.shop_packs add column if not exists pumpkin_vinyls int;      
 alter table public.purchases add column if not exists pumpkins int not null default 0;
 
 insert into public.shop_packs (id, name, cents, vinyls, pumpkins, pumpkin_vinyls) values
-  ('pk100', '100 citrouilles', 99, 0, 100, 80),
-  ('pk250', '250 citrouilles', 199, 0, 250, 160),
-  ('pk600', '600 citrouilles', 399, 0, 600, 320),
-  ('pk1600', '1 600 citrouilles', 999, 0, 1600, 800)
+  ('pk60', '60 citrouilles', 99, 0, 60, 80),
+  ('pk150', '150 citrouilles', 199, 0, 150, 160),
+  ('pk400', '400 citrouilles', 499, 0, 400, 400),
+  ('pk1000', '1 000 citrouilles', 999, 0, 1000, 800)
 on conflict (id) do update set name = excluded.name, cents = excluded.cents, pumpkins = excluded.pumpkins, pumpkin_vinyls = excluded.pumpkin_vinyls;
 
 -- the quote refuses a pumpkin pack when the event is over
