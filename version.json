@@ -1,10 +1,8 @@
 {
-  "id": "2026-10-22.5",
-  "title": "Les cartes Hantées se gradent, s'écoutent et se vendent",
+  "id": "2026-10-22.6",
+  "title": "L'extrait des cartes Hantées remarche",
   "notes": [
-    "Touche une de tes cartes de la Collection Hantée pour écouter son extrait",
-    "Fais-la grader pour 600 Streams : elle passe dans sa boîte avec sa note et son numéro",
-    "Mets-la en vente au prix que tu veux : les autres joueurs la voient sur le tableau de la Collection Hantée et peuvent l'acheter",
-    "Sur le tableau, touche un numéro pour voir la carte, sa note et son prix"
+    "« Écouter l'extrait » sur une carte de la Collection Hantée lance bien la musique",
+    "La musique revient aussi quand une carte Hantée sort d'un booster"
   ]
 }

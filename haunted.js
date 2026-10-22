@@ -21,6 +21,23 @@ function hauntedCardEl(c) {
   return w;
 }
 
+/* Deezer's preview links expire after a few hours: the one saved with the card is stale, so a fresh one is fetched
+   each time (the track is found once by its title and artist, then remembered) */
+const HX_TRACK = {};
+async function hxPreview(c) {
+  const k = c.title + "|" + c.artist;
+  if (!HX_TRACK[k]) {
+    const r = await dz("search", { q: `artist:"${c.artist}" track:"${c.title}"`, limit: 10 }, true).catch(() => null);
+    const l = (r?.data || []), low = x => (x || "").toLowerCase();
+    const t = l.find(x => low(x.title) === low(c.title) && low(x.artist?.name) === low(c.artist)) || l.find(x => low(x.title) === low(c.title)) || l[0];
+    if (!t) return null;
+    HX_TRACK[k] = t.id;
+    if (t.preview) return t.preview;
+  }
+  const t = await dz("track/" + HX_TRACK[k], {}, true).catch(() => null);
+  return t?.preview || null;
+}
+
 /* the copy found in a booster: the room goes dark, bats cross, the card rises out of the fog with its number */
 const Haunted = {
   reveal(card, view = false) {             // view: the card sheet of a card already found (no suspense)
@@ -35,8 +52,8 @@ const Haunted = {
           <button class="btn primary" type="button">Continuer</button></div>`;
       el.querySelector(".hx-r-card").appendChild(hauntedCardEl({ t: card.title, a: card.artist, cov: card.cover, no: card.no, of: card.of }));
       document.body.appendChild(el); document.body.classList.add("fx-on");
-      const audio = card.preview ? new Audio(card.preview) : null;
-      if (audio) { audio.volume = .7; audio.play().catch(() => {}); }
+      const audio = new Audio(); audio.volume = .7;
+      hxPreview(card).then(u => { if (u && el.isConnected) { audio.src = u; audio.play().catch(() => {}); } });
       requestAnimationFrame(() => el.classList.add("on"));
       setTimeout(() => el.classList.add("show"), view ? 60 : 1500);
       const close = () => { audio?.pause(); el.classList.remove("on"); document.body.classList.remove("fx-on"); setTimeout(() => { el.remove(); done(); }, 400); };
@@ -152,8 +169,8 @@ Object.assign(Haunted, {
     opHint("Une présence hante ce booster… touche la carte");
     OP.step = async () => {
       opHint("");
-      const audio = c.preview ? new Audio(c.preview) : null;
-      if (audio) { audio.volume = .7; audio.play().catch(() => {}); OP.hAudio = audio; }
+      const audio = new Audio(); audio.volume = .7; OP.hAudio = audio;
+      Promise.race([hxPreview(c), wait(2500).then(() => null)]).then(u => { if (u && OP.hAudio === audio) { audio.src = u; audio.play().catch(() => {}); } });
       const m = await Promise.race([film, wait(2500).then(() => null)]);
       let shown = false;
       if (m) {
@@ -167,7 +184,7 @@ Object.assign(Haunted, {
       if (shown) el.classList.add("burning", "done");
       else { el.classList.add("burning"); await wait(1900); el.classList.add("done"); }
       opHint(`${c.title} · N° ${hxNo(c)}/${c.of}${c.of === 1 ? " · exemplaire unique !" : ""} — touche pour voir tout le booster`);
-      OP.step = async () => { OP.hAudio?.pause(); op.classList.remove("hx-on"); el.classList.add("leave"); setTimeout(() => el.remove(), 380);
+      OP.step = async () => { OP.hAudio?.pause(); OP.hAudio = null; op.classList.remove("hx-on"); el.classList.add("leave"); setTimeout(() => el.remove(), 380);
         if (OP.demo) { OP.demo = false; OP.haunted = null; OP.step = null; closeOpening(); } else opRecap(); };
     };
   },
@@ -273,12 +290,18 @@ function hxView(c) {
     const btn = (label, cls, f) => { const b = document.createElement("button"); b.type = "button"; b.className = "btn " + cls; b.textContent = label; b.onclick = f; acts.appendChild(b); return b; };
     const close = () => { audio?.pause(); el.classList.remove("on"); document.body.classList.remove("fx-on"); setTimeout(() => { el.remove(); done(); }, 400); };
     const run = async (f, ok) => { if (el.dataset.busy) return; el.dataset.busy = 1; try { await f(); ok && toast(ok); close(); hxRefresh(); } catch (e) { toast(message(e)); } delete el.dataset.busy; };
-    if (c.preview) {
-      const play = btn("▶ Écouter l'extrait", "hx-play", () => {
-        if (!audio) { audio = new Audio(c.preview); audio.volume = .8; audio.onended = () => { play.textContent = "▶ Écouter l'extrait"; }; }
-        if (audio.paused) { audio.play().catch(() => {}); play.textContent = "⏸ Pause"; } else { audio.pause(); play.textContent = "▶ Écouter l'extrait"; }
-      });
-    }
+    const play = btn("▶ Écouter l'extrait", "hx-play", async () => {
+      if (audio && !audio.paused) { audio.pause(); play.textContent = "▶ Écouter l'extrait"; return; }
+      if (!audio) {
+        audio = new Audio(); audio.volume = .8; audio.onended = () => { play.textContent = "▶ Écouter l'extrait"; };
+        play.textContent = "Chargement…";
+        const u = await hxPreview(c);
+        if (!u) { audio = null; play.textContent = "▶ Écouter l'extrait"; return toast("Pas d'extrait disponible pour ce morceau."); }
+        audio.src = u;
+      }
+      if (!el.isConnected) return;
+      try { await audio.play(); play.textContent = "⏸ Pause"; } catch (e) { play.textContent = "▶ Écouter l'extrait"; toast("Impossible de lancer l'extrait."); }
+    });
     if (c.mine && c.id) {
       if (c.sale) {
         acts.insertAdjacentHTML("beforeend", `<p class="hx-onsale">En vente à <b>${fmt(c.sale.price)} Streams</b></p>`);
