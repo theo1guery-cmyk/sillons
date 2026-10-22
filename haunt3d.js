@@ -44,7 +44,7 @@ export async function play(host, card) {
   /* ---------- the ground, the graves, the moon ---------- */
   scene.add(new THREE.AmbientLight(0x1a3a28, 1.1));
   const moon = new THREE.DirectionalLight(0x9fffd0, 1.1); moon.position.set(-3, 6, -4); scene.add(moon);
-  const glow = new THREE.PointLight(0x39ff88, 0, 9, 1.6); glow.position.set(0, 1.4, .6); scene.add(glow);
+  const glow = new THREE.PointLight(0x39ff88, 0, 9, 1.6); glow.position.set(0, 1.6, -1.2); scene.add(glow);
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.MeshStandardMaterial({ color: 0x06100a, roughness: .38, metalness: .25 }));
   ground.rotation.x = -Math.PI / 2; scene.add(ground);
   const stone = new THREE.MeshStandardMaterial({ color: 0x0c1410, roughness: .9 });
@@ -107,7 +107,7 @@ export async function play(host, card) {
   coffin.traverse(o => { if (o.isMesh) o.castShadow = true; });
   const key = new THREE.SpotLight(0xd8ffe8, 5, 12, .45, .6, 1.2); key.position.set(1.5, 4.5, 3.5); key.target = coffin; scene.add(key);
   scene.add(coffin);
-  const inner = new THREE.PointLight(0x39ff88, 0, 5, 1.6); inner.position.set(0, .35, .1); scene.add(inner);
+  const inner = new THREE.PointLight(0x39ff88, 0, 1.6, 1.6); inner.position.set(0, .5, .1); scene.add(inner);
   const flash = new THREE.HemisphereLight(0xbfffe0, 0x0a1a10, 0); scene.add(flash);   // the lightning
 
   /* ---------- mist and embers ---------- */
