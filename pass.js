@@ -189,6 +189,7 @@ async function renderPass() {
       </div>
     </div>
     ${xpBox(d)}
+    ${rarityBox(d)}
     <div class="ps-bar">
       <h3>Récompenses</h3>
       <button class="btn primary" id="psAll" ${ready ? "" : "disabled"}>${ready ? `Tout récupérer (${ready})` : "Rien à récupérer"}</button>
@@ -265,6 +266,21 @@ function xpBox(d) {
       <h3>Comment gagner de l'XP</h3>
       <ul>${rows.map(([t, n]) => `<li><span>${t}</span><b>${typeof n === "number" ? "+" + n + " XP" : n}</b></li>`).join("")}</ul>
       <small>Les paliers se débloquent aussi avec des Vinyles. ${m > 1 ? "Les valeurs tiennent compte de tes bonus." : ""} 200 XP par palier.</small>
+    </div>
+  </section>`;
+}
+// the rarities are fixed for a season and computed again from Deezer's numbers when it ends
+function rarityBox(d) {
+  const dia = r => `<i style="background:${RCOL[r]}"></i>${RAR[r]}`;
+  return `<section class="ps-rar" aria-labelledby="psRarT">
+    <div class="ps-rar-l"><p class="ps-kicker">Raretés de saison</p>
+      <h3 id="psRarT">Les raretés sont recalculées à chaque fin de saison</h3>
+      <p>Pendant une saison, chaque son garde la même rareté pour tout le monde. À la fin de la saison${d.ends_at && Date.parse(d.ends_at) > Date.now() ? `, dans ${Math.ceil((Date.parse(d.ends_at) - Date.now()) / 864e5)} jours,` : ""} elles sont toutes recalculées d'après les écoutes sur Deezer : un son qui a explosé monte, un son qui s'essouffle descend.</p>
+      <p><b>Tes cartes ne bougent pas :</b> une carte garde pour toujours la rareté avec laquelle tu l'as tirée. Une Légendaire d'une saison passée devient un vrai souvenir.</p></div>
+    <div class="ps-rar-r" aria-hidden="true">
+      <span class="ps-rar-row up"><b>Le son du moment</b><span>${dia(3)}</span><em>→</em><span>${dia(5)}</span></span>
+      <span class="ps-rar-row down"><b>Le tube d'hier</b><span>${dia(5)}</span><em>→</em><span>${dia(4)}</span></span>
+      <span class="ps-rar-row keep"><b>Ta carte déjà tirée</b><span>${dia(5)}</span><em>=</em><span>${dia(5)}</span></span>
     </div>
   </section>`;
 }
