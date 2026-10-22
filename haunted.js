@@ -28,7 +28,7 @@ async function hxPreview(c) {
   const k = c.title + "|" + c.artist;
   if (!HX_TRACK[k]) {
     const r = await dz("search", { q: `artist:"${c.artist}" track:"${c.title}"`, limit: 10 }, true).catch(() => null);
-    const l = (r?.data || []), low = x => (x || "").toLowerCase();
+    const all = r?.data || [], l = all.some(x => x.preview) ? all.filter(x => x.preview) : all, low = x => (x || "").toLowerCase();   // a version that has an extract
     const t = l.find(x => low(x.title) === low(c.title) && low(x.artist?.name) === low(c.artist)) || l.find(x => low(x.title) === low(c.title)) || l[0];
     if (!t) return null;
     HX_TRACK[k] = t.id;
@@ -167,10 +167,12 @@ Object.assign(Haunted, {
         .forEach(f => fetch("brand/3d/" + f).catch(() => {})); }
     $o(".op-sub").textContent = "Carte bonus · Collection Hantée";
     opHint("Une présence hante ce booster… touche la carte");
+    const audio = new Audio(); audio.preload = "auto"; audio.volume = .7; OP.hAudio = audio;     // fetched now: played inside the touch
+    const pre = hxPreview(c).then(u => { if (u) audio.src = u; return u; }).catch(() => null);
     OP.step = async () => {
       opHint("");
-      const audio = new Audio(); audio.volume = .7; OP.hAudio = audio;
-      Promise.race([hxPreview(c), wait(2500).then(() => null)]).then(u => { if (u && OP.hAudio === audio) { audio.src = u; audio.play().catch(() => {}); } });
+      if (audio.src) audio.play().catch(() => {});
+      else pre.then(u => { if (u && OP.hAudio === audio) audio.play().catch(() => {}); });
       const m = await Promise.race([film, wait(2500).then(() => null)]);
       let shown = false;
       if (m) {
@@ -290,18 +292,23 @@ function hxView(c) {
     const btn = (label, cls, f) => { const b = document.createElement("button"); b.type = "button"; b.className = "btn " + cls; b.textContent = label; b.onclick = f; acts.appendChild(b); return b; };
     const close = () => { audio?.pause(); el.classList.remove("on"); document.body.classList.remove("fx-on"); setTimeout(() => { el.remove(); done(); }, 400); };
     const run = async (f, ok) => { if (el.dataset.busy) return; el.dataset.busy = 1; try { await f(); ok && toast(ok); close(); hxRefresh(); } catch (e) { toast(message(e)); } delete el.dataset.busy; };
-    const play = btn("▶ Écouter l'extrait", "hx-play", async () => {
-      if (audio && !audio.paused) { audio.pause(); play.textContent = "▶ Écouter l'extrait"; return; }
-      if (!audio) {
-        audio = new Audio(); audio.volume = .8; audio.onended = () => { play.textContent = "▶ Écouter l'extrait"; };
+    // the link is fetched as soon as the sheet opens, so the touch on the button starts the sound at once: phones only
+    // let a page play sound right inside the touch, not after waiting for Deezer
+    const PLAY = "▶ Écouter l'extrait";
+    audio = new Audio(); audio.preload = "auto"; audio.volume = .8;
+    const pre = hxPreview(c).then(u => { if (u) audio.src = u; return u; }).catch(() => null);
+    const play = btn(PLAY, "hx-play", async () => {
+      if (!audio.paused) { audio.pause(); play.textContent = PLAY; return; }
+      if (!audio.src) {
         play.textContent = "Chargement…";
-        const u = await hxPreview(c);
-        if (!u) { audio = null; play.textContent = "▶ Écouter l'extrait"; return toast("Pas d'extrait disponible pour ce morceau."); }
-        audio.src = u;
+        if (!await pre) { play.textContent = PLAY; return toast("Pas d'extrait disponible pour ce morceau."); }
       }
       if (!el.isConnected) return;
-      try { await audio.play(); play.textContent = "⏸ Pause"; } catch (e) { play.textContent = "▶ Écouter l'extrait"; toast("Impossible de lancer l'extrait."); }
+      try { await audio.play(); play.textContent = "⏸ Pause"; }
+      catch (e) { play.textContent = PLAY; if (e?.name === "NotAllowedError") toast("Touche encore une fois pour écouter."); else toast("Impossible de lancer l'extrait."); }
     });
+    audio.onended = audio.onpause = () => { play.textContent = PLAY; };
+    audio.onplay = () => { play.textContent = "⏸ Pause"; };
     if (c.mine && c.id) {
       if (c.sale) {
         acts.insertAdjacentHTML("beforeend", `<p class="hx-onsale">En vente à <b>${fmt(c.sale.price)} Streams</b></p>`);

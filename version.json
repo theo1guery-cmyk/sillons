@@ -1,8 +1,8 @@
 {
-  "id": "2026-10-22.6",
-  "title": "L'extrait des cartes Hantées remarche",
+  "id": "2026-10-22.7",
+  "title": "L'extrait des cartes Hantées se lance au premier toucher",
   "notes": [
-    "« Écouter l'extrait » sur une carte de la Collection Hantée lance bien la musique",
-    "La musique revient aussi quand une carte Hantée sort d'un booster"
+    "L'extrait est préparé dès que tu ouvres la carte : « Écouter l'extrait » lance la musique tout de suite, aussi sur téléphone",
+    "La musique d'une carte Hantée qui sort d'un booster est prête avant que tu touches la carte"
   ]
 }
