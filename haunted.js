@@ -140,7 +140,7 @@ Object.assign(Haunted, {
       <div class="hx-bats-s" aria-hidden="true">${"<i></i>".repeat(6)}</div>`;
     el.querySelector(".hx-front").appendChild(hauntedCardEl({ t: c.title, a: c.artist, cov: c.cover, no: c.no, of: c.of }));
     box.appendChild(el); op.classList.add("hx-on");
-    const film = matchMedia("(prefers-reduced-motion: reduce)").matches ? null : import("./haunt3d.js?v=7").catch(() => null);   // loads while the back shakes
+    const film = matchMedia("(prefers-reduced-motion: reduce)").matches ? null : import("./haunt3d.js?v=8").catch(() => null);   // loads while the back shakes
     $o(".op-sub").textContent = "Carte bonus · Collection Hantée";
     opHint("Une présence hante ce booster… touche la carte");
     OP.step = async () => {

@@ -1,0 +1,11 @@
+Model Information:
+* title:	Coffin
+* source:	https://sketchfab.com/3d-models/coffin-40f961bc1b6b423fadb406e3eff9f006
+* author:	✞BloodTea✞ (https://sketchfab.com/bloodtea)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Coffin" (https://sketchfab.com/3d-models/coffin-40f961bc1b6b423fadb406e3eff9f006) by ✞BloodTea✞ (https://sketchfab.com/bloodtea) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

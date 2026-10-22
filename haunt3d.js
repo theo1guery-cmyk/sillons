@@ -1,10 +1,12 @@
 /* Zik Hunter — the reveal of a Collection Hantée card in 3D: a graveyard in green fog, lightning, a coffin rattles,
    green light leaks out, its lid flies open, bats burst out, the cursed card rises out of it spinning, then green
-   fire eats its cover and the card shows. Loaded only when a booster holds such a card. play() resolves when the film is over; the page then shows
-   the HTML card in its place. */
+   fire eats its cover and the card shows. Coffin: "Coffin" by ✞BloodTea✞ (https://sketchfab.com/bloodtea), CC BY 4.0.
+   Loaded only when a booster holds such a card. play() resolves when the film is over; the page then shows the HTML
+   card in its place. */
 const CDN = "https://cdn.jsdelivr.net/npm/three@0.160.0/";
-const [THREE, { EffectComposer }, { RenderPass }, { UnrealBloomPass }, { OutputPass }] = await Promise.all([
+const [THREE, { GLTFLoader }, { EffectComposer }, { RenderPass }, { UnrealBloomPass }, { OutputPass }] = await Promise.all([
   import(CDN + "+esm"),
+  import(CDN + "examples/jsm/loaders/GLTFLoader.js/+esm"),
   import(CDN + "examples/jsm/postprocessing/EffectComposer.js/+esm"),
   import(CDN + "examples/jsm/postprocessing/RenderPass.js/+esm"),
   import(CDN + "examples/jsm/postprocessing/UnrealBloomPass.js/+esm"),
@@ -38,7 +40,8 @@ export async function play(host, card) {
   composer.addPass(bloom); composer.addPass(new OutputPass());
   const texOf = cv => { const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = renderer.capabilities.getMaxAnisotropy(); return t; };
 
-  const [cover, bat, torn, rim, logo] = await Promise.all([loadImg(card.cover, true), loadImg("brand/bat.svg"), loadImg("brand/torn.svg"), loadImg("brand/torn-rim.svg"), loadImg("brand/zikhunter-icon.svg")]);
+  const [cover, bat, torn, rim, logo, gltf] = await Promise.all([loadImg(card.cover, true), loadImg("brand/bat.svg"), loadImg("brand/torn.svg"), loadImg("brand/torn-rim.svg"), loadImg("brand/zikhunter-icon.svg"),
+    new GLTFLoader().loadAsync(new URL("brand/3d/coffin/scene.gltf?v=1", location.href).href)]);
   await document.fonts?.ready;
 
   /* ---------- the ground, the graves, the moon ---------- */
@@ -66,55 +69,35 @@ export async function play(host, card) {
   const moonSpr = new THREE.Sprite(new THREE.SpriteMaterial({ map: texOf(mc), transparent: true, depthWrite: false, fog: false }));
   moonSpr.material.opacity = .7; moonSpr.position.set(-3.4, 4.6, -10); moonSpr.scale.setScalar(2.4); scene.add(moonSpr);
 
-  /* ---------- the coffin: lacquered wood, brass handles and cross, violet satin inside, the lid on a hinge ---------- */
-  const [wc, wg] = canvas2d(512, 1024);                     // dark mahogany, its grain along the length
-  wg.fillStyle = "#2a0f0a"; wg.fillRect(0, 0, 512, 1024);
-  for (let k = 0; k < 140; k++) {
-    const x = Math.random() * 512, w = 1 + Math.random() * 5, v = Math.random();
-    wg.strokeStyle = v < .5 ? `rgba(10,3,2,${.2 + v * .5})` : `rgba(120,50,30,${(v - .5) * .35})`; wg.lineWidth = w;
-    wg.beginPath(); wg.moveTo(x, 0);
-    for (let y = 0; y <= 1024; y += 32) wg.lineTo(x + Math.sin(y * .012 + k) * 6 + Math.sin(y * .05 + k * 3) * 2, y);
-    wg.stroke();
-  }
-  const woodTex = texOf(wc); woodTex.wrapS = woodTex.wrapT = THREE.RepeatWrapping; woodTex.repeat.set(1.6, .9);
-  const wood = new THREE.MeshPhysicalMaterial({ map: woodTex, roughness: .42, metalness: .05, clearcoat: .8, clearcoatRoughness: .25 });
-  const brass = new THREE.MeshStandardMaterial({ color: 0xb8892f, metalness: 1, roughness: .32 });
-  const satin = new THREE.MeshStandardMaterial({ color: 0x2a0c3a, roughness: .45, metalness: .1, emissive: 0x0d0314, side: THREE.DoubleSide });
-  const outline = (k = 1) => { const sh = new THREE.Shape(), P = [[-.3, -1.1], [.3, -1.1], [.44, -.48], [.24, 1.1], [-.24, 1.1], [-.44, -.48]];
-    P.forEach(([x, z], n) => sh[n ? "lineTo" : "moveTo"](x * k, z * k)); sh.closePath(); return sh; };
-  const slab = (sh, depth, bevel = 0) => { const g = new THREE.ExtrudeGeometry(sh, { depth, bevelEnabled: bevel > 0, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 2, curveSegments: 4 }); g.rotateX(Math.PI / 2); g.translate(0, depth, 0); return g; };
-  const coffin = new THREE.Group();
-  const H = .46, walls = outline(); walls.holes.push(outline(.86));
-  coffin.add(new THREE.Mesh(slab(outline(), .05), wood));
-  const wallMesh = new THREE.Mesh(slab(walls, H), wood); coffin.add(wallMesh);
-  const lining = new THREE.Mesh(slab(outline(.85), .02), satin); lining.position.y = .05; coffin.add(lining);
-  const liningWalls = new THREE.Mesh(slab((() => { const w = outline(.86); w.holes.push(outline(.8)); return w; })(), H - .06), satin); liningWalls.position.y = .05; coffin.add(liningWalls);
-  for (const z of [-.6, .2]) for (const x of [-1, 1]) {           // the brass handles on the sides
-    const h = new THREE.Mesh(new THREE.TorusGeometry(.07, .014, 8, 20, Math.PI), brass); h.rotation.set(0, x > 0 ? Math.PI / 2 : -Math.PI / 2, Math.PI);
-    h.position.set(x * (.42 - (z > 0 ? .07 : 0)), H * .55, z); coffin.add(h);
-  }
-  // the green light leaking out between the lid and the box
-  const seamMat = new THREE.MeshBasicMaterial({ color: 0x39ff88, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
-  const seam = new THREE.Mesh(slab((() => { const w = outline(1.01); w.holes.push(outline(.97)); return w; })(), .012), seamMat); seam.position.y = H; coffin.add(seam);
-  const lidPivot = new THREE.Group(); lidPivot.position.set(-.45, H + .012, 0); coffin.add(lidPivot);
-  const lid = new THREE.Group(); lid.position.x = .45; lidPivot.add(lid);
-  lid.add(new THREE.Mesh(slab(outline(1.03), .06, .015), wood));
-  const lidLining = new THREE.Mesh(slab(outline(.9), .01), satin); lidLining.position.y = -.012; lid.add(lidLining);   // the satin under the lid
-  const panel = new THREE.Mesh(slab(outline(.82), .03, .01), wood); panel.position.y = .06; lid.add(panel);
-  const crossV = new THREE.Mesh(new THREE.BoxGeometry(.06, .025, .7), brass); crossV.position.set(0, .105, -.25); lid.add(crossV);
-  const crossH = new THREE.Mesh(new THREE.BoxGeometry(.36, .025, .06), brass); crossH.position.set(0, .105, -.42); lid.add(crossH);
-  coffin.scale.setScalar(1.18); coffin.rotation.y = -Math.PI / 2; coffin.position.set(0, 0, .1);   // lying across, the hinge at the back: the lid opens away from us
-  coffin.traverse(o => { if (o.isMesh) o.castShadow = true; });
-  const key = new THREE.SpotLight(0xd8ffe8, 5, 12, .45, .6, 1.2); key.position.set(1.5, 4.5, 3.5); key.target = coffin; scene.add(key);
-  scene.add(coffin);
-  const inner = new THREE.PointLight(0x39ff88, 0, 1.6, 1.6); inner.position.set(0, .5, .1); scene.add(inner);
+  /* ---------- the coffin ("Coffin" by ✞BloodTea✞ on Sketchfab, CC BY 4.0): lying across, its lid on a hinge at the back ---------- */
+  const model = gltf.scene;
+  model.traverse(o => { if (o.isMesh) { o.castShadow = true; o.material.envMapIntensity = .6; } });
+  const coffin = new THREE.Group(); coffin.add(model); scene.add(coffin);
+  let box = new THREE.Box3().setFromObject(model), size = box.getSize(new THREE.Vector3());
+  if (size.z > size.x) { model.rotation.y = Math.PI / 2; model.updateMatrixWorld(true); box = new THREE.Box3().setFromObject(model); size = box.getSize(new THREE.Vector3()); }
+  model.scale.multiplyScalar(3 / size.x); model.updateMatrixWorld(true);         // 3 units long
+  box = new THREE.Box3().setFromObject(model);
+  const ctr = box.getCenter(new THREE.Vector3());
+  model.position.sub(new THREE.Vector3(ctr.x, box.min.y, ctr.z)); model.updateMatrixWorld(true);
+  box = new THREE.Box3().setFromObject(model);
+  const lidNode = model.getObjectByName("lid"), lidBox = new THREE.Box3().setFromObject(lidNode);
+  const H = lidBox.min.y;                                    // the top of the box, under the lid
+  const lidPivot = new THREE.Group(); lidPivot.position.set(0, H, lidBox.min.z); coffin.add(lidPivot);
+  lidPivot.attach(lidNode);                                  // the hinge: the back edge of the lid
+  // green light leaking out between the lid and the box
+  const seamMat = new THREE.SpriteMaterial({ map: null, color: 0x39ff88, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
+  const seam = new THREE.Sprite(seamMat); seam.position.set(0, H + .01, (box.max.z + box.min.z) / 2 + .1); seam.scale.set(size.x * 0, .1, 1); coffin.add(seam);
+  coffin.position.set(0, 0, .1);
+  const key = new THREE.SpotLight(0xd8ffe8, 6, 12, .45, .6, 1.2); key.position.set(1.5, 4.5, 3.5); key.target = coffin; scene.add(key);
+  const inner = new THREE.PointLight(0x39ff88, 0, 1.8, 1.6); inner.position.set(0, H * .8, .1); scene.add(inner);
   const flash = new THREE.HemisphereLight(0xbfffe0, 0x0a1a10, 0); scene.add(flash);   // the lightning
+  const CARD_Y = H * .55;                                    // the card lies inside, on the satin
 
   /* ---------- mist and embers ---------- */
   const [sc, sg] = canvas2d(128, 128);
   const sgr = sg.createRadialGradient(64, 64, 0, 64, 64, 64); sgr.addColorStop(0, "rgba(255,255,255,1)"); sgr.addColorStop(1, "rgba(255,255,255,0)");
   sg.fillStyle = sgr; sg.fillRect(0, 0, 128, 128);
-  const soft = texOf(sc);
+  const soft = texOf(sc); seamMat.map = soft; seam.scale.set(3.3, .22, 1);
   const mist = [];
   for (let k = 0; k < (mobile ? 14 : 26); k++) {
     const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: soft, color: k % 3 ? 0x2f8a57 : 0x6a4a9a, transparent: true, opacity: .16, depthWrite: false }));
@@ -220,11 +203,11 @@ export async function play(host, card) {
     const bolt = Math.max(0, 1 - Math.abs(t - .45) * 14) + Math.max(0, 1 - Math.abs(t - 1.05) * 10) * .7;
     flash.intensity = bolt * 3; bloom.strength = .55 + bolt * .6 + seg(t, 4.3, 5) * 1.1 * (1 - seg(t, 5.2, 6.3));
     const shake = seg(t, .6, 1.5) * (1 - seg(t, 1.45, 1.6));
-    coffin.rotation.x = Math.sin(t * 55) * .012 * shake; coffin.position.y = Math.abs(Math.sin(t * 38)) * .02 * shake;
+    coffin.rotation.z = Math.sin(t * 55) * .01 * shake; coffin.position.y = Math.abs(Math.sin(t * 38)) * .02 * shake;
     seamMat.opacity = seg(t, .5, 1.3) * (.6 + .4 * Math.sin(t * 20)) * (1 - seg(t, 1.6, 2));
     // the lid flies open (a little bounce), light and mist pour out
     const open = seg(t, 1.5, 2.3);
-    lidPivot.rotation.z = (ease.out(open) * 2.05 - Math.sin(open * Math.PI) * .12 * (open > .7 ? 1 : 0));
+    lidPivot.rotation.x = -(ease.out(open) * 1.95 - Math.sin(open * Math.PI) * .12 * (open > .7 ? 1 : 0));
     inner.intensity = ease.out(seg(t, 1.4, 2.2)) * 4 * (1 - seg(t, 5, 6) * .5);
     glow.intensity = seg(t, 1.5, 2.3) * 1.2 + seg(t, 4.2, 5) * 5 * (1 - seg(t, 5.2, 6.4));
     embers.material.opacity = ease.out(seg(t, 1.6, 2.4)) * .9;
@@ -232,7 +215,7 @@ export async function play(host, card) {
     embGeo.attributes.position.needsUpdate = true;
     for (const s of mist) { s.position.x += s.userData.v * .016; if (Math.abs(s.position.x) > 5) s.userData.v *= -1; }
     // the card: lying in the coffin, it rises, turns twice and stands facing us
-    cardG.position.set(0, lerp(.42, 1.55, rise) + Math.sin(t * 2) * .03 * seg(t, 3.9, 4.3), lerp(.1, .45, rise));
+    cardG.position.set(0, lerp(CARD_Y, 1.55, rise) + Math.sin(t * 2) * .03 * seg(t, 3.9, 4.3), lerp(.1, .45, rise));
     cardG.rotation.set(lerp(-Math.PI / 2, 0, ease.out(seg(t, 2.3, 3.4))), (1 - ease.out(seg(t, 2.3, 4))) * Math.PI * 4, lerp(Math.PI / 2, 0, ease.out(seg(t, 2.3, 3.2))) + Math.sin(t * 1.6) * .03 * seg(t, 3.9, 5));
     cardG.scale.setScalar(.82 + rise * .18 + ease.out(seg(t, 5.2, 6.4)) * .06);
     halo.position.copy(cardG.position); halo.position.z -= .25; halo.material.opacity = seg(t, 2.8, 3.6) * .3 + seg(t, 4.2, 5) * .5 * (1 - seg(t, 5.4, 6.8));
