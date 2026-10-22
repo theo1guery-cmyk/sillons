@@ -23,7 +23,8 @@ function hauntedCardEl(c) {
 
 /* the copy found in a booster: the room goes dark, bats cross, the card rises out of the fog with its number */
 const Haunted = {
-  reveal(card, view = false) {             // view: the big view of a card already owned (no suspense)
+  reveal(card, view = false) {             // view: the card sheet of a card already found (no suspense)
+    if (view) return hxView(card);
     return new Promise(done => {
       const el = document.createElement("div"); el.className = "hx-reveal"; el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true");
       el.setAttribute("aria-label", "Carte de la Collection Hantée");
@@ -73,13 +74,16 @@ async function drawHaunted(box) {
       return `<div class="hx-slot${mine.length ? " mine" : ""}${left ? "" : " out"}" data-slot="${e.slot}">
         <div class="hx-card"></div>
         <p class="hx-left">${left ? `${left} / ${e.of} à trouver` : "Tous sortis"}</p>
-        <ul class="hx-owners">${e.copies.map(c => `<li${c.mine ? ' class="me"' : ""}><b>N° ${String(c.no).padStart(String(e.of).length, "0")}</b> ${esc(c.pseudo || "?")}</li>`).join("")}</ul></div>`;
+        <ul class="hx-owners">${e.copies.map(c => `<li${c.mine ? ' class="me"' : ""}><button type="button" data-no="${c.no}"><b>N° ${String(c.no).padStart(String(e.of).length, "0")}</b> ${esc(c.pseudo || "?")}${c.grade ? ` <i class="hx-g">${c.grade}</i>` : ""}${c.sale ? ` <em class="hx-price">${fmt(c.sale.price)} Streams</em>` : ""}</button></li>`).join("")}</ul></div>`;
     }).join("")}</div>`;
   box.querySelectorAll(".hx-slot").forEach(s => {
     const e = d.editions.find(x => x.slot === +s.dataset.slot), mine = e.copies.filter(c => c.mine);
     const w = hauntedCardEl({ t: e.title, a: e.artist, cov: e.cover || "", no: mine.length ? mine[0].no : "?", of: e.of });
     if (!mine.length) w.querySelector(".hcard").classList.add("hc-ghost");
     s.querySelector(".hx-card").appendChild(w);
+    const open = cp => hxView(hxCard(e, cp));
+    if (e.copies.length) { s.querySelector(".hx-card").onclick = () => open(mine[0] || e.copies.find(c => c.sale) || e.copies[0]); s.querySelector(".hx-card").classList.add("tap"); }
+    s.querySelectorAll(".hx-owners button").forEach(b => b.onclick = () => open(e.copies.find(c => c.no === +b.dataset.no)));
   });
   box.querySelector("#hxPack").onclick = () => startOpening(HAUNTED);
   const art = box.querySelector("#hxPackArt"); skin(art, "pack-haunted", { sway: true }); art.onclick = () => pk >= 100 ? startOpening(HAUNTED) : toast(`Il te faut 100 🎃 pour le Pack Hanté.`);
@@ -214,15 +218,101 @@ async function drawMyHaunted() {
     try { HXM.d = await rpc("haunted_collection"); HXM.at = Date.now(); } catch (e) {}
     HXM.busy = false;
   }
-  const mine = (HXM.d?.editions || []).flatMap(e => e.copies.filter(x => x.mine).map(x => ({ ...e, no: x.no })));
+  const mine = (HXM.d?.editions || []).flatMap(e => e.copies.filter(x => x.mine).map(x => hxCard(e, x)));
   box.hidden = !mine.length; if (!mine.length) return;
   box.innerHTML = `<h3>🦇 Ta Collection Hantée <small>${mine.length} carte${mine.length > 1 ? "s" : ""} · édition limitée</small></h3><div class="hx-mine-row"></div>`;
   const row = box.querySelector(".hx-mine-row");
   for (const e of mine) {
     const b = document.createElement("button"); b.className = "hx-mine-c"; b.setAttribute("aria-label", `${e.title}, N° ${hxNo(e)}/${e.of}`);
-    b.appendChild(hauntedCardEl({ t: e.title, a: e.artist, cov: e.cover || "", no: e.no, of: e.of }));
-    b.onclick = () => Haunted.reveal({ title: e.title, artist: e.artist, cover: e.cover, preview: e.preview, no: e.no, of: e.of }, true);
+    b.appendChild(hxCardOrSlab(e));
+    if (e.sale) b.insertAdjacentHTML("beforeend", `<span class="hx-tag">En vente · ${fmt(e.sale.price)}</span>`);
+    b.onclick = () => hxView(e);
     row.appendChild(b);
   }
 }
 window.drawMyHaunted = drawMyHaunted;
+
+/* ---------- graded, listened to, sold ---------- */
+const HX_GRADE = 600;                          // Streams (haunted_grade on the server)
+const hxCard = (e, cp) => ({ title: e.title, artist: e.artist, cover: e.cover, preview: e.preview, no: cp.no, of: e.of, slot: e.slot,
+  id: cp.id, mine: cp.mine, pseudo: cp.pseudo, grade: cp.grade, cert: cp.cert, sale: cp.sale });
+// the card in its case, like the graded cards: the label says the sound, the collection, the number and the grade
+function hxSlabEl(c) {
+  const box = document.createElement("div"); box.className = "slab-box hx-slab";
+  box.innerHTML = `<div class="slab" data-g="${c.grade}"><div class="pocket"><div class="lbl">
+      <div class="txt"><span class="l1">HALLOWEEN 2026 ZIK HUNTER</span><b class="l2">${esc(c.title)}</b><span class="l3">${esc(c.artist)} · COLLECTION HANTÉE</span>
+        <span class="l4"><b>N° ${hxNo(c)}/${c.of}</b>${c.of === 1 ? " · EXEMPLAIRE UNIQUE" : ""}</span></div>
+      <div class="mark"><img src="brand/zikhunter-icon.svg" alt=""></div>
+      <div class="gr"><small>${GRADE_NAME[c.grade]}</small><b>${c.grade}</b><span class="bar" aria-hidden="true"></span><span class="cert">${esc(c.cert)}</span></div>
+    </div></div><div class="grip" aria-hidden="true"></div><div class="well"></div><div class="glare" aria-hidden="true"></div></div>`;
+  box.querySelector(".well").appendChild(hauntedCardEl({ t: c.title, a: c.artist, cov: c.cover || "", no: c.no, of: c.of }));
+  if (typeof tiltSlab === "function") tiltSlab(box);
+  return box;
+}
+const hxCardOrSlab = c => c.grade ? hxSlabEl(c) : hauntedCardEl({ t: c.title, a: c.artist, cov: c.cover || "", no: c.no, of: c.of });
+function hxRefresh() {
+  HXM.at = 0; drawMyHaunted();
+  const w = $("#hxSec"); if (w && document.body.contains(w)) drawHaunted(w);
+  loadProfile?.().catch(() => {});
+}
+
+// the sheet of one copy: listen to its preview; mine: grade it, crack its case, put it on sale or take it back; someone
+// else's on sale: buy it
+function hxView(c) {
+  return new Promise(done => {
+    const el = document.createElement("div"); el.className = "hx-reveal hx-view"; el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true");
+    el.setAttribute("aria-label", `${c.title}, Collection Hantée`);
+    el.innerHTML = `<div class="hx-r-fog"></div><p class="hx-r-kick">Collection Hantée</p><div class="hx-r-card"></div>
+      <div class="hx-r-txt"><b>${esc(c.title)}</b><span>${esc(c.artist)} · N° ${hxNo(c)}/${c.of}${c.of === 1 ? " · exemplaire unique" : ""}${c.mine ? "" : c.pseudo ? ` · à ${esc(c.pseudo)}` : ""}</span>
+        <div class="hx-acts"></div><div class="hx-sellf" hidden></div>
+        <button class="btn hx-close" type="button">Fermer</button></div>`;
+    el.querySelector(".hx-r-card").appendChild(hxCardOrSlab(c));
+    document.body.appendChild(el); document.body.classList.add("fx-on");
+    const acts = el.querySelector(".hx-acts"), sellf = el.querySelector(".hx-sellf");
+    let audio = null;
+    const btn = (label, cls, f) => { const b = document.createElement("button"); b.type = "button"; b.className = "btn " + cls; b.textContent = label; b.onclick = f; acts.appendChild(b); return b; };
+    const close = () => { audio?.pause(); el.classList.remove("on"); document.body.classList.remove("fx-on"); setTimeout(() => { el.remove(); done(); }, 400); };
+    const run = async (f, ok) => { if (el.dataset.busy) return; el.dataset.busy = 1; try { await f(); ok && toast(ok); close(); hxRefresh(); } catch (e) { toast(message(e)); } delete el.dataset.busy; };
+    if (c.preview) {
+      const play = btn("▶ Écouter l'extrait", "hx-play", () => {
+        if (!audio) { audio = new Audio(c.preview); audio.volume = .8; audio.onended = () => { play.textContent = "▶ Écouter l'extrait"; }; }
+        if (audio.paused) { audio.play().catch(() => {}); play.textContent = "⏸ Pause"; } else { audio.pause(); play.textContent = "▶ Écouter l'extrait"; }
+      });
+    }
+    if (c.mine && c.id) {
+      if (c.sale) {
+        acts.insertAdjacentHTML("beforeend", `<p class="hx-onsale">En vente à <b>${fmt(c.sale.price)} Streams</b></p>`);
+        btn("Retirer de la vente", "", () => run(() => rpc("haunted_unsell", { p_card: c.id }), "Ta carte n'est plus en vente."));
+      } else {
+        if (!c.grade) btn(`Faire grader · ${fmt(HX_GRADE)} Streams`, "primary-soft", async () => {
+          if ((S.streams || 0) < HX_GRADE) return toast(`Il te faut ${fmt(HX_GRADE)} Streams pour faire grader cette carte. Tu en as ${fmt(S.streams || 0)}.`);
+          if (el.dataset.busy) return; el.dataset.busy = 1;
+          try { const r = await rpc("haunted_grade", { p_card: c.id }); S.streams = Math.max(0, (S.streams || 0) - HX_GRADE);
+            Object.assign(c, { grade: r.grade, cert: r.cert }); close(); hxRefresh();
+            await wait(450); toast(`${GRADE_NAME[r.grade]} ${r.grade} ! « ${c.title} » est dans sa boîte.`); hxView(c);
+          } catch (e) { toast(message(e)); delete el.dataset.busy; }
+        });
+        else btn("Casser la boîte", "", () => { if (confirm(`Casser la boîte ? « ${c.title} » redevient une carte sans note. Sa note ${c.grade} est perdue pour toujours.`)) run(() => rpc("haunted_crack", { p_card: c.id }), "Boîte cassée."); });
+        btn("Mettre en vente", "primary", () => {
+          sellf.hidden = false; sellf.innerHTML = `<label>Prix en Streams <input type="number" min="100" step="100" inputmode="numeric" value="${c.of === 1 ? 100000 : 10000}"></label>
+            <small>Les autres joueurs la verront sur le tableau de la Collection Hantée. La banque garde ${HXM.d?.fee ?? 5} % à la vente.</small>
+            <button class="btn primary" type="button">Confirmer la vente</button>`;
+          const inp = sellf.querySelector("input"); inp.focus(); inp.select();
+          sellf.querySelector("button").onclick = () => { const p = Math.round(+inp.value); if (!(p >= 100)) return toast("Prix minimum : 100 Streams.");
+            run(() => rpc("haunted_sell", { p_card: c.id, p_price: p }), `« ${c.title} » est en vente à ${fmt(p)} Streams.`); };
+        });
+      }
+    } else if (c.sale && typeof me !== "undefined" && me) {
+      btn(`Acheter · ${fmt(c.sale.price)} Streams`, "primary", () => {
+        if ((S.streams || 0) < c.sale.price) return toast(`Pas assez de Streams : il t'en faut ${fmt(c.sale.price)}, tu en as ${fmt(S.streams || 0)}.`);
+        if (!confirm(`Acheter « ${c.title} » N° ${hxNo(c)}/${c.of}${c.grade ? ` (${GRADE_NAME[c.grade]} ${c.grade})` : ""} à ${esc(c.pseudo || "?")} pour ${fmt(c.sale.price)} Streams ?`)) return;
+        run(() => rpc("haunted_buy", { p_listing: c.sale.id }), `🦇 « ${c.title} » est dans ta collection !`);
+      });
+    }
+    requestAnimationFrame(() => el.classList.add("on"));
+    setTimeout(() => el.classList.add("show"), 60);
+    const x = el.querySelector(".hx-close"); x.onclick = close; setTimeout(() => x.focus(), 100);
+    el.addEventListener("click", e => { if (e.target === el) close(); });
+    el.addEventListener("keydown", e => { if (e.key === "Escape") close(); });
+  });
+}
