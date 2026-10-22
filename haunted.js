@@ -140,7 +140,7 @@ Object.assign(Haunted, {
       <div class="hx-bats-s" aria-hidden="true">${"<i></i>".repeat(6)}</div>`;
     el.querySelector(".hx-front").appendChild(hauntedCardEl({ t: c.title, a: c.artist, cov: c.cover, no: c.no, of: c.of }));
     box.appendChild(el); op.classList.add("hx-on");
-    const film = matchMedia("(prefers-reduced-motion: reduce)").matches ? null : import("./haunt3d.js?v=16").catch(() => null);   // loads while the back shakes
+    const film = matchMedia("(prefers-reduced-motion: reduce)").matches ? null : import("./haunt3d.js?v=17").catch(() => null);   // loads while the back shakes
     if (film) ["scene.gltf?v=1", "scene.bin", "textures/coffin1_baseColor.jpg", "textures/phongE3_baseColor.jpg", "textures/phongE4_baseColor.jpg", "textures/phongE4_normal.jpg"]
       .forEach(f => fetch("brand/3d/coffin/" + f).catch(() => {}));   // the coffin too, so the film starts at once
     $o(".op-sub").textContent = "Carte bonus · Collection Hantée";
