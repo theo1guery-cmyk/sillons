@@ -199,12 +199,13 @@ export async function play(host, card) {
   const frame = now => {
     if (!t0) t0 = now;
     const t = !host.isConnected ? T : window.__hxT ?? (now - t0) / 1000;   // host gone: skip to the end (__hxT: a frozen instant, for tests)
+    const top = t >= SHOT2 && t < SHOT3;                    // the shot from above
     if (t < SHOT2) {                                         // 1. wide: we come closer to the coffin
       const app = ease.inOut(seg(t, 0, SHOT2)), far = portrait() ? 14 : 7.2, near = portrait() ? 9.5 : 5;
       camera.up.copy(UP); camera.position.set(Math.sin(t * .2) * .5, lerp(3.1, 2.4, app), lerp(far, near, app));
       target.set(0, .45, .1);
     } else if (t < SHOT3) {                                  // 2. straight above the card, slowly coming down, a slight turn
-      const k = ease.inOut(seg(t, SHOT2, SHOT3)), h = (portrait() ? 3.6 : 2.4) - k * .7;
+      const k = ease.inOut(seg(t, SHOT2, SHOT3)), h = (portrait() ? 4.6 : 3.2) - k * .7;
       camera.up.copy(DOWN_UP).applyAxisAngle(UP, .25 - k * .35);
       camera.position.set(0, CARD_Y + h, .1 + .001); target.set(0, CARD_Y, .1);
     } else {                                                 // 3. in front, low: the card rises and turns to us
@@ -215,16 +216,16 @@ export async function play(host, card) {
     camera.lookAt(target);
     // lightning twice, the coffin rattles, green light leaks out
     const bolt = Math.max(0, 1 - Math.abs(t - .45) * 14) + Math.max(0, 1 - Math.abs(t - 1.05) * 10) * .7;
-    flash.intensity = bolt * 3; bloom.strength = .55 + bolt * .6 + seg(t, 5.7, 6.4) * 1.1 * (1 - seg(t, 6.6, 7.7));
+    flash.intensity = bolt * 3; bloom.strength = (top ? .3 : .55) + bolt * .6 + seg(t, 5.7, 6.4) * 1.1 * (1 - seg(t, 6.6, 7.7));
     const shake = seg(t, .6, 1.5) * (1 - seg(t, 1.45, 1.6));
     coffin.rotation.z = Math.sin(t * 55) * .01 * shake; coffin.position.y = Math.abs(Math.sin(t * 38)) * .02 * shake;
     seamMat.opacity = seg(t, .5, 1.3) * (.6 + .4 * Math.sin(t * 20)) * (1 - seg(t, 1.6, 2));
     // the lid flies open (a little bounce), light and mist pour out
     const open = seg(t, 1.5, 2.3);
     lidPivot.rotation.x = -(ease.out(open) * 1.95 - Math.sin(open * Math.PI) * .12 * (open > .7 ? 1 : 0));
-    inner.intensity = ease.out(seg(t, 1.4, 2.2)) * 4 * (1 - seg(t, 6.4, 7.4) * .5);
+    inner.intensity = ease.out(seg(t, 1.4, 2.2)) * (top ? 1.2 : 4) * (1 - seg(t, 6.4, 7.4) * .5);
     glow.intensity = seg(t, 1.5, 2.3) * 1.2 + seg(t, 5.6, 6.4) * 5 * (1 - seg(t, 6.6, 7.8));
-    embers.material.opacity = ease.out(seg(t, 1.6, 2.4)) * .9;
+    embers.visible = !top; embers.material.opacity = ease.out(seg(t, 1.6, 2.4)) * .9;
     for (let k = 0; k < EMB; k++) { ePos[k * 3 + 1] += eSpd[k] * .016 * (seg(t, 1.6, 2) + seg(t, 5.8, 6.6) * 2); if (ePos[k * 3 + 1] > 3.4) resetEmber(k); }
     embGeo.attributes.position.needsUpdate = true;
     for (const s of mist) { s.position.x += s.userData.v * .016; if (Math.abs(s.position.x) > 5) s.userData.v *= -1; }
@@ -238,7 +239,7 @@ export async function play(host, card) {
     rimMesh.material.opacity = .6 + .4 * Math.sin(t * 9);
     // the burn
     uBurn.value = ease.inOut(seg(t, 5.6, 6.8));
-    sheetMat.emissiveIntensity = .8 + seg(t, 5, 5.6) * .5;
+    sheetMat.emissiveIntensity = .8 + seg(t, 5, 5.6) * .5; backMat.emissiveIntensity = top ? .45 : .8;
     // the bats burst out of the coffin when it opens, and circle away
     const fly = seg(t, 1.6, 7);
     bats.forEach(b => {
