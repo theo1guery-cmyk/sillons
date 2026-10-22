@@ -4,13 +4,14 @@
    Loaded only when a booster holds such a card. play() resolves when the film is over; the page then shows the HTML
    card in its place. */
 const CDN = "https://cdn.jsdelivr.net/npm/three@0.160.0/";
-const [THREE, { GLTFLoader }, { EffectComposer }, { RenderPass }, { UnrealBloomPass }, { OutputPass }] = await Promise.all([
+const [THREE, { GLTFLoader }, { EffectComposer }, { RenderPass }, { UnrealBloomPass }, { OutputPass }, { RoomEnvironment }] = await Promise.all([
   import(CDN + "+esm"),
   import(CDN + "examples/jsm/loaders/GLTFLoader.js/+esm"),
   import(CDN + "examples/jsm/postprocessing/EffectComposer.js/+esm"),
   import(CDN + "examples/jsm/postprocessing/RenderPass.js/+esm"),
   import(CDN + "examples/jsm/postprocessing/UnrealBloomPass.js/+esm"),
   import(CDN + "examples/jsm/postprocessing/OutputPass.js/+esm"),
+  import(CDN + "examples/jsm/environments/RoomEnvironment.js/+esm"),
 ]);
 
 const ease = { out: t => 1 - Math.pow(1 - t, 3), inOut: t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2, soft: t => t * t * (3 - 2 * t) };
@@ -33,6 +34,8 @@ export async function play(host, card) {
 
   const scene = new THREE.Scene();
   scene.fog = new THREE.FogExp2(0x020a06, .09);
+  scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), .04).texture;   // soft reflections on the wood and the brass
+  scene.environmentIntensity = .35;
   const camera = new THREE.PerspectiveCamera(34, 1, .05, 60);
   const composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
@@ -48,7 +51,7 @@ export async function play(host, card) {
   scene.add(new THREE.AmbientLight(0x1a3a28, 1.1));
   const moon = new THREE.DirectionalLight(0x9fffd0, 1.1); moon.position.set(-3, 6, -4); scene.add(moon);
   const glow = new THREE.PointLight(0x39ff88, 0, 9, 1.6); glow.position.set(0, 1.6, -1.2); scene.add(glow);
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.MeshStandardMaterial({ color: 0x06100a, roughness: .38, metalness: .25 }));
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.MeshStandardMaterial({ color: 0x06100a, roughness: .85, metalness: .05 }));
   ground.rotation.x = -Math.PI / 2; scene.add(ground);
   const stone = new THREE.MeshStandardMaterial({ color: 0x0c1410, roughness: .9 });
   const grave = (x, z, w, h, cross) => {
@@ -71,7 +74,7 @@ export async function play(host, card) {
 
   /* ---------- the coffin ("Coffin" by ✞BloodTea✞ on Sketchfab, CC BY 4.0): lying across, its lid on a hinge at the back ---------- */
   const model = gltf.scene;
-  model.traverse(o => { if (o.isMesh) { o.castShadow = true; o.material.envMapIntensity = .6; } });
+  model.traverse(o => { if (o.isMesh) { o.castShadow = true; o.material.envMapIntensity = 1.4; } });
   const coffin = new THREE.Group(); coffin.add(model); scene.add(coffin);
   let box = new THREE.Box3().setFromObject(model), size = box.getSize(new THREE.Vector3());
   if (size.z > size.x) { model.rotation.y = Math.PI / 2; model.updateMatrixWorld(true); box = new THREE.Box3().setFromObject(model); size = box.getSize(new THREE.Vector3()); }
@@ -88,7 +91,7 @@ export async function play(host, card) {
   const seamMat = new THREE.SpriteMaterial({ map: null, color: 0x39ff88, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
   const seam = new THREE.Sprite(seamMat); seam.position.set(0, H + .01, (box.max.z + box.min.z) / 2 + .1); seam.scale.set(size.x * 0, .1, 1); coffin.add(seam);
   coffin.position.set(0, 0, .1);
-  const key = new THREE.SpotLight(0xd8ffe8, 6, 12, .45, .6, 1.2); key.position.set(1.5, 4.5, 3.5); key.target = coffin; scene.add(key);
+  const key = new THREE.SpotLight(0xfff0dc, 16, 14, .5, .5, 1.1); key.position.set(1.5, 4.5, 3.5); key.target = coffin; scene.add(key);
   const inner = new THREE.PointLight(0x39ff88, 0, 1.8, 1.6); inner.position.set(0, H * .8, .1); scene.add(inner);
   const flash = new THREE.HemisphereLight(0xbfffe0, 0x0a1a10, 0); scene.add(flash);   // the lightning
   const CARD_Y = H * .55;                                    // the card lies inside, on the satin
