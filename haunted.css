@@ -1,0 +1,36 @@
+/* Halloween: the "Hantée" edition of a card, pulled only during the event (cardEl adds .haunted and its layers) */
+.card.haunted{background:linear-gradient(160deg,#ff8a2a,#5b1d7a 28%,#120818 50%,#5b1d7a 72%,#ff8a2a);
+  box-shadow:0 10px 26px rgba(0,0,0,.65),0 0 22px -4px rgba(255,120,30,.55)}
+.card.haunted .in{background:#0d0612}
+.card.haunted .in>.cover,.card.haunted.legend .art{filter:saturate(.75) contrast(1.08) sepia(.18) hue-rotate(-12deg)}
+.card.haunted .in>.bg,.card.haunted.legend .ext{filter:blur(18px) saturate(1.1) brightness(.45) hue-rotate(240deg)}
+/* a pale moon glow behind the title, and the mist rising from the bottom */
+.hx-moon{position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(60% 34% at 50% 100%,rgba(255,140,40,.32),transparent 70%)}
+.hx-fog{position:absolute;left:-30%;right:-30%;bottom:-6%;height:52%;z-index:1;pointer-events:none;opacity:1;
+  background:radial-gradient(40% 50% at 25% 70%,rgba(170,120,220,.55),transparent 70%),radial-gradient(45% 45% at 70% 80%,rgba(120,220,170,.28),transparent 70%),radial-gradient(35% 40% at 50% 95%,rgba(200,170,255,.4),transparent 70%);
+  filter:blur(2cqw);animation:hxfog 9s ease-in-out infinite alternate}
+@keyframes hxfog{from{transform:translateX(-8%)}to{transform:translateX(8%)}}
+/* spider webs in two corners */
+.hx-web{position:absolute;z-index:0;width:34cqw;height:34cqw;pointer-events:none;background:rgba(255,236,210,.55);
+  -webkit-mask:url(brand/web.svg) 0 0/100% 100% no-repeat;mask:url(brand/web.svg) 0 0/100% 100% no-repeat}
+.hx-web.l{left:0;top:0}
+.hx-web.r{right:0;bottom:0;transform:rotate(180deg);width:26cqw;height:26cqw;opacity:.7}
+/* three bats crossing the sleeve */
+.hx-bats{position:absolute;inset:0;z-index:3;pointer-events:none}
+.hx-bats i{position:absolute;width:15cqw;height:6.6cqw;background:url(brand/bat.svg) center/contain no-repeat;filter:drop-shadow(0 0 1.6cqw rgba(255,140,40,.9));animation:hxbat 7s ease-in-out infinite}
+.hx-bats i:nth-child(1){left:62%;top:18%}
+.hx-bats i:nth-child(2){left:76%;top:30%;width:9cqw;height:4cqw;animation-delay:-2.3s}
+.hx-bats i:nth-child(3){left:12%;top:42%;width:10cqw;height:4.4cqw;animation-delay:-4.6s}
+@keyframes hxbat{0%,100%{translate:0 0;scale:1 1}25%{scale:1 .6}50%{translate:-3cqw -2cqw;scale:1 1}75%{scale:1 .6}}
+/* the ribbon, the title in pumpkin orange */
+.card.haunted::before{content:"HANTÉE";position:absolute;top:5.5cqw;right:-9cqw;width:40cqw;transform:rotate(38deg);text-align:center;z-index:4;
+  background:#120818;color:#ff9a3c;border-block:.35cqw solid #ff8a2a;font-family:var(--mono);font-size:3.1cqw;letter-spacing:.24em;padding:.6cqw 0;box-shadow:0 .6cqw 1.2cqw rgba(0,0,0,.6)}
+.card.haunted .nm,.card.haunted.legend .lttl{background:linear-gradient(180deg,#ffd29a,#ff8a2a 60%,#c2410c);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 .3cqw .8cqw #000)}
+.card.haunted .top{padding-right:16cqw}
+.card.haunted .ty{border-color:#ff8a2a;color:#ff9a3c}
+.card.haunted .pw,.card.haunted .ft .rn{color:#ff9a3c}
+.card.haunted .st .bar>s{background:linear-gradient(90deg,#7c3aed,#ff8a2a)}
+.card.haunted.legend .lhead{right:17cqw;color:#ff9a3c}
+.card.haunted.legend .lpw{border-color:#ff9a3c}
+.card.haunted.legend .sig{color:#c9a6e0}
+@media (prefers-reduced-motion:reduce){.hx-fog,.hx-bats i{animation:none}}
