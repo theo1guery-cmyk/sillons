@@ -55,6 +55,7 @@ const MESSAGES = {
   bad_switch: "Réglage inconnu.",
   bad_event: "Événement inconnu.",
   event_over: "L'événement est terminé : la magie s'est envolée.",
+  haunted_sold_out: "Tous les exemplaires de cette carte sont déjà sortis.",
   not_enough_pumpkins: "Il te manque des citrouilles 🎃 : fais les quêtes de la nuit.",
   cauldron_five: "Le chaudron prend exactement 5 cartes.",
   cauldron_same: "Les 5 cartes doivent être de la même rareté.",
@@ -371,6 +372,7 @@ async function proposals(p, pk) {
 Object.assign(Online, {
   message,
   async startPack(p) {
+    if (p.haunted) return await rpc("haunted_pack_start");
     const d = await rpc("start_pack", { p_kind: p.big ? "big" : p.g >= 0 ? "genre" : "booster", p_genre: p.g >= 0 ? p.g : null, p_pay: p.pay === "vinyls" ? "vinyls" : "streams" });
     return d;
   },
@@ -402,6 +404,9 @@ Object.assign(Online, {
       addCopy(S.c, row, meta);
       return { c: cardFromRow(row, meta), holo: r.holo, isNew: r.new, wanted: r.wanted };
     }).sort((a, b) => a.c.tier - b.c.tier || a.c.rank - b.c.rank);
+    if (typeof EVENT !== "undefined" && EVENT.on === "halloween") {      // a haunted copy, pumpkins (haunted.js)
+      try { const h = await rpc("haunted_roll", { p_pack: pk.id }); if (h) { pulls.haunted = h.card || null; pulls.pumpkins = h.pumpkins || 0; } } catch (e) {}
+    }
     await loadProfile();
     flushPool();
     updateDefisBadge(); Online.loadPass?.(); Online.afterPack?.(pulls, pk.god);

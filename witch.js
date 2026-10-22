@@ -28,6 +28,7 @@ async function renderWitch() {
           ${q.claimed ? `<em>✓ +${q.reward} 🎃</em>` : q.progress >= q.goal ? `<button class="btn primary" data-q="${q.key}">+${q.reward} 🎃</button>` : `<em>+${q.reward} 🎃</em>`}</div>`).join("")}
         <p class="wz-note">Les quêtes reviennent chaque jour à minuit.</p></div>
     </div>
+    <section class="wz-sec hx-sec" id="hxSec" aria-labelledby="hxT"></section>
     <section class="wz-sec wz-shop" aria-labelledby="wzShopT">
       <h3 id="wzShopT">Le marché aux citrouilles</h3>
       <p class="sub">Besoin de plus de magie ? Les citrouilles servent au chaudron et à l'élixir, et seulement pendant l'événement : dépense-les avant la fin.</p>
@@ -54,7 +55,7 @@ async function renderWitch() {
   });
   $("#wzIntro").onclick = () => window.halloweenIntro?.();
   box.querySelectorAll(".wz-rec").forEach(b => b.onclick = () => { W.tier = +b.dataset.t; W.sel = []; renderWitch(); });
-  drawPot(); drawElixir(); drawPumpkinShop();
+  drawPot(); drawElixir(); drawPumpkinShop(); drawHaunted($("#hxSec"));
 }
 // the pumpkin packs: paid in euros (Stripe, or through the Discord while card payments are off) or in Vinyles
 async function drawPumpkinShop() {
