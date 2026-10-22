@@ -33,8 +33,8 @@ insert into public.haunted_editions (slot, query, title, artist, copies, weight)
   (7, 'artist:"Billie Eilish" track:"bury a friend"', 'bury a friend', 'Billie Eilish', 10, 1),
   (8, 'artist:"Lady Gaga" track:"Bloody Mary"', 'Bloody Mary', 'Lady Gaga', 10, 1),
   (9, 'artist:"AC/DC" track:"Highway to Hell"', 'Highway to Hell', 'AC/DC', 10, 1),
-  (10, 'artist:"The Cranberries" track:"Zombie"', 'Zombie', 'The Cranberries', 10, 1),
-  (11, 'artist:"Bobby Boris Pickett" track:"Monster Mash"', 'Monster Mash', 'Bobby "Boris" Pickett', 10, 1),
+  (10, 'artist:"GIMS" track:"Zombie"', 'Zombie', 'GIMS', 10, 1),
+  (11, 'artist:"Images" track:"Les Démons de minuit"', 'Les Démons de minuit', 'Images', 10, 1),
   (12, 'artist:"Andrew Gold" track:"Spooky, Scary Skeletons"', 'Spooky, Scary Skeletons', 'Andrew Gold', 10, 1),
   (13, 'artist:"Tame Impala" track:"Dracula"', 'Dracula', 'Tame Impala', 10, 1)
 on conflict (slot) do nothing;
@@ -57,13 +57,22 @@ alter table public.packs add column if not exists haunted_rolled boolean not nul
 -- finds each sound on Deezer (title, sleeve, preview); run again by haunted_collection() while one is missing
 create or replace function public.haunted_resolve() returns void
 language plpgsql security definer set search_path = public as $$
-declare e record; j jsonb; t jsonb;
+declare e record; j jsonb; t jsonb; q text; tries text[];
 begin
   for e in select * from haunted_editions where track_id is null order by slot loop
     begin
-      j := deezer('search?limit=10&q=' || replace(replace(replace(e.query, ' ', '%20'), '"', '%22'), '&', '%26'));
-      select x into t from jsonb_array_elements(coalesce(j -> 'data', '[]')) x
-      order by (lower(x ->> 'title') = lower(e.title)) desc, (x ->> 'rank')::int desc limit 1;
+      t := null;
+      tries := array[e.query, e.title || ' ' || e.artist];          -- the exact search, then a plain one
+      for i in 1..2 loop
+        exit when t is not null;
+        begin q := extensions.urlencode(tries[i]);
+        exception when others then
+          q := replace(replace(replace(replace(replace(tries[i], '%', '%25'), ' ', '%20'), '"', '%22'), '&', '%26'), 'é', '%C3%A9');
+        end;
+        j := deezer('search?limit=10&q=' || q);
+        select x into t from jsonb_array_elements(coalesce(j -> 'data', '[]')) x
+        order by (lower(x ->> 'title') = lower(e.title)) desc, (lower(x -> 'artist' ->> 'name') = lower(e.artist)) desc, (x ->> 'rank')::int desc limit 1;
+      end loop;
       if t is not null then
         update haunted_editions set track_id = (t ->> 'id')::bigint,
           cover = replace(coalesce(t -> 'album' ->> 'cover_xl', t -> 'album' ->> 'cover_big', ''), 'http:', 'https:'),
