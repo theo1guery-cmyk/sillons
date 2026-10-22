@@ -75,7 +75,7 @@ async function drawHaunted(box) {
 }
 
 /* the announcement of the Collection Hantée: stories (event-intro.js), once per player, after the Halloween one */
-const HXI = { shown: false, KEY: "zh-haunted-intro-2026" };
+const HXI = { shown: false, KEY: "zh-haunted-intro-2026-v2" };   // v2: shown again with the new cards
 function hauntedIntroMaybe() {
   if (HXI.shown || typeof EVENT === "undefined" || EVENT.on !== "halloween" || !Online.active || !me) return;
   try { if (localStorage.getItem(HXI.KEY) || !localStorage.getItem("zh-event-intro-halloween-2026")) return; } catch (e) { return; }
