@@ -1,8 +1,9 @@
-/* Zik Hunter — the reveal of a Collection Hantée card in 3D: a graveyard in green fog, lightning, a coffin rattles,
-   green light leaks out, its lid flies open and bats burst out; seen from above, the cursed card lies face down in the
-   satin and trembles; then in front, it rises spinning, turns to us, and green fire eats its cover: the card shows. Coffin: "Coffin" by ✞BloodTea✞ (https://sketchfab.com/bloodtea), CC BY 4.0.
-   Loaded only when a booster holds such a card. play() resolves when the film is over; the page then shows the HTML
-   card in its place. */
+/* Zik Hunter — the reveal of a Collection Hantée card in 3D, shot like the hit film (same turntable, same light):
+   a dark room lit by three candles; a black record drops on the platter, the arm lands, the record turns backwards
+   and green cracks run through its grooves; the candles blow out; in the dark the record bursts into shards and the
+   cursed card rises out of them in a green beam, turns to us, and green fire eats its cover: the card shows.
+   One continuous camera move, no cut. Turntable: "Yamaha TT-300 Record Player" by AleixoAlonso, CC BY 4.0.
+   Loaded only when a booster holds such a card. play() resolves when the film is over. */
 const CDN = "https://cdn.jsdelivr.net/npm/three@0.160.0/";
 const [THREE, { GLTFLoader }, { EffectComposer }, { RenderPass }, { UnrealBloomPass }, { OutputPass }, { RoomEnvironment }] = await Promise.all([
   import(CDN + "+esm"),
@@ -14,10 +15,15 @@ const [THREE, { GLTFLoader }, { EffectComposer }, { RenderPass }, { UnrealBloomP
   import(CDN + "examples/jsm/environments/RoomEnvironment.js/+esm"),
 ]);
 
-const ease = { out: t => 1 - Math.pow(1 - t, 3), inOut: t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2, soft: t => t * t * (3 - 2 * t) };
+const ease = {
+  out: t => 1 - Math.pow(1 - t, 3),
+  inOut: t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2,
+  soft: t => t * t * (3 - 2 * t),
+  drop: t => { const n = 7.5625, d = 2.75; if (t < 1 / d) return n * t * t; if (t < 2 / d) return n * (t -= 1.5 / d) * t + .75; if (t < 2.5 / d) return n * (t -= 2.25 / d) * t + .9375; return n * (t -= 2.625 / d) * t + .984375; },
+};
 const lerp = (a, b, t) => a + (b - a) * t;
 const clamp01 = t => Math.max(0, Math.min(1, t));
-const seg = (t, a, b) => clamp01((t - a) / (b - a));          // 0 → 1 between a and b
+const seg = (t, a, b) => clamp01((t - a) / (b - a));
 const loadImg = (src, cors) => new Promise(r => { const i = new Image(); if (cors) i.crossOrigin = "anonymous"; i.onload = () => r(i); i.onerror = () => r(null); i.src = src; });
 const canvas2d = (w, h) => { const c = document.createElement("canvas"); c.width = w; c.height = h; return [c, c.getContext("2d")]; };
 const GREEN = "#39ff88";
@@ -28,97 +34,237 @@ export async function play(host, card) {
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, mobile ? 1.25 : 1.5));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.setClearColor(0x020604, 1);
+  renderer.toneMappingExposure = mobile ? 1.15 : 1;
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.setClearColor(0x020203, 1);
   const canvas = renderer.domElement; canvas.className = "hx3d-gl";
   host.prepend(canvas);
 
   const scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(0x020a06, .09);
-  scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), .04).texture;   // soft reflections on the wood and the brass
-  scene.environmentIntensity = .35;
-  const camera = new THREE.PerspectiveCamera(34, 1, .05, 60);
-  // the glow pass only on computers, at a lower resolution (as the hit film does): phones render straight
+  scene.fog = new THREE.FogExp2(0x020203, .085);
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromScene(new RoomEnvironment(), .04).texture;
+  scene.environmentIntensity = .25;
+  const camera = new THREE.PerspectiveCamera(30, 1, .05, 80);
+  // the glow pass only on computers, at half resolution (as the hit film does): phones render straight
   const composer = mobile ? null : new EffectComposer(renderer);
   let bloom = null;
   if (composer) {
     composer.setPixelRatio(1);
     composer.addPass(new RenderPass(scene, camera));
-    bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), .55, .6, .72);
+    bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), .45, .55, .78);
     composer.addPass(bloom); composer.addPass(new OutputPass());
   }
   const draw = () => composer ? composer.render() : renderer.render(scene, camera);
-  const texOf = cv => { const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = renderer.capabilities.getMaxAnisotropy(); return t; };
 
-  const [cover, bat, torn, rim, logo, gltf] = await Promise.all([loadImg(card.cover, true), loadImg("brand/bat.svg"), loadImg("brand/torn.svg"), loadImg("brand/torn-rim.svg"), loadImg("brand/zikhunter-icon.svg"),
-    new GLTFLoader().loadAsync(new URL("brand/3d/coffin/scene.gltf?v=1", location.href).href)]);
+  const [gltf, logo, cover, torn, rim] = await Promise.all([
+    new GLTFLoader().loadAsync(new URL(mobile ? "brand/3d/turntable-1k.gltf?v=2" : "brand/3d/turntable.gltf?v=2", location.href).href),
+    loadImg("brand/zikhunter-icon.svg"), loadImg(card.cover, true), loadImg("brand/torn.svg"), loadImg("brand/torn-rim.svg"),
+  ]);
   await document.fonts?.ready;
-
-  /* ---------- the ground, the graves, the moon ---------- */
-  scene.add(new THREE.AmbientLight(0x1a3a28, 1.1));
-  const moon = new THREE.DirectionalLight(0x9fffd0, 1.1); moon.position.set(-3, 6, -4); scene.add(moon);
-  const glow = new THREE.PointLight(0x39ff88, 0, 9, 1.6); glow.position.set(0, 1.6, -1.2); scene.add(glow);
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.MeshStandardMaterial({ color: 0x06100a, roughness: .85, metalness: .05 }));
-  ground.rotation.x = -Math.PI / 2; scene.add(ground);
-  const stone = new THREE.MeshStandardMaterial({ color: 0x0c1410, roughness: .9 });
-  const grave = (x, z, w, h, cross) => {
-    const g = new THREE.Group();
-    if (cross) {
-      const a = new THREE.Mesh(new THREE.BoxGeometry(w * .25, h, w * .25), stone); a.position.y = h / 2;
-      const b = new THREE.Mesh(new THREE.BoxGeometry(w, w * .25, w * .25), stone); b.position.y = h * .72; g.add(a, b);
-    } else {
-      const sh = new THREE.Shape(); sh.moveTo(-w / 2, 0); sh.lineTo(-w / 2, h - w / 2); sh.absarc(0, h - w / 2, w / 2, Math.PI, 0, true); sh.lineTo(w / 2, 0);
-      g.add(new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: .12, bevelEnabled: false }), stone));
-    }
-    g.position.set(x, 0, z); g.rotation.y = (Math.random() - .5) * .5; g.rotation.z = (Math.random() - .5) * .12; scene.add(g);
-  };
-  grave(-2.6, -2.2, .7, 1.1); grave(2.4, -2.6, .8, 1.25); grave(-1.4, -4.2, .6, .9, true); grave(1.3, -4.6, .7, 1.4, true); grave(3.6, -1.2, .55, .8); grave(-3.8, -1, .6, 1.2, true);
-  const [mc, mg] = canvas2d(512, 512);
-  const mgr = mg.createRadialGradient(256, 256, 0, 256, 256, 256); mgr.addColorStop(0, "rgba(230,255,235,1)"); mgr.addColorStop(.35, "rgba(160,255,200,.35)"); mgr.addColorStop(1, "rgba(0,0,0,0)");
-  mg.fillStyle = mgr; mg.fillRect(0, 0, 512, 512);
-  const moonSpr = new THREE.Sprite(new THREE.SpriteMaterial({ map: texOf(mc), transparent: true, depthWrite: false, fog: false }));
-  moonSpr.material.opacity = .7; moonSpr.position.set(-3.4, 4.6, -10); moonSpr.scale.setScalar(2.4); scene.add(moonSpr);
-
-  /* ---------- the coffin ("Coffin" by ✞BloodTea✞ on Sketchfab, CC BY 4.0): lying across, its lid on a hinge at the back ---------- */
-  const model = gltf.scene;
-  model.traverse(o => { if (o.isMesh) { o.castShadow = true; o.material.envMapIntensity = 1.4; } });
-  const coffin = new THREE.Group(); coffin.add(model); scene.add(coffin);
-  let box = new THREE.Box3().setFromObject(model), size = box.getSize(new THREE.Vector3());
-  if (size.z > size.x) { model.rotation.y = Math.PI / 2; model.updateMatrixWorld(true); box = new THREE.Box3().setFromObject(model); size = box.getSize(new THREE.Vector3()); }
-  model.scale.multiplyScalar(3 / size.x); model.updateMatrixWorld(true);         // 3 units long
-  box = new THREE.Box3().setFromObject(model);
-  const ctr = box.getCenter(new THREE.Vector3());
-  model.position.sub(new THREE.Vector3(ctr.x, box.min.y, ctr.z)); model.updateMatrixWorld(true);
-  box = new THREE.Box3().setFromObject(model);
-  const lidNode = model.getObjectByName("lid"), lidBox = new THREE.Box3().setFromObject(lidNode);
-  const H = lidBox.min.y;                                    // the top of the box, under the lid
-  const lidPivot = new THREE.Group(); lidPivot.position.set(0, H, lidBox.min.z); coffin.add(lidPivot);
-  lidPivot.attach(lidNode);                                  // the hinge: the back edge of the lid
-  // green light leaking out between the lid and the box
-  const seamMat = new THREE.SpriteMaterial({ map: null, color: 0x39ff88, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
-  const seam = new THREE.Sprite(seamMat); seam.position.set(0, H + .01, (box.max.z + box.min.z) / 2 + .1); seam.scale.set(size.x * 0, .1, 1); coffin.add(seam);
-  coffin.position.set(0, 0, .1);
-  const key = new THREE.SpotLight(0xfff0dc, 16, 14, .5, .5, 1.1); key.position.set(1.5, 4.5, 3.5); key.target = coffin; scene.add(key);
-  const inner = new THREE.PointLight(0x39ff88, 0, 1.8, 1.6); inner.position.set(0, H * .8, .1); scene.add(inner);
-  const flash = new THREE.HemisphereLight(0xbfffe0, 0x0a1a10, 0); scene.add(flash);   // the lightning
-  const CARD_Y = H * .55;                                    // the card lies inside, on the satin
-
-  /* ---------- mist and embers ---------- */
+  const maxAniso = renderer.capabilities.getMaxAnisotropy();
+  const texOf = cv => { const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = maxAniso; return t; };
   const [sc, sg] = canvas2d(128, 128);
-  const sgr = sg.createRadialGradient(64, 64, 0, 64, 64, 64); sgr.addColorStop(0, "rgba(255,255,255,1)"); sgr.addColorStop(1, "rgba(255,255,255,0)");
-  sg.fillStyle = sgr; sg.fillRect(0, 0, 128, 128);
-  const soft = texOf(sc); seamMat.map = soft; seam.scale.set(3.3, .22, 1);
-  const mist = [];
-  for (let k = 0; k < (mobile ? 8 : 14); k++) {
-    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: soft, color: k % 3 ? 0x2f8a57 : 0x6a4a9a, transparent: true, opacity: .16, depthWrite: false }));
-    s.position.set((Math.random() - .5) * 9, .2 + Math.random() * .5, -Math.random() * 5 + 1); s.scale.setScalar(2.5 + Math.random() * 2.5);
-    s.material.opacity = .09; s.userData.v = (Math.random() - .5) * .25; scene.add(s); mist.push(s);
+  { const gr = sg.createRadialGradient(64, 64, 0, 64, 64, 64); gr.addColorStop(0, "rgba(255,255,255,1)"); gr.addColorStop(1, "rgba(255,255,255,0)"); sg.fillStyle = gr; sg.fillRect(0, 0, 128, 128); }
+  const soft = texOf(sc);
+
+  /* ---------- the turntable model ---------- */
+  const model = gltf.scene;
+  const byName = n => { let f = null; model.traverse(o => { if (!f && o.name === n) f = o; }); return f; };
+  byName("#RPL0002_Cover")?.removeFromParent();              // no dust cover: we want to see the record
+  model.traverse(o => {
+    if (!o.isMesh) return;
+    o.castShadow = o.receiveShadow = true;
+    o.material.envMapIntensity = .55;
+  });
+  const deck = new THREE.Group(); deck.add(model); scene.add(deck);
+  // size it (3.5 units wide) and put the platter's centre at the origin
+  let box = new THREE.Box3().setFromObject(model);
+  const size = box.getSize(new THREE.Vector3());
+  deck.scale.setScalar(3.5 / size.x);
+  deck.updateMatrixWorld(true);
+  const platterNode = byName("#RPL0002_Platter"), armNode = byName("#RPL0002_Tone_Arm");
+  const platterMesh = platterNode.children.find(c => c.isMesh) || platterNode;
+  const pBox = new THREE.Box3().setFromObject(platterMesh), pc = pBox.getCenter(new THREE.Vector3());
+  deck.position.set(-pc.x, -pBox.max.y, -pc.z);
+  deck.updateMatrixWorld(true);
+  box = new THREE.Box3().setFromObject(model);
+  const FLOOR_Y = box.min.y;
+
+  // the platter's own frame is Z-up, in the model's units: the record is built in it and turns with it
+  const P_TOP = .0159, R_REC = .1505;
+  function vinylTexture(light = false) {        // light: a pale version, tinted gold by the material for the GOD pack
+    const S = 2048, cv = document.createElement("canvas"); cv.width = cv.height = S;
+    const g = cv.getContext("2d"), c = S / 2;
+    g.fillStyle = light ? "#c8c8c8" : "#18181b"; g.fillRect(0, 0, S, S);
+    for (let r = c * .36; r < c * .985; r += 1.5) {
+      const v = light ? 150 + Math.random() * 90 : 20 + Math.random() * 14;
+      g.strokeStyle = `rgb(${v},${v},${v + 2})`; g.lineWidth = 1; g.beginPath(); g.arc(c, c, r, 0, 7); g.stroke();
+    }
+    for (const f of [.48, .61, .74, .87]) { g.strokeStyle = light ? "#6a6a6a" : "#0b0b0d"; g.lineWidth = S * .004; g.beginPath(); g.arc(c, c, c * f, 0, 7); g.stroke(); }
+    g.strokeStyle = light ? "#f0f0f0" : "#26262a"; g.lineWidth = S * .008; g.beginPath(); g.arc(c, c, c * .978, 0, 7); g.stroke();
+    return texOf(cv);
   }
-  const EMB = mobile ? 60 : 110, ePos = new Float32Array(EMB * 3), eSpd = new Float32Array(EMB);
-  const resetEmber = (k, y) => { const a = Math.random() * 7, r = Math.random() * .5; ePos[k * 3] = Math.cos(a) * r; ePos[k * 3 + 1] = y ?? Math.random() * .3; ePos[k * 3 + 2] = Math.sin(a) * r; eSpd[k] = .4 + Math.random() * .9; };
-  for (let k = 0; k < EMB; k++) resetEmber(k, Math.random() * 3);
-  const embGeo = new THREE.BufferGeometry(); embGeo.setAttribute("position", new THREE.BufferAttribute(ePos, 3));
-  const embers = new THREE.Points(embGeo, new THREE.PointsMaterial({ map: soft, color: 0x7dffb0, size: .09, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
-  scene.add(embers);
+  function labelTexture(shiny) {
+    const S = 1024, cv = document.createElement("canvas"); cv.width = cv.height = S;
+    const g = cv.getContext("2d"), c = S / 2;
+    const bg = g.createRadialGradient(c * .7, c * .6, 0, c, c, c);
+    if (shiny) { bg.addColorStop(0, "#2c241a"); bg.addColorStop(1, "#0b0907"); } else { bg.addColorStop(0, "#ffffff"); bg.addColorStop(1, "#d4d4d4"); }
+    g.fillStyle = bg; g.beginPath(); g.arc(c, c, c, 0, 7); g.fill();
+    g.strokeStyle = shiny ? "#f5d27a" : "rgba(0,0,0,.4)"; g.lineWidth = 5; g.beginPath(); g.arc(c, c, c * .93, 0, 7); g.stroke();
+    if (logo) { g.save(); if (!shiny) g.filter = "brightness(0) opacity(.8)"; g.drawImage(logo, c - c * .4, c - c * .56, c * .8, c * .8); g.restore(); }
+    g.fillStyle = shiny ? "#f5d27a" : "rgba(0,0,0,.75)"; g.textAlign = "center";
+    g.font = `600 ${S * .05}px "DM Mono", Menlo, monospace`; g.fillText("ZIK HUNTER · FACE A", c, c + c * .52);
+    g.font = `500 ${S * .036}px "DM Mono", Menlo, monospace`; g.fillText("33 ⅓ TOURS", c, c + c * .67);
+    g.fillStyle = "#050505"; g.beginPath(); g.arc(c, c, c * .06, 0, 7); g.fill();
+    return texOf(cv);
+  }
+  function godLabelTexture() {
+    const S = 1024, cv = document.createElement("canvas"); cv.width = cv.height = S;
+    const g = cv.getContext("2d"), c = S / 2;
+    const bg = g.createRadialGradient(c * .7, c * .6, 0, c, c, c); bg.addColorStop(0, "#1d1810"); bg.addColorStop(1, "#060504");
+    g.fillStyle = bg; g.beginPath(); g.arc(c, c, c, 0, 7); g.fill();
+    g.strokeStyle = "#f5c24d"; g.lineWidth = 8; g.beginPath(); g.arc(c, c, c * .93, 0, 7); g.stroke();
+    g.lineWidth = 2; g.beginPath(); g.arc(c, c, c * .86, 0, 7); g.stroke();
+    if (logo) g.drawImage(logo, c - c * .3, c - c * .66, c * .6, c * .6);
+    g.fillStyle = "#f5c24d"; g.textAlign = "center";
+    g.font = `900 ${S * .11}px "Unbounded", "Arial Black", sans-serif`; g.fillText("GOD PACK", c, c + c * .3);
+    g.font = `500 ${S * .036}px "DM Mono", Menlo, monospace`; g.fillText("1 CHANCE SUR 3 000", c, c + c * .5);
+    g.fillStyle = "#050505"; g.beginPath(); g.arc(c, c, c * .06, 0, 7); g.fill();
+    return texOf(cv);
+  }
+
+  /* ---------- the cursed record: black, a dark label; green cracks spread through its grooves ---------- */
+  const recordMat = new THREE.MeshPhysicalMaterial({ map: vinylTexture(), color: 0x55555c, roughness: .34, metalness: .1, clearcoat: 1, clearcoatRoughness: .1, envMapIntensity: .8 });
+  const [lc, lg] = canvas2d(1024, 1024);
+  { const c = 512, gr = lg.createRadialGradient(c * .7, c * .6, 0, c, c, c); gr.addColorStop(0, "#14261b"); gr.addColorStop(1, "#040806");
+    lg.fillStyle = gr; lg.beginPath(); lg.arc(c, c, c, 0, 7); lg.fill();
+    lg.strokeStyle = GREEN; lg.lineWidth = 6; lg.beginPath(); lg.arc(c, c, c * .93, 0, 7); lg.stroke();
+    lg.fillStyle = "#9dffbf"; lg.textAlign = "center"; lg.font = `600 ${1024 * .05}px "DM Mono", monospace`; lg.fillText("ZIK HUNTER · FACE B", c, c + c * .52);
+    lg.font = `500 ${1024 * .036}px "DM Mono", monospace`; lg.fillText("À NE PAS ÉCOUTER", c, c + c * .67);
+    lg.font = `900 ${1024 * .2}px Unbounded, sans-serif`; lg.shadowColor = GREEN; lg.shadowBlur = 30; lg.fillText("?", c, c - c * .08);
+    lg.shadowBlur = 0; lg.fillStyle = "#020202"; lg.beginPath(); lg.arc(c, c, c * .06, 0, 7); lg.fill(); }
+  const labelMat = new THREE.MeshStandardMaterial({ map: texOf(lc), roughness: .6 });
+  const record = new THREE.Group();
+  const recTop = new THREE.Mesh(new THREE.CircleGeometry(R_REC, 160), recordMat); recTop.position.z = .0021; record.add(recTop);
+  const edgeMat = new THREE.MeshStandardMaterial({ color: 0x0a0a0c, roughness: .3 });
+  const recEdge = new THREE.Mesh(new THREE.CylinderGeometry(R_REC, R_REC, .002, 160, 1, true), edgeMat);
+  recEdge.rotation.x = Math.PI / 2; recEdge.position.z = .001; record.add(recEdge);
+  const label = new THREE.Mesh(new THREE.CircleGeometry(.05, 96), labelMat); label.position.z = .00225; record.add(label);
+  // the cracks: branching lines from the centre, drawn once; a shader shows them up to a growing radius
+  const [kc, kg] = canvas2d(1024, 1024);
+  kg.fillStyle = "#000"; kg.fillRect(0, 0, 1024, 1024); kg.strokeStyle = "#fff"; kg.lineCap = "round";
+  const branch = (x, y, a, len, w, depth) => {
+    for (let s = 0; s < len; s += 14) {
+      const nx = x + Math.cos(a) * 14, ny = y + Math.sin(a) * 14;
+      kg.lineWidth = w; kg.beginPath(); kg.moveTo(x, y); kg.lineTo(nx, ny); kg.stroke();
+      x = nx; y = ny; a += (Math.random() - .5) * .5;
+      if (depth < 3 && Math.random() < .06) branch(x, y, a + (Math.random() < .5 ? -1 : 1) * (.5 + Math.random() * .6), len * .5, w * .7, depth + 1);
+      if (Math.hypot(x - 512, y - 512) > 505) break;
+    }
+  };
+  for (let k = 0; k < 11; k++) { const a = k / 11 * Math.PI * 2 + Math.random() * .4; branch(512 + Math.cos(a) * 56, 512 + Math.sin(a) * 56, a, 520, 5, 0); }
+  kg.filter = "blur(2px)"; kg.drawImage(kc, 0, 0); kg.filter = "none";
+  const crackTex = new THREE.CanvasTexture(kc);
+  const uCrack = { value: 0 }, uCrackGlow = { value: 0 };
+  const crackMat = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    uniforms: { map: { value: crackTex }, reach: uCrack, glow: uCrackGlow, color: { value: new THREE.Color(GREEN) } },
+    vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }`,
+    fragmentShader: `uniform sampler2D map; uniform float reach; uniform float glow; uniform vec3 color; varying vec2 vUv;
+      void main(){ float d = length(vUv - .5) * 2.; float c = texture2D(map, vUv).r;
+        float shown = smoothstep(reach, reach - .08, d);
+        gl_FragColor = vec4(clamp(color * c * shown * glow, 0., 4.), 1.); }`,
+  });
+  const cracks = new THREE.Mesh(new THREE.CircleGeometry(R_REC, 96), crackMat); cracks.position.z = .0024; record.add(cracks);
+  record.traverse(o => { if (o.isMesh) { o.castShadow = false; o.receiveShadow = true; } });
+  platterNode.add(record);
+  const REC_Z = P_TOP;
+  // the shards it bursts into: wedges of the same record, their broken edges glowing
+  const shards = [];
+  { let a0 = 0; const glowEdge = new THREE.MeshBasicMaterial({ color: 0x39ff88 });
+    while (a0 < Math.PI * 2 - .01) {
+      const a1 = Math.min(Math.PI * 2, a0 + .35 + Math.random() * .5), sh = new THREE.Shape();
+      sh.moveTo(Math.cos(a0) * .012, Math.sin(a0) * .012);
+      const steps = 6; for (let s = 0; s <= steps; s++) { const r = s === 0 || s === steps ? R_REC * (.55 + Math.random() * .2) : R_REC * (.18 + s / steps * .8 + (Math.random() - .5) * .05); sh.lineTo(Math.cos(a0) * r, Math.sin(a0) * r); }
+      for (let s = 0; s <= 12; s++) { const a = lerp(a0, a1, s / 12); sh.lineTo(Math.cos(a) * R_REC, Math.sin(a) * R_REC); }
+      sh.lineTo(Math.cos(a1) * .012, Math.sin(a1) * .012);
+      const geo = new THREE.ExtrudeGeometry(sh, { depth: .002, bevelEnabled: false });
+      const uv = geo.attributes.uv, pos = geo.attributes.position;
+      for (let i = 0; i < uv.count; i++) uv.setXY(i, pos.getX(i) / (R_REC * 2) + .5, pos.getY(i) / (R_REC * 2) + .5);   // the same grooves as the record
+      const m = new THREE.Mesh(geo, [recordMat, glowEdge]); m.visible = false;
+      const mid = (a0 + a1) / 2;
+      m.userData = { dir: new THREE.Vector3(Math.cos(mid), Math.sin(mid), 0), up: .9 + Math.random() * .8, out: .5 + Math.random() * .5, spin: new THREE.Vector3((Math.random() - .5) * 9, (Math.random() - .5) * 9, (Math.random() - .5) * 4) };
+      platterNode.add(m); shards.push(m); a0 = a1;
+    }
+  }
+
+  // the tone arm turns around the pivot (Z), lifts around X; find the angle that puts the needle on the outer tracks
+  armNode.rotation.order = "ZXY";
+  const pivotNode = armNode.parent;
+  const TIP = new THREE.Vector2(.015, -.232);
+  const PIV = new THREE.Vector2(pivotNode.position.x - platterNode.position.x, pivotNode.position.y - platterNode.position.y);
+  let YAW_PLAY = 0;
+  for (let a = 0, best = 9; a < 1.4; a += .002) for (const s of [-1, 1]) {
+    const yaw = a * s, x = TIP.x * Math.cos(yaw) - TIP.y * Math.sin(yaw), y = TIP.x * Math.sin(yaw) + TIP.y * Math.cos(yaw);
+    const d = Math.abs(Math.hypot(PIV.x + x, PIV.y + y) - .132);
+    if (d < best - 1e-4) { best = d; YAW_PLAY = yaw; }
+    if (best < .001) break;
+  }
+  const LIFT_UP = -.13, LIFT_PLAY = -.05;                       // radians around X (negative raises the head)
+
+  /* ---------- the floor, a dim moon from above (for the shadow), three candles ---------- */
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(300, 300), new THREE.MeshStandardMaterial({ color: 0x0a0a0c, roughness: .32, metalness: .55, envMapIntensity: .25 }));
+  floor.rotation.x = -Math.PI / 2; floor.position.y = FLOOR_Y; floor.receiveShadow = true; scene.add(floor);
+  scene.add(new THREE.HemisphereLight(0x8890a0, 0x000000, .05));
+  const key = new THREE.SpotLight(0xbfd0ff, 6, 16, .42, .7, 1.4);
+  key.position.set(-.4, 6, .8); key.target.position.set(.15, 0, 0); scene.add(key, key.target);
+  key.castShadow = true; key.shadow.mapSize.set(mobile ? 512 : 1024, mobile ? 512 : 1024); key.shadow.bias = -.0004; key.shadow.radius = 6;
+  key.shadow.camera.near = 2; key.shadow.camera.far = 12;
+  const greenLight = new THREE.PointLight(0x39ff88, 0, 4, 1.8); greenLight.position.set(0, .35, 0); scene.add(greenLight);
+  // a candle: ivory wax with a soft top, a black wick, a flame (an additive sprite with a hot core) and its light
+  const [fc0, fg0] = canvas2d(64, 128);
+  { const gr = fg0.createRadialGradient(32, 84, 2, 32, 74, 50); gr.addColorStop(0, "rgba(255,250,220,1)"); gr.addColorStop(.25, "rgba(255,200,90,.95)"); gr.addColorStop(.6, "rgba(255,120,20,.35)"); gr.addColorStop(1, "rgba(255,80,0,0)");
+    fg0.fillStyle = gr; fg0.beginPath(); fg0.moveTo(32, 4); fg0.bezierCurveTo(52, 50, 58, 96, 32, 124); fg0.bezierCurveTo(6, 96, 12, 50, 32, 4); fg0.fill(); }
+  const flameTex = texOf(fc0);
+  const wax = new THREE.MeshStandardMaterial({ color: 0xe9dcc4, roughness: .55, emissive: 0x3a1c06, emissiveIntensity: .25 });
+  const wick = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: .9 });
+  const smokeMat = new THREE.SpriteMaterial({ map: soft, color: 0x9a9a9a, transparent: true, opacity: 0, depthWrite: false });
+  const candles = [[-1.75, .62, .95], [1.95, .9, .35], [-1.2, .45, -1.3]].map(([x, h, z], i) => {
+    const g = new THREE.Group(); g.position.set(x, FLOOR_Y, z); scene.add(g);
+    const r = .085 - i * .01;
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(r, r * 1.04, h, 32), wax); body.position.y = h / 2; body.castShadow = true; g.add(body);
+    const lip = new THREE.Mesh(new THREE.TorusGeometry(r * .85, r * .18, 10, 32), wax); lip.rotation.x = Math.PI / 2; lip.position.y = h - r * .05; g.add(lip);
+    const w = new THREE.Mesh(new THREE.CylinderGeometry(.004, .004, .05, 6), wick); w.position.y = h + .02; g.add(w);
+    const flame = new THREE.Sprite(new THREE.SpriteMaterial({ map: flameTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+    flame.center.set(.5, .05); flame.position.y = h + .02; flame.scale.set(.07, .14, 1); g.add(flame);
+    const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: soft, color: 0xff9a40, transparent: true, opacity: .35, depthWrite: false, blending: THREE.AdditiveBlending }));
+    halo.position.y = h + .07; halo.scale.setScalar(.6); g.add(halo);
+    const light = new THREE.PointLight(0xffa04a, 0, 5, 1.6); light.position.y = h + .1; g.add(light);
+    const smoke = Array.from({ length: 6 }, (_, k) => { const s = new THREE.Sprite(smokeMat.clone()); s.position.y = h + .03; s.scale.setScalar(.05); s.userData.k = k; g.add(s); return s; });
+    return { g, flame, halo, light, smoke, h, seed: Math.random() * 10 };
+  });
+
+  /* ---------- a green beam in the haze, for the card ---------- */
+  const beamMat = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+    uniforms: { color: { value: new THREE.Color(0x39ff88) }, strength: { value: 0 }, height: { value: 1 } },
+    vertexShader: `uniform float height; varying float vY; varying vec3 vN; varying vec3 vV;
+      void main(){ vY = position.y / height + .5; vec4 wp = modelMatrix * vec4(position,1.); vN = normalize(mat3(modelMatrix) * normal); vV = normalize(cameraPosition - wp.xyz); gl_Position = projectionMatrix * viewMatrix * wp; }`,
+    fragmentShader: `uniform vec3 color; uniform float strength; varying float vY; varying vec3 vN; varying vec3 vV;
+      void main(){ float y = clamp(vY, 0., 1.);
+        float edge = pow(clamp(abs(dot(normalize(vN), normalize(vV))), 0., 1.), 2.2);
+        float along = (1. - y) * smoothstep(0., .15, y) * (1. - smoothstep(.85, 1., y));
+        gl_FragColor = vec4(clamp(color * strength * edge * along, 0., 4.), 1.); }`,
+  });
+  const beam = new THREE.Mesh(new THREE.CylinderGeometry(.55, .25, 4, 48, 1, true), beamMat);
+  beam.position.set(0, 2, 0); beamMat.uniforms.height.value = 4; scene.add(beam);
+  // dust (green motes) floating up in it
+  const DUST = mobile ? 90 : 200, dPos = new Float32Array(DUST * 3), dSeed = new Float32Array(DUST);
+  for (let i = 0; i < DUST; i++) { const a = Math.random() * 7, r = Math.sqrt(Math.random()) * .5; dPos.set([Math.cos(a) * r, Math.random() * 3, Math.sin(a) * r], i * 3); dSeed[i] = Math.random() * 100; }
+  const dGeo = new THREE.BufferGeometry(); dGeo.setAttribute("position", new THREE.BufferAttribute(dPos, 3));
+  const motes = new THREE.Points(dGeo, new THREE.PointsMaterial({ map: soft, size: .03, color: 0x9dffbf, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }));
+  scene.add(motes); const dBase = dPos.slice();
 
   /* ---------- the card: its face, the cursed sheet over it (which burns), its back ---------- */
   const CW = 1.26, CH = 1.76, TW = 630, TH = 880;
@@ -178,83 +324,83 @@ export async function play(host, card) {
   const [rc, rg] = canvas2d(TW, TH); if (rim) { rg.filter = "invert(1) drop-shadow(0 0 6px #fff)"; rg.drawImage(rim, 0, 0, TW, TH); }
   const rimMesh = new THREE.Mesh(new THREE.PlaneGeometry(CW * 1.02, CH * 1.02), new THREE.MeshBasicMaterial({ color: 0x39ff88, alphaMap: new THREE.CanvasTexture(rc), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
   rimMesh.position.z = .006;
-  cardG.add(face, sheet, back, rimMesh); scene.add(cardG);
+  cardG.add(face, sheet, back, rimMesh); scene.add(cardG); cardG.visible = false;
   const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: soft, color: 0x39ff88, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
   halo.scale.set(3.2, 3.6, 1); scene.add(halo);
 
-  /* ---------- bats ---------- */
-  const [btc, btg] = canvas2d(256, 112); if (bat) btg.drawImage(bat, 0, 0, 256, 112);
-  const batMat = new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(btc), color: 0x000000, transparent: true, depthWrite: false, side: THREE.DoubleSide });
-  const bats = Array.from({ length: mobile ? 7 : 11 }, (_, k) => {
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(.42, .18), batMat); m.visible = false;
-    m.userData = { a: k / 7 * Math.PI * 2 + Math.random(), r: 1.2 + Math.random() * 2.4, y: .6 + Math.random() * 1.8, s: .8 + Math.random() * .7, ph: Math.random() * 6 };
-    scene.add(m); return m;
-  });
 
-  /* ---------- the film ---------- */
+  const CARD_S = .55;                                         // the card at the deck's size
+
+  /* ---------- the film: one continuous camera move ---------- */
   const resize = () => { const w = host.clientWidth || innerWidth, h = host.clientHeight || innerHeight; renderer.setSize(w, h, false); composer?.setSize(w, h); camera.aspect = w / h; camera.updateProjectionMatrix(); };
   resize(); addEventListener("resize", resize);
-  const portrait = () => camera.aspect < .8;
-  const T = 8.4;
-  let raf = 0, t0 = 0, done;
-  const finished = new Promise(r => done = r);
-  const target = new THREE.Vector3(), UP = new THREE.Vector3(0, 1, 0), DOWN_UP = new THREE.Vector3(1, 0, 0);   // from above, the coffin stands upright on the screen and the card reads the right way
-  cardG.rotation.order = "YXZ";                              // lying: turned along the coffin, back up; standing: facing us
-  // three shots: the graveyard (the coffin opens), from above (the card lies face down in the satin), then in front
-  const SHOT2 = 2.5, SHOT3 = 4.3;
-  let last = 0;
+  const portrait = () => camera.aspect < 1.1;
+  const pk = () => portrait() ? Math.min(2.6, 1.15 / Math.max(.4, camera.aspect)) : 1;
+  const camPath = () => {
+    const k = pk(), side = portrait() ? .45 : 1, V = (x, y, z) => new THREE.Vector3(x, y, z);
+    return {
+      p: new THREE.CatmullRomCurve3([V(2.6 * side, .55, 3.1 * k), V(1.9 * side, .95, 2.7 * k), V(1.2 * side, 1.6, 3.2 * k), V(.6 * side, 1.7, 3.6 * k), V(.25 * side, 1.25, 2.9 * k)]),
+      l: new THREE.CatmullRomCurve3([V(-.1, .1, 0), V(0, .08, 0), V(0, .15, 0), V(0, .5, 0), V(0, .95, 0)]),
+    };
+  };
+  let path = camPath(); addEventListener("resize", () => { path = camPath(); });
+  const T = 9.4;
+  const recPos = new THREE.Vector3(), cardEnd = new THREE.Vector3(), flat = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0)), qa = new THREE.Quaternion(), qs = new THREE.Quaternion(), Y = new THREE.Vector3(0, 1, 0);
+  let spinA = 0, last = 0;
   const step = (t, dt = .016) => {
-    const top = t >= SHOT2 && t < SHOT3;                    // the shot from above
-    if (t < SHOT2) {                                         // 1. wide: we come closer to the coffin
-      const app = ease.inOut(seg(t, 0, SHOT2)), far = portrait() ? 14 : 7.2, near = portrait() ? 9.5 : 5;
-      camera.up.copy(UP); camera.position.set(Math.sin(t * .2) * .5, lerp(3.1, 2.4, app), lerp(far, near, app));
-      target.set(0, .45, .1);
-    } else if (t < SHOT3) {                                  // 2. straight above the card, slowly coming down, a slight turn
-      const k = ease.inOut(seg(t, SHOT2, SHOT3)), h = (portrait() ? 5.2 : 3.6) - k * .6;
-      camera.up.copy(DOWN_UP).applyAxisAngle(UP, .12 - k * .2);
-      camera.position.set(0, CARD_Y + h, .1 + .001); target.set(0, CARD_Y, .1);
-    } else {                                                 // 3. in front, low: the card rises and turns to us
-      const push = ease.out(seg(t, 6.6, 7.8)), dist = portrait() ? 8.4 : 5.2;
-      camera.up.copy(UP); camera.position.set(Math.sin(t * .2) * .3, 1.25 + (t - SHOT3) * .04, dist - push * (portrait() ? 1.2 : 1.1));
-      target.set(0, lerp(.9, 1.5, ease.out(seg(t, SHOT3, 5.2))), .45);
-    }
-    camera.lookAt(target);
-    // lightning twice, the coffin rattles, green light leaks out
-    const bolt = Math.max(0, 1 - Math.abs(t - .45) * 14) + Math.max(0, 1 - Math.abs(t - 1.05) * 10) * .7;
-    flash.intensity = bolt * 3; if (bloom) bloom.strength = (top ? .3 : .55) + bolt * .6 + seg(t, 5.7, 6.4) * 1.1 * (1 - seg(t, 6.6, 7.7));
-    const shake = seg(t, .6, 1.5) * (1 - seg(t, 1.45, 1.6));
-    coffin.rotation.z = Math.sin(t * 55) * .01 * shake; coffin.position.y = Math.abs(Math.sin(t * 38)) * .02 * shake;
-    seamMat.opacity = seg(t, .5, 1.3) * (.6 + .4 * Math.sin(t * 20)) * (1 - seg(t, 1.6, 2));
-    // the lid flies open (a little bounce), light and mist pour out
-    const open = seg(t, 1.5, 2.3);
-    lidPivot.rotation.x = -(ease.out(open) * 1.95 - Math.sin(open * Math.PI) * .12 * (open > .7 ? 1 : 0));
-    inner.intensity = ease.out(seg(t, 1.4, 2.2)) * (top ? 1.2 : 4) * (1 - seg(t, 6.4, 7.4) * .5);
-    glow.intensity = seg(t, 1.5, 2.3) * 1.2 + seg(t, 5.6, 6.4) * 5 * (1 - seg(t, 6.6, 7.8));
-    embers.visible = !top; embers.material.opacity = ease.out(seg(t, 1.6, 2.4)) * .9;
-    for (let k = 0; k < EMB; k++) { ePos[k * 3 + 1] += eSpd[k] * dt * (seg(t, 1.6, 2) + seg(t, 5.8, 6.6) * 2); if (ePos[k * 3 + 1] > 3.4) resetEmber(k); }
-    embGeo.attributes.position.needsUpdate = true;
-    for (const s of mist) { s.position.x += s.userData.v * dt; if (Math.abs(s.position.x) > 5) s.userData.v *= -1; }
-    // the card: face down in the satin; it trembles, lifts a little, then rises, spins and stands facing us
-    const tremble = seg(t, 3.2, SHOT3) * (t < SHOT3 ? 1 : 0), lift = ease.inOut(seg(t, 3.7, SHOT3)) * .18;
-    const rise = ease.out(seg(t, SHOT3, 5.2)), stand = ease.inOut(seg(t, SHOT3 + .2, 5.1));
-    cardG.position.set(Math.sin(t * 47) * .008 * tremble, lerp(CARD_Y + lift, 1.55, rise) + Math.sin(t * 2) * .03 * seg(t, 5.2, 5.6), lerp(.1, .45, rise));
-    cardG.rotation.set(lerp(Math.PI / 2, 0, stand) + Math.sin(t * 31) * .02 * tremble, lerp(Math.PI / 2 + Math.PI * 4, 0, ease.out(seg(t, SHOT3, 5.4))), Math.sin(t * 1.6) * .03 * seg(t, 5.2, 6.4));
-    cardG.scale.setScalar(lerp(.6, 1, ease.out(seg(t, SHOT3, 5))) + ease.out(seg(t, 6.6, 7.8)) * .06);   // small enough to lie inside
-    halo.position.copy(cardG.position); halo.position.z -= .25; halo.material.opacity = seg(t, 4.6, 5.2) * .3 + seg(t, 5.6, 6.4) * .5 * (1 - seg(t, 6.8, 8.2));
-    rimMesh.material.opacity = .6 + .4 * Math.sin(t * 9);
-    // the burn
-    uBurn.value = ease.inOut(seg(t, 5.6, 6.8));
-    sheetMat.emissiveIntensity = .8 + seg(t, 5, 5.6) * .5; backMat.emissiveIntensity = top ? .45 : .8;
-    // the bats burst out of the coffin when it opens, and circle away
-    const fly = seg(t, 1.6, 7);
-    bats.forEach(b => {
-      const u = b.userData; b.visible = t > 1.6 && t < 7 && (t < SHOT2 || t > SHOT3);
-      const a = u.a + fly * u.s * 5, r = .2 + ease.out(fly) * u.r * 1.6;
-      b.position.set(Math.cos(a) * r, .5 + (u.y + .4) * ease.out(fly) + fly * 1.2, Math.sin(a) * r * .6 + .4);
-      b.scale.y = .45 + .55 * Math.abs(Math.sin(t * 16 + u.ph)); b.lookAt(camera.position);
+    const u = ease.inOut(clamp01(t / T));
+    camera.position.copy(path.p.getPointAt(u)); camera.lookAt(path.l.getPointAt(u));
+    // candles: alive, then leaning and fluttering as the curse grows, then blown out
+    const out = seg(t, 5.1, 5.35), wind = seg(t, 3.4, 5.1);
+    candles.forEach((c, i) => {
+      const f = .85 + .1 * Math.sin(t * 13 + c.seed) + .06 * Math.sin(t * 29 + c.seed * 3) + wind * .25 * Math.sin(t * 41 + i);
+      const on = (1 - out) * ease.out(seg(t, 0, .6));
+      c.flame.scale.set(.07 * (1 + wind * .3), .14 * f * (1 - out * .9), 1); c.flame.material.opacity = on; c.flame.material.rotation = wind * .35 * Math.sin(t * 7 + i);
+      c.halo.material.opacity = .35 * on * f; c.light.intensity = 2.2 * on * f;
+      c.smoke.forEach(s => { const a = seg(t, 5.3 + s.userData.k * .08, 7.3 + s.userData.k * .1); s.position.y = c.h + .03 + a * .9; s.position.x = Math.sin(a * 6 + s.userData.k) * .06 * a; s.scale.setScalar(.05 + a * .35); s.material.opacity = .22 * Math.sin(a * Math.PI); });
     });
+    // the record drops, the arm lands, the record turns backwards, faster and faster
+    const drop = seg(t, .9, 1.75);
+    record.position.z = lerp(REC_Z + .12, REC_Z, ease.drop(drop)); record.rotation.x = lerp(.3, 0, clamp01(drop * 1.25));
+    armNode.rotation.x = t < 2.2 ? lerp(0, LIFT_UP, ease.out(seg(t, 1.9, 2.2))) : t < 3 ? LIFT_UP : lerp(LIFT_UP, LIFT_PLAY, ease.soft(seg(t, 3, 3.35)));
+    armNode.rotation.z = lerp(0, YAW_PLAY, ease.inOut(seg(t, 2.2, 3)));
+    const speed = seg(t, 3.3, 3.9) * .55 + seg(t, 3.9, 5.6) * 1.6;
+    spinA += speed * Math.PI * 2 * dt; platterNode.rotation.z = spinA;                // backwards: anticlockwise seen from above
+    // the cracks spread, then glow brighter; the record bursts
+    uCrack.value = lerp(.1, 1.05, ease.inOut(seg(t, 3.7, 5.5))); uCrackGlow.value = seg(t, 3.6, 4) * (1.2 + seg(t, 5.1, 5.7) * 2.5);
+    const burst = seg(t, 5.8, 7.6), broken = t >= 5.8;
+    recTop.visible = label.visible = recEdge.visible = cracks.visible = !broken;
+    shards.forEach(s => {
+      s.visible = broken;
+      if (!broken) return;
+      const d = s.userData, tt = burst * 1.8;
+      s.position.copy(d.dir).multiplyScalar(d.out * tt * .35).setZ(REC_Z + d.up * tt * .3 - tt * tt * .08);
+      s.rotation.set(d.spin.x * tt * .4, d.spin.y * tt * .4, d.spin.z * tt * .4);
+    });
+    greenLight.intensity = uCrackGlow.value * 1.4 + Math.max(0, 1 - Math.abs(t - 5.85) * 4) * 14 + seg(t, 6, 7) * 3;
+    key.intensity = 6 * (1 - out * .6);
+    beamMat.uniforms.strength.value = seg(t, 5.8, 6.6) * .7; motes.material.opacity = seg(t, 5.9, 6.8) * .8;
+    for (let i = 0; i < DUST; i++) { dPos[i * 3 + 1] = (dBase[i * 3 + 1] + t * .25 * (1 + (dSeed[i] % 1))) % 3; dPos[i * 3] = dBase[i * 3] + Math.sin(t * .6 + dSeed[i]) * .04; }
+    dGeo.attributes.position.needsUpdate = true;
+    if (bloom) bloom.strength = .45 + uCrackGlow.value * .12 + Math.max(0, 1 - Math.abs(t - 5.85) * 3) * 1.2;
+    // the card rises out of the shards, turning, and stops facing the camera
+    const rise = ease.out(seg(t, 5.9, 7.3));
+    cardG.visible = t >= 5.85;
+    platterNode.getWorldPosition(recPos);
+    const endCam = path.p.getPointAt(ease.inOut(clamp01(7.6 / T)));
+    cardEnd.set(0, 1.0, .1);
+    cardG.position.lerpVectors(recPos.setY(recPos.y + .05), cardEnd, rise); cardG.position.y += Math.sin(t * 2) * .02 * seg(t, 7.3, 7.8);
+    qa.copy(flat).slerp(new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().lookAt(endCam, cardEnd, Y)), Math.min(1, rise * 1.3));
+    qs.setFromAxisAngle(Y, (1 - rise) * Math.PI * 4); cardG.quaternion.copy(qa).multiply(qs);
+    cardG.scale.setScalar(CARD_S * lerp(.35, 1, rise));
+    halo.position.copy(cardG.position); halo.material.opacity = seg(t, 6.3, 7.2) * .35 + seg(t, 7.8, 8.4) * .3 * (1 - seg(t, 8.6, 9.4));
+    halo.scale.set(3.2 * CARD_S, 3.6 * CARD_S, 1);
+    rimMesh.material.opacity = .6 + .4 * Math.sin(t * 9);
+    uBurn.value = ease.inOut(seg(t, 7.7, 8.8)); sheetMat.emissiveIntensity = .8 + seg(t, 7.2, 7.7) * .5;
     draw();
   };
+  let raf = 0, t0 = 0, done;
+  const finished = new Promise(r => done = r);
   const frame = now => {
     if (!t0) t0 = now;
     const t = !host.isConnected ? T : window.__hxT ?? (now - t0) / 1000;   // host gone: skip to the end (__hxT: a frozen instant, for tests)
@@ -262,10 +408,11 @@ export async function play(host, card) {
     if (t < T) raf = requestAnimationFrame(frameSafe); else done();
   };
   const frameSafe = now => { try { frame(now); } catch (e) { done(); throw e; } };
-  // warm-up, out of sight: every shot drawn once (shaders compiled, textures sent to the GPU) before the clock starts
-  canvas.style.visibility = "hidden"; renderer.compile(scene, camera);
-  for (const w of [.3, 2, 3, 4.8, 6.2]) { step(w, 0); await new Promise(r => requestAnimationFrame(r)); }
-  canvas.style.visibility = "";
+  // warm-up, out of sight: every moment drawn once (shaders compiled, textures sent to the GPU) before the clock starts
+  canvas.style.visibility = "hidden";
+  try { await renderer.compileAsync(scene, camera); } catch (e) {}
+  for (const w of [.5, 3.5, 5.9, 7.5, 8.3]) { step(w, 0); await new Promise(r => requestAnimationFrame(r)); }
+  spinA = 0; canvas.style.visibility = "";
   raf = requestAnimationFrame(frameSafe);
   await finished;
   cancelAnimationFrame(raf); removeEventListener("resize", resize);

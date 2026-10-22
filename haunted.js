@@ -140,9 +140,10 @@ Object.assign(Haunted, {
       <div class="hx-bats-s" aria-hidden="true">${"<i></i>".repeat(6)}</div>`;
     el.querySelector(".hx-front").appendChild(hauntedCardEl({ t: c.title, a: c.artist, cov: c.cover, no: c.no, of: c.of }));
     box.appendChild(el); op.classList.add("hx-on");
-    const film = matchMedia("(prefers-reduced-motion: reduce)").matches ? null : import("./haunt3d.js?v=17").catch(() => null);   // loads while the back shakes
-    if (film) ["scene.gltf?v=1", "scene.bin", "textures/coffin1_baseColor.jpg", "textures/phongE3_baseColor.jpg", "textures/phongE4_baseColor.jpg", "textures/phongE4_normal.jpg"]
-      .forEach(f => fetch("brand/3d/coffin/" + f).catch(() => {}));   // the coffin too, so the film starts at once
+    const film = matchMedia("(prefers-reduced-motion: reduce)").matches ? null : import("./haunt3d.js?v=20").catch(() => null);   // loads while the back shakes
+    if (film) { const m = Math.min(innerWidth, innerHeight) < 600 || /Android|iPhone|iPad/.test(navigator.userAgent);   // the turntable too, so the film starts at once
+      (m ? ["turntable-1k.gltf?v=2", "turntable.bin", "base-1k.jpg?v=2", "mr-1k.jpg?v=2", "normal-1k.jpg?v=2"] : ["turntable.gltf?v=2", "turntable.bin", "base.jpg?v=2", "mr.jpg?v=2", "normal.jpg?v=2"])
+        .forEach(f => fetch("brand/3d/" + f).catch(() => {})); }
     $o(".op-sub").textContent = "Carte bonus · Collection Hantée";
     opHint("Une présence hante ce booster… touche la carte");
     OP.step = async () => {
