@@ -418,17 +418,14 @@ body.op-on{overflow:hidden}
 .op-xp{position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:6px;padding:4px 12px;border-radius:999px;white-space:nowrap;
   font:700 .85rem var(--mono);color:#2a1300;background:linear-gradient(90deg,#e8bf62,#ffe2a0);box-shadow:0 0 18px rgba(240,190,90,.6);animation:opXp 2.6s ease-out forwards;pointer-events:none}
 @keyframes opXp{0%{opacity:0;transform:translate(-50%,10px) scale(.8)}12%{opacity:1;transform:translate(-50%,0) scale(1.05)}20%{transform:translate(-50%,0) scale(1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-14px)}}
-/* Shiny Légendaire: holographic waves behind the title, rising faintly over the sleeve */
+/* Shiny Légendaire: holographic sound waves around the sleeve, behind the title */
 @property --wvx{syntax:"<percentage>";inherits:false;initial-value:0%}
 .card.legend.shiny .wv{position:absolute;inset:0;z-index:1;pointer-events:none;mix-blend-mode:screen;
   background:linear-gradient(115deg,#f5c24d,#ff7ac6 18%,#7fd8ff 34%,#b7ff9a 50%,#ffe08a 66%,#ff7ac6 82%,#f5c24d) var(--wvx) 0/300% 100%;
   animation:wvflow 9s linear infinite}
-.card.legend.shiny .wv.a{
+.card.legend.shiny .wv{
   -webkit-mask:repeating-radial-gradient(circle at 50% 36%,transparent 0 3.1cqw,#000 3.3cqw 3.75cqw,transparent 3.95cqw 4.6cqw),linear-gradient(0deg,rgba(0,0,0,.22) 0 16%,#000 36%,rgba(0,0,0,.6) 55%,rgba(0,0,0,.14) 74%);
   -webkit-mask-composite:source-in;mask:repeating-radial-gradient(circle at 50% 36%,transparent 0 3.1cqw,#000 3.3cqw 3.75cqw,transparent 3.95cqw 4.6cqw),linear-gradient(0deg,rgba(0,0,0,.22) 0 16%,#000 36%,rgba(0,0,0,.6) 55%,rgba(0,0,0,.14) 74%);mask-composite:intersect}
-.card.legend.shiny .wv.b{
-  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='14'%3E%3Cpath d='M0 7 C15 0 15 0 30 7 S45 14 60 7' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E") 0 0/12cqw 2.8cqw,linear-gradient(0deg,rgba(0,0,0,.22) 0 16%,#000 36%,rgba(0,0,0,.6) 55%,rgba(0,0,0,.14) 74%);
-  -webkit-mask-composite:source-in;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='14'%3E%3Cpath d='M0 7 C15 0 15 0 30 7 S45 14 60 7' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E") 0 0/12cqw 2.8cqw,linear-gradient(0deg,rgba(0,0,0,.22) 0 16%,#000 36%,rgba(0,0,0,.6) 55%,rgba(0,0,0,.14) 74%);mask-composite:intersect}
 @keyframes wvflow{to{--wvx:300%}}
 .card.legend.shiny .lfoot{filter:drop-shadow(0 .4cqw 1.2cqw #000)}
 @media (prefers-reduced-motion:reduce){.card.legend.shiny .wv{animation:none}}
