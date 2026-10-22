@@ -233,7 +233,7 @@ export async function play(host, card) {
     const tremble = seg(t, 3.2, SHOT3) * (t < SHOT3 ? 1 : 0), lift = ease.inOut(seg(t, 3.7, SHOT3)) * .18;
     const rise = ease.out(seg(t, SHOT3, 5.2)), stand = ease.inOut(seg(t, SHOT3 + .2, 5.1));
     cardG.position.set(Math.sin(t * 47) * .008 * tremble, lerp(CARD_Y + lift, 1.55, rise) + Math.sin(t * 2) * .03 * seg(t, 5.2, 5.6), lerp(.1, .45, rise));
-    cardG.rotation.set(lerp(Math.PI / 2, 0, stand) + Math.sin(t * 31) * .02 * tremble, lerp(Math.PI / 2 + Math.PI * 4, 0, ease.out(seg(t, SHOT3, 5.4))), Math.sin(t * 1.6) * .03 * seg(t, 5.2, 6.4));
+    cardG.rotation.set(lerp(Math.PI / 2, 0, stand) + Math.sin(t * 31) * .02 * tremble, lerp(Math.PI * 4, 0, ease.out(seg(t, SHOT3, 5.4))), Math.sin(t * 1.6) * .03 * seg(t, 5.2, 6.4));
     cardG.scale.setScalar(lerp(.6, 1, ease.out(seg(t, SHOT3, 5))) + ease.out(seg(t, 6.6, 7.8)) * .06);   // small enough to lie inside
     halo.position.copy(cardG.position); halo.position.z -= .25; halo.material.opacity = seg(t, 4.6, 5.2) * .3 + seg(t, 5.6, 6.4) * .5 * (1 - seg(t, 6.8, 8.2));
     rimMesh.material.opacity = .6 + .4 * Math.sin(t * 9);
