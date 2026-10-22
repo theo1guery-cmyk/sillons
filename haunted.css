@@ -173,3 +173,23 @@
 
 /* while the 3D film plays, nothing else on the page is painted (its animations and blurs cost frames) */
 body.hx3d-on > *:not(.hx3d){visibility:hidden}
+
+/* graded, listened to, sold: the sheet of a copy, the board and the collection strip */
+.hx-view{overflow-y:auto;align-content:start;padding-top:max(24px,env(safe-area-inset-top))}
+.hx-view .hx-r-card{width:min(280px,64vw,38vh)}
+.hx-view .hx-r-card .slab-box{width:100%}
+.hx-acts{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:6px;max-width:440px}
+.hx-onsale{flex-basis:100%;margin:0;color:#ffd29a;font-size:.9rem}
+.hx-sellf{display:grid;gap:8px;justify-items:center;max-width:340px;padding:12px;border-radius:14px;background:rgba(255,255,255,.05);box-shadow:inset 0 0 0 1px rgba(57,255,136,.25)}
+.hx-sellf label{display:grid;gap:4px;font-size:.8rem;color:#c9a6e0}
+.hx-sellf input{width:180px;padding:8px 10px;border-radius:10px;border:1px solid rgba(57,255,136,.4);background:#0b0710;color:#fff;font:600 1rem var(--mono);text-align:center}
+.hx-sellf small{color:var(--muted);font-size:.72rem}
+.hx-close{margin-top:4px}
+.hx-card.tap{cursor:pointer}
+.hx-owners button{all:unset;cursor:pointer;display:block;width:100%;padding:1px 2px;border-radius:4px}
+.hx-owners button:hover,.hx-owners button:focus-visible{background:rgba(255,255,255,.06)}
+.hx-owners .hx-g{font:800 .68rem var(--mono);font-style:normal;padding:0 4px;border-radius:4px;background:linear-gradient(180deg,#f2d27e,#c9962f);color:#3a2604}
+.hx-owners .hx-price{display:block;font:600 .68rem var(--mono);font-style:normal;color:#39ff88}
+.hx-mine-c{position:relative}
+.hx-tag{position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);white-space:nowrap;padding:2px 8px;border-radius:999px;background:#0e2a18;box-shadow:inset 0 0 0 1px #39ff88;color:#b8ffcf;font:600 .62rem var(--mono)}
+.hx-onsale b{font:700 1rem var(--mono);background:none;color:#39ff88;-webkit-text-fill-color:#39ff88}
