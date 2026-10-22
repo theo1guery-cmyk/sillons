@@ -874,7 +874,7 @@ async function opGo() {
   try { await s(); } finally { OP.busy = false; }
 }
 function opCards(pulls) {
-  OP.pulls = pulls; OP.i = -1; OP.seen = -1;
+  OP.pulls = pulls; OP.i = -1; OP.seen = -1; OP.haunted = pulls.haunted || null; OP.hDone = false;
   opPhase("cards");
   const best = Math.max(...pulls.map(pl => pl.c.tier));
   op.style.setProperty("--best", RCOL[best]);
@@ -889,7 +889,7 @@ function opNext() {
     mini.appendChild(cardEl(pl.c, pl.holo)); $o(".op-tray").appendChild(mini);
   }
   OP.i++;
-  if (OP.i >= pulls.length) return opRecap();
+  if (OP.i >= pulls.length) return OP.haunted && !OP.hDone ? window.Haunted.inPack(OP) : opRecap();
   const pl = pulls[OP.i], slot = slotEl(pl, OP.i); slot.classList.add("solo-card");
   const f = slot.querySelector(".flip"); f.onclick = null; f.tabIndex = -1;
   box.appendChild(slot);
@@ -927,9 +927,11 @@ async function opRecap(from) {
     try { for (let i = from; i < pulls.length; i++) { await flips[i].reveal(); await wait(pulls[i].c.tier >= 3 ? 320 : 180); } }
     finally { OP.busy = false; op.classList.remove("flipping"); }
   }
+  if (OP.haunted) await window.Haunted.inRecap(OP, rc);       // the haunted copy, last of the booster
   const fresh = pulls.filter(pl => pl.isNew).length, best = pulls.reduce((a, b) => b.c.tier > a.c.tier ? b : a);
   $o(".op-title").textContent = "Booster ouvert";
-  $o(".op-sub").textContent = `${fresh} nouvelle${fresh > 1 ? "s" : ""} carte${fresh > 1 ? "s" : ""} · meilleure : ${rarName(best.c)}`;
+  $o(".op-sub").textContent = OP.haunted ? `🦇 Une carte de la Collection Hantée : ${OP.haunted.title} · N° ${String(OP.haunted.no).padStart(String(OP.haunted.of).length, "0")}/${OP.haunted.of} !`
+    : `${fresh} nouvelle${fresh > 1 ? "s" : ""} carte${fresh > 1 ? "s" : ""} · meilleure : ${rarName(best.c)}`;
   opHint("Touche une carte pour la voir en grand");
   $o(".op-again").disabled = !canOpen(OP.p) && !(OP.p.g < 0 && TEST_MODE);
 }
@@ -1035,7 +1037,6 @@ async function openPack(p, opts = {}) {
     for (const pl of pulls) if (Stage.isHit(pl)) Stage.warm(pl);   // the hits' tracks load while the first cards flip
     window.V2?.pulls(pulls);
     if (pulls.pumpkins) toast(`+${pulls.pumpkins} 🎃 cachées dans ce booster !`);
-    if (pulls.haunted) await window.Haunted?.reveal(pulls.haunted);
     const xp = window.packXp?.(p, god);
     if (xp) { const t = document.createElement("span"); t.className = "op-xp"; t.textContent = `+${xp} XP`; $o(".op-head").appendChild(t); setTimeout(() => t.remove(), 2600); }
     if (god && !reduceMotion()) {                   // the GOD pack keeps its own film, then the booster laid out
@@ -1464,6 +1465,7 @@ $("#tableBack").onclick = unseatTable;
 /* ---------- binder ---------- */
 const F = { g: -1, r: -1, sort: "recent", q: "", tag: null };
 function renderBinder() {
+  window.drawMyHaunted?.();
   const all = owned();
   const pg = $("#prog");
   const rows = [{ g: -1, n: "Tout", h: 42 }].concat(TYPES.map((t, g) => ({ g, n: t.n, h: t.h })));
