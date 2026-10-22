@@ -1,6 +1,6 @@
-/* Zik Hunter — the reveal of a Collection Hantée card in 3D: a graveyard in green fog, a magic circle lights up on
-   the ground, the cursed card rises out of it spinning, bats burst out, then green fire eats its cover and the card
-   shows. Loaded only when a booster holds such a card. play() resolves when the film is over; the page then shows
+/* Zik Hunter — the reveal of a Collection Hantée card in 3D: a graveyard in green fog, lightning, a coffin rattles,
+   green light leaks out, its lid flies open, bats burst out, the cursed card rises out of it spinning, then green
+   fire eats its cover and the card shows. Loaded only when a booster holds such a card. play() resolves when the film is over; the page then shows
    the HTML card in its place. */
 const CDN = "https://cdn.jsdelivr.net/npm/three@0.160.0/";
 const [THREE, { EffectComposer }, { RenderPass }, { UnrealBloomPass }, { OutputPass }] = await Promise.all([
@@ -42,7 +42,7 @@ export async function play(host, card) {
   await document.fonts?.ready;
 
   /* ---------- the ground, the graves, the moon ---------- */
-  scene.add(new THREE.AmbientLight(0x1a3a28, .6));
+  scene.add(new THREE.AmbientLight(0x1a3a28, 1.1));
   const moon = new THREE.DirectionalLight(0x9fffd0, 1.1); moon.position.set(-3, 6, -4); scene.add(moon);
   const glow = new THREE.PointLight(0x39ff88, 0, 9, 1.6); glow.position.set(0, .4, 0); scene.add(glow);
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.MeshStandardMaterial({ color: 0x06100a, roughness: .38, metalness: .25 }));
@@ -66,23 +66,49 @@ export async function play(host, card) {
   const moonSpr = new THREE.Sprite(new THREE.SpriteMaterial({ map: texOf(mc), transparent: true, depthWrite: false, fog: false }));
   moonSpr.material.opacity = .7; moonSpr.position.set(-3.4, 4.6, -10); moonSpr.scale.setScalar(2.4); scene.add(moonSpr);
 
-  /* ---------- the magic circle, the pillar of light ---------- */
-  const [cc, cg] = canvas2d(1024, 1024);
-  cg.translate(512, 512); cg.strokeStyle = GREEN; cg.fillStyle = GREEN; cg.shadowColor = GREEN; cg.shadowBlur = 18;
-  for (const [r, w] of [[480, 10], [440, 4], [300, 6], [270, 3]]) { cg.lineWidth = w; cg.beginPath(); cg.arc(0, 0, r, 0, 7); cg.stroke(); }
-  cg.lineWidth = 5; cg.beginPath();
-  for (let k = 0; k <= 5; k++) { const a = -Math.PI / 2 + k * 4 * Math.PI / 5; cg[k ? "lineTo" : "moveTo"](Math.cos(a) * 430, Math.sin(a) * 430); }
-  cg.stroke();
-  cg.font = "bold 46px serif"; cg.textAlign = "center"; cg.textBaseline = "middle";
-  const runes = "ᚠᚢᚦᚨᚱᚲᚷᚹᚺᚾᛁᛃᛇᛈᛉᛊᛏᛒᛖᛗᛚᛜᛞᛟ";
-  for (let k = 0; k < 24; k++) { cg.save(); cg.rotate(k * Math.PI / 12); cg.fillText(runes[k], 0, -372); cg.restore(); }
-  const circle = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 3.4), new THREE.MeshBasicMaterial({ map: texOf(cc), transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
-  circle.rotation.x = -Math.PI / 2; circle.position.y = .01; scene.add(circle);
-  const [pc, pg] = canvas2d(64, 256);
-  const pgr = pg.createLinearGradient(0, 256, 0, 0); pgr.addColorStop(0, "rgba(120,255,170,.9)"); pgr.addColorStop(1, "rgba(120,255,170,0)");
-  pg.fillStyle = pgr; pg.fillRect(0, 0, 64, 256);
-  const pillar = new THREE.Mesh(new THREE.CylinderGeometry(.8, 1.1, 5, 48, 1, true), new THREE.MeshBasicMaterial({ map: texOf(pc), transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.BackSide }));   // only its far wall: the light stays behind the card
-  pillar.position.y = 2.5; scene.add(pillar);
+  /* ---------- the coffin: lacquered wood, brass handles and cross, violet satin inside, the lid on a hinge ---------- */
+  const [wc, wg] = canvas2d(512, 1024);                     // dark mahogany, its grain along the length
+  wg.fillStyle = "#2a0f0a"; wg.fillRect(0, 0, 512, 1024);
+  for (let k = 0; k < 140; k++) {
+    const x = Math.random() * 512, w = 1 + Math.random() * 5, v = Math.random();
+    wg.strokeStyle = v < .5 ? `rgba(10,3,2,${.2 + v * .5})` : `rgba(120,50,30,${(v - .5) * .35})`; wg.lineWidth = w;
+    wg.beginPath(); wg.moveTo(x, 0);
+    for (let y = 0; y <= 1024; y += 32) wg.lineTo(x + Math.sin(y * .012 + k) * 6 + Math.sin(y * .05 + k * 3) * 2, y);
+    wg.stroke();
+  }
+  const woodTex = texOf(wc); woodTex.wrapS = woodTex.wrapT = THREE.RepeatWrapping; woodTex.repeat.set(1.6, .9);
+  const wood = new THREE.MeshPhysicalMaterial({ map: woodTex, roughness: .42, metalness: .05, clearcoat: .8, clearcoatRoughness: .25 });
+  const brass = new THREE.MeshStandardMaterial({ color: 0xb8892f, metalness: 1, roughness: .32 });
+  const satin = new THREE.MeshStandardMaterial({ color: 0x3b1252, roughness: .38, metalness: .1, emissive: 0x1a0626, side: THREE.DoubleSide });
+  const outline = (k = 1) => { const sh = new THREE.Shape(), P = [[-.3, -1.1], [.3, -1.1], [.44, -.48], [.24, 1.1], [-.24, 1.1], [-.44, -.48]];
+    P.forEach(([x, z], n) => sh[n ? "lineTo" : "moveTo"](x * k, z * k)); sh.closePath(); return sh; };
+  const slab = (sh, depth, bevel = 0) => { const g = new THREE.ExtrudeGeometry(sh, { depth, bevelEnabled: bevel > 0, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 2, curveSegments: 4 }); g.rotateX(Math.PI / 2); g.translate(0, depth, 0); return g; };
+  const coffin = new THREE.Group();
+  const H = .46, walls = outline(); walls.holes.push(outline(.86));
+  coffin.add(new THREE.Mesh(slab(outline(), .05), wood));
+  const wallMesh = new THREE.Mesh(slab(walls, H), wood); coffin.add(wallMesh);
+  const lining = new THREE.Mesh(slab(outline(.85), .02), satin); lining.position.y = .05; coffin.add(lining);
+  const liningWalls = new THREE.Mesh(slab((() => { const w = outline(.86); w.holes.push(outline(.8)); return w; })(), H - .06), satin); liningWalls.position.y = .05; coffin.add(liningWalls);
+  for (const z of [-.6, .2]) for (const x of [-1, 1]) {           // the brass handles on the sides
+    const h = new THREE.Mesh(new THREE.TorusGeometry(.07, .014, 8, 20, Math.PI), brass); h.rotation.set(0, x > 0 ? Math.PI / 2 : -Math.PI / 2, Math.PI);
+    h.position.set(x * (.42 - (z > 0 ? .07 : 0)), H * .55, z); coffin.add(h);
+  }
+  // the green light leaking out between the lid and the box
+  const seamMat = new THREE.MeshBasicMaterial({ color: 0x39ff88, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
+  const seam = new THREE.Mesh(slab((() => { const w = outline(1.01); w.holes.push(outline(.97)); return w; })(), .012), seamMat); seam.position.y = H; coffin.add(seam);
+  const lidPivot = new THREE.Group(); lidPivot.position.set(-.45, H + .012, 0); coffin.add(lidPivot);
+  const lid = new THREE.Group(); lid.position.x = .45; lidPivot.add(lid);
+  lid.add(new THREE.Mesh(slab(outline(1.03), .06, .015), wood));
+  const lidLining = new THREE.Mesh(slab(outline(.9), .01), satin); lidLining.position.y = -.012; lid.add(lidLining);   // the satin under the lid
+  const panel = new THREE.Mesh(slab(outline(.82), .03, .01), wood); panel.position.y = .06; lid.add(panel);
+  const crossV = new THREE.Mesh(new THREE.BoxGeometry(.06, .025, .7), brass); crossV.position.set(0, .105, -.25); lid.add(crossV);
+  const crossH = new THREE.Mesh(new THREE.BoxGeometry(.36, .025, .06), brass); crossH.position.set(0, .105, -.42); lid.add(crossH);
+  coffin.scale.setScalar(1.18); coffin.rotation.y = -Math.PI / 2; coffin.position.set(0, 0, .1);   // lying across, the hinge at the back: the lid opens away from us
+  coffin.traverse(o => { if (o.isMesh) o.castShadow = true; });
+  const key = new THREE.SpotLight(0xd8ffe8, 8, 12, .5, .6, 1.2); key.position.set(1.5, 4.5, 3.5); key.target = coffin; scene.add(key);
+  scene.add(coffin);
+  const inner = new THREE.PointLight(0x39ff88, 0, 5, 1.6); inner.position.set(0, .35, .1); scene.add(inner);
+  const flash = new THREE.HemisphereLight(0xbfffe0, 0x0a1a10, 0); scene.add(flash);   // the lightning
 
   /* ---------- mist and embers ---------- */
   const [sc, sg] = canvas2d(128, 128);
@@ -96,7 +122,7 @@ export async function play(host, card) {
     s.material.opacity = .09; s.userData.v = (Math.random() - .5) * .25; scene.add(s); mist.push(s);
   }
   const EMB = mobile ? 90 : 180, ePos = new Float32Array(EMB * 3), eSpd = new Float32Array(EMB);
-  const resetEmber = (k, y) => { const a = Math.random() * 7, r = Math.random() * 1.3; ePos[k * 3] = Math.cos(a) * r; ePos[k * 3 + 1] = y ?? Math.random() * .3; ePos[k * 3 + 2] = Math.sin(a) * r; eSpd[k] = .4 + Math.random() * .9; };
+  const resetEmber = (k, y) => { const a = Math.random() * 7, r = Math.random() * .5; ePos[k * 3] = Math.cos(a) * r; ePos[k * 3 + 1] = y ?? Math.random() * .3; ePos[k * 3 + 2] = Math.sin(a) * r; eSpd[k] = .4 + Math.random() * .9; };
   for (let k = 0; k < EMB; k++) resetEmber(k, Math.random() * 3);
   const embGeo = new THREE.BufferGeometry(); embGeo.setAttribute("position", new THREE.BufferAttribute(ePos, 3));
   const embers = new THREE.Points(embGeo, new THREE.PointsMaterial({ map: soft, color: 0x7dffb0, size: .09, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
@@ -177,42 +203,49 @@ export async function play(host, card) {
   const resize = () => { const w = host.clientWidth || innerWidth, h = host.clientHeight || innerHeight; renderer.setSize(w, h, false); composer.setSize(w, h); camera.aspect = w / h; camera.updateProjectionMatrix(); };
   resize(); addEventListener("resize", resize);
   const portrait = () => camera.aspect < .8;
-  const T = 6.2;
+  const T = 7.6;
   let raf = 0, t0 = 0, done;
   const finished = new Promise(r => done = r);
+  const target = new THREE.Vector3();
   const frame = now => {
     if (!t0) t0 = now;
     const t = !host.isConnected ? T : window.__hxT ?? (now - t0) / 1000;   // host gone: skip to the end (__hxT: a frozen instant, for tests)
-    const dist = portrait() ? 8.2 : 6;
-    const push = ease.inOut(seg(t, 0, 3)) * .9 + ease.out(seg(t, 4.4, 5.6)) * (portrait() ? 1.6 : 1.3);
-    camera.position.set(Math.sin(t * .15) * .6, 1.55 + .15 * Math.sin(t * .4), dist - push);
-    camera.lookAt(0, 1.3, 0);
-    const lit = ease.out(seg(t, .1, 1.1));
-    circle.material.opacity = lit * (.85 + .15 * Math.sin(t * 6)); circle.rotation.z = t * .25;
-    pillar.material.opacity = ease.soft(seg(t, .6, 1.6)) * .16 * (1 - seg(t, 3, 4.4) * .7);
-    glow.intensity = lit * 2.5 + seg(t, 3.2, 4.2) * 5 * (1 - seg(t, 4.4, 5.6));
-    embers.material.opacity = lit * .9;
-    for (let k = 0; k < EMB; k++) { ePos[k * 3 + 1] += eSpd[k] * .016 * (1 + seg(t, 3.4, 4.4) * 2); if (ePos[k * 3 + 1] > 3.4) resetEmber(k); }
+    const rise = ease.inOut(seg(t, 2.3, 3.9));
+    // the camera comes to the coffin, then follows the card up
+    const far = portrait() ? 9.5 : 7.2, near = portrait() ? 5.6 : 4.2;
+    const app = ease.inOut(seg(t, 0, 2.4)), up = ease.inOut(seg(t, 2.3, 4)), push = ease.out(seg(t, 5.2, 6.6));
+    camera.position.set(Math.sin(t * .2) * .5, lerp(lerp(3.1, 2.6, app), 1.75, up), lerp(far, near + 1, app) - up * 1 - push * (portrait() ? 1.4 : 1));
+    target.set(0, lerp(.4, 1.55, up), lerp(.1, .45, up)); camera.lookAt(target);
+    // lightning twice, the coffin rattles, green light leaks out
+    const bolt = Math.max(0, 1 - Math.abs(t - .45) * 14) + Math.max(0, 1 - Math.abs(t - 1.05) * 10) * .7;
+    flash.intensity = bolt * 3; bloom.strength = .55 + bolt * .6 + seg(t, 4.3, 5) * 1.1 * (1 - seg(t, 5.2, 6.3));
+    const shake = seg(t, .6, 1.5) * (1 - seg(t, 1.45, 1.6));
+    coffin.rotation.x = Math.sin(t * 55) * .012 * shake; coffin.position.y = Math.abs(Math.sin(t * 38)) * .02 * shake;
+    seamMat.opacity = seg(t, .5, 1.3) * (.6 + .4 * Math.sin(t * 20)) * (1 - seg(t, 1.6, 2));
+    // the lid flies open (a little bounce), light and mist pour out
+    const open = seg(t, 1.5, 2.3);
+    lidPivot.rotation.z = (ease.out(open) * 2.05 - Math.sin(open * Math.PI) * .12 * (open > .7 ? 1 : 0));
+    inner.intensity = ease.out(seg(t, 1.4, 2.2)) * 7 * (1 - seg(t, 5, 6) * .5);
+    glow.intensity = seg(t, 1.5, 2.3) * 2.5 + seg(t, 4.2, 5) * 5 * (1 - seg(t, 5.2, 6.4));
+    embers.material.opacity = ease.out(seg(t, 1.6, 2.4)) * .9;
+    for (let k = 0; k < EMB; k++) { ePos[k * 3 + 1] += eSpd[k] * .016 * (seg(t, 1.6, 2) + seg(t, 4.4, 5.2) * 2); if (ePos[k * 3 + 1] > 3.4) resetEmber(k); }
     embGeo.attributes.position.needsUpdate = true;
     for (const s of mist) { s.position.x += s.userData.v * .016; if (Math.abs(s.position.x) > 5) s.userData.v *= -1; }
-    // the card rises spinning, slows down facing us, hovers
-    const rise = ease.out(seg(t, .7, 2.6));
-    cardG.position.set(0, lerp(-.9, 1.35, rise) + Math.sin(t * 2) * .03 * seg(t, 2.6, 3), 0);
-    const spin = 1 - ease.out(seg(t, .7, 2.8));
-    cardG.rotation.set(0, spin * Math.PI * 6, Math.sin(t * 1.6) * .03);
-    cardG.scale.setScalar(lerp(.55, 1, rise) * (1 + ease.out(seg(t, 4.3, 5.4)) * .08));
-    halo.position.copy(cardG.position); halo.position.z -= .2; halo.material.opacity = rise * .35 + seg(t, 3.2, 4.2) * .5 * (1 - seg(t, 4.6, 6));
+    // the card: lying in the coffin, it rises, turns twice and stands facing us
+    cardG.position.set(0, lerp(.42, 1.55, rise) + Math.sin(t * 2) * .03 * seg(t, 3.9, 4.3), lerp(.1, .45, rise));
+    cardG.rotation.set(lerp(-Math.PI / 2, 0, ease.out(seg(t, 2.3, 3.4))), (1 - ease.out(seg(t, 2.3, 4))) * Math.PI * 4, lerp(Math.PI / 2, 0, ease.out(seg(t, 2.3, 3.2))) + Math.sin(t * 1.6) * .03 * seg(t, 3.9, 5));
+    cardG.scale.setScalar(.82 + rise * .18 + ease.out(seg(t, 5.2, 6.4)) * .06);
+    halo.position.copy(cardG.position); halo.position.z -= .25; halo.material.opacity = seg(t, 1.8, 2.6) * .3 + seg(t, 4.2, 5) * .5 * (1 - seg(t, 5.4, 6.8));
     rimMesh.material.opacity = .6 + .4 * Math.sin(t * 9);
     // the burn
-    uBurn.value = ease.inOut(seg(t, 3.2, 4.5));
-    sheetMat.emissiveIntensity = .8 + seg(t, 2.6, 3.2) * .5;
-    bloom.strength = .55 + seg(t, 3.6, 4.3) * 1.1 * (1 - seg(t, 4.5, 5.6));
-    // the bats burst out of the card and circle away
-    const fly = seg(t, 2.7, 6.2);
-    bats.forEach((b, k) => {
-      const u = b.userData; b.visible = t > 2.7 && t < 6.2;
+    uBurn.value = ease.inOut(seg(t, 4.2, 5.4));
+    sheetMat.emissiveIntensity = .8 + seg(t, 3.6, 4.2) * .5;
+    // the bats burst out of the coffin when it opens, and circle away
+    const fly = seg(t, 1.6, 6.6);
+    bats.forEach(b => {
+      const u = b.userData; b.visible = t > 1.6 && t < 6.6;
       const a = u.a + fly * u.s * 5, r = .2 + ease.out(fly) * u.r * 1.6;
-      b.position.set(Math.cos(a) * r, cardG.position.y + (u.y - 1.3) * ease.out(fly) + fly * 1.2, Math.sin(a) * r * .6 + .4);
+      b.position.set(Math.cos(a) * r, .5 + (u.y + .4) * ease.out(fly) + fly * 1.2, Math.sin(a) * r * .6 + .4);
       b.scale.y = .45 + .55 * Math.abs(Math.sin(t * 16 + u.ph)); b.lookAt(camera.position);
     });
     composer.render();
