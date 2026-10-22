@@ -374,8 +374,9 @@ export async function play(host, card) {
       s.visible = broken;
       if (!broken) return;
       const d = s.userData, tt = burst * 1.8;
-      s.position.copy(d.dir).multiplyScalar(d.out * tt * .09).setZ(REC_Z + Math.max(0, d.up * tt * .1 - tt * tt * .045));
-      s.rotation.set(d.spin.x * tt * .25, d.spin.y * tt * .25, d.spin.z * tt * .3);
+      const k = Math.min(1, tt * 1.4);   // the record is ~1.3 units wide in the world: pieces jump a little and fall back on the platter
+      s.position.copy(d.dir).multiplyScalar(d.out * ease.out(k) * .022).setZ(REC_Z + Math.sin(k * Math.PI) * d.up * .018 + k * .001);
+      s.rotation.set(d.spin.x * .012 * ease.out(k), d.spin.y * .012 * ease.out(k), d.spin.z * .03 * ease.out(k));
     });
     greenLight.intensity = uCrackGlow.value * 1.2 + Math.max(0, 1 - Math.abs(t - 5.85) * 4) * 9 + seg(t, 6, 7) * 1.2;
     key.intensity = 6 * (1 - out * .6);
