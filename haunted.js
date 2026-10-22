@@ -4,18 +4,19 @@
 function hauntedCardEl(c) {
   const one = c.of === 1, no = c.no === "?" ? "?" : String(c.no).padStart(String(c.of).length, "0");
   const el = document.createElement("div"); el.className = "hcard" + (one ? " one" : "");
-  el.innerHTML = `<div class="hc-in">
-      <div class="hc-sky"></div>
-      <div class="hc-win"><img class="hc-art" src="${esc(c.cov)}" alt="Pochette de ${esc(c.t)}" loading="lazy" decoding="async"><div class="hc-fog"></div></div>
-      <div class="hc-bats" aria-hidden="true"><i></i><i></i><i></i></div>
-      <div class="hc-web l" aria-hidden="true"></div><div class="hc-web r" aria-hidden="true"></div>
-      <div class="hc-head"><span>Collection hantée</span><span class="hc-pk" aria-hidden="true">🎃</span></div>
+  el.innerHTML = `<div class="hc-glow" aria-hidden="true"></div>
+    <div class="hc-paper">
+      <img class="hc-art" src="${esc(c.cov)}" alt="Pochette de ${esc(c.t)}" loading="lazy" decoding="async">
+      <div class="hc-tint" aria-hidden="true"></div><div class="hc-char" aria-hidden="true"></div><div class="hc-smoke" aria-hidden="true"><i></i><i></i></div>
+      <div class="hc-head"><span>Collection hantée</span>${one ? `<span class="hc-uniq">Unique</span>` : ""}</div>
       <div class="hc-foot">
         <div class="hc-a">${esc(c.a)}</div>
-        <div class="hc-t">${esc(c.t)}</div>
+        <div class="hc-t${c.t.length > 18 ? " xlong" : c.t.length > 10 ? " long" : ""}">${esc(c.t)}</div>
         <div class="hc-row"><span>Halloween ${c.year || 2026}</span><b class="hc-no"><small>N°</small>${no}<em>/${c.of}</em></b></div>
       </div>
-    </div>`;
+    </div>
+    <div class="hc-rim" aria-hidden="true"></div>
+    <div class="hc-embers" aria-hidden="true">${"<i></i>".repeat(9)}</div>`;
   const w = document.createElement("div"); w.className = "cq"; w.appendChild(el);
   return w;
 }
@@ -74,7 +75,7 @@ async function drawHaunted(box) {
 }
 
 /* the announcement of the Collection Hantée: stories (event-intro.js), once per player, after the Halloween one */
-const HXI = { shown: false, KEY: "zh-haunted-intro-2026" };
+const HXI = { shown: false, KEY: "zh-haunted-intro-2026-v2" };   // v2: shown again with the new cards
 function hauntedIntroMaybe() {
   if (HXI.shown || typeof EVENT === "undefined" || EVENT.on !== "halloween" || !Online.active || !me) return;
   try { if (localStorage.getItem(HXI.KEY) || !localStorage.getItem("zh-event-intro-halloween-2026")) return; } catch (e) { return; }
