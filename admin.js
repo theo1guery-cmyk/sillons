@@ -281,9 +281,10 @@ async function showUser(u) {
   const box = $("#admDetail");
   box.innerHTML = `<h3>${esc(u.pseudo)}</h3><p class="empty-line">Chargement de la fiche…</p>`;
   let d;
-  let gifts = {}, given = [], pass = null;
-  try { [d, gifts, given, pass] = await Promise.all([rpc("admin_user", { p_user: u.id }), rpc("admin_gifts", { p_user: u.id }).catch(() => ({})),
-    rpc("admin_gifted_cards", { p_user: u.id }).catch(() => []), rpc("admin_season_get", { p_user: u.id }).catch(() => null)]); }
+  let gifts = {}, given = [], pass = null, pumpkins = null;
+  try { [d, gifts, given, pass, pumpkins] = await Promise.all([rpc("admin_user", { p_user: u.id }), rpc("admin_gifts", { p_user: u.id }).catch(() => ({})),
+    rpc("admin_gifted_cards", { p_user: u.id }).catch(() => []), rpc("admin_season_get", { p_user: u.id }).catch(() => null),
+    rpc("admin_pumpkins_get", { p_user: u.id }).catch(() => null)]); }
   catch (e) { box.innerHTML = `<p class="empty-line">${esc(message(e))}</p>`; return; }
   if (ADM.sel !== u.id) return;
   const god = !!gifts.god, gift = gifts.card;
@@ -296,6 +297,7 @@ async function showUser(u) {
       ${row("Dernière activité", u.online ? "en ligne" : esc(ago(u.active_at)))}
       ${row("Streams", fmt(u.streams))}
       ${pass ? row("Vinyles", fmt(pass.vinyls ?? 0)) : ""}
+      ${pumpkins != null ? row("Citrouilles 🎃", fmt(pumpkins)) : ""}
       ${row("Boosters en stock", fmt(u.stock))}
       ${row("Boosters ouverts", fmt(u.opened) + (u.gods ? ` · ${u.gods} GOD pack${u.gods > 1 ? "s" : ""}` : ""))}
       ${row("Cartes", fmt(d.cards))}
@@ -320,6 +322,10 @@ async function showUser(u) {
         <div class="adm-row"><input type="number" step="1" placeholder="+100 ou -100" aria-label="Nombre de Vinyles" required>
           <input maxlength="100" placeholder="Raison" aria-label="Raison"></div>
         <button class="btn">Appliquer</button></form>
+      ${pumpkins != null ? `<form class="adm-act" id="aPumpkins"><h4>Citrouilles 🎃 <small>(pendant Halloween)</small></h4>
+        <div class="adm-row"><input type="number" step="1" placeholder="+100 ou -100" aria-label="Nombre de citrouilles" required>
+          <input maxlength="100" placeholder="Raison" aria-label="Raison"></div>
+        <button class="btn">Appliquer</button></form>` : ""}
       <div class="adm-act"><h4>GOD pack</h4>
         <p class="adm-small">${god ? "Son prochain booster sera un <b>GOD pack</b>." : "Son prochain booster ouvert sur le site sera un GOD pack (animation complète et annonce Discord)."}</p>
         <button class="btn${god ? "" : " primary"}" id="aGod">${god ? "Annuler le GOD pack" : "Offrir un GOD pack"}</button></div>
@@ -364,6 +370,11 @@ async function showUser(u) {
     e.preventDefault(); const [n, why] = e.target.querySelectorAll("input"); const v = Math.trunc(+n.value);
     if (v) act("admin_vinyls", { p_user: u.id, p_amount: v, p_reason: why.value.trim() }, bal => `${u.pseudo} a maintenant ${fmt(bal)} Vinyles.`);
   };
+  const pk = $("#aPumpkins");
+  if (pk) pk.onsubmit = e => {
+    e.preventDefault(); const [n, why] = pk.querySelectorAll("input"); const v = Math.trunc(+n.value);
+    if (v) act("admin_pumpkins", { p_user: u.id, p_amount: v, p_reason: why.value.trim() }, bal => `${u.pseudo} a maintenant ${fmt(bal)} citrouilles.`);
+  };
   $("#aGod").onclick = () => act("admin_force_god", { p_user: u.id, p_on: !god },
     () => god ? `GOD pack annulé pour ${u.pseudo}.` : `Le prochain booster de ${u.pseudo} sera un GOD pack.`);
   box.querySelectorAll("[data-gift]").forEach(b => b.onclick = () => { const g = GIFTS[+b.dataset.gift];
@@ -397,7 +408,7 @@ async function showUser(u) {
 const GIFTS = [["track", 4], ["track", 5], ["track", 4, true], ["track", 5, true], ["artist", 4], ["artist", 5], ["artist", 4, true], ["artist", 5, true]]
   .map(([kind, tier, shiny = false]) => ({ kind, tier, shiny }));
 const giftName = g => (g.kind === "artist" ? (g.tier === 5 ? "Artiste Diamant" : "Artiste Platine") : (g.tier === 5 ? "Légendaire" : "Mythique")) + (g.shiny ? " Shiny" : "");
-const ACTIONS = { vinyls: "Vinyles", pass: "Pass Tournée", ban: "Banni", unban: "Débanni", warn: "Averti", broadcast: "Message à tous", maintenance: "Maintenance", test_mode: "Mode test", payments_off: "Paiements en maintenance", xp_boost: "Boost d'XP", event: "Événement", streams: "Streams", boosters: "Boosters", discord: "Discord", god: "GOD pack", gift: "Cadeau" };
+const ACTIONS = { vinyls: "Vinyles", pass: "Pass Tournée", ban: "Banni", unban: "Débanni", warn: "Averti", broadcast: "Message à tous", maintenance: "Maintenance", test_mode: "Mode test", payments_off: "Paiements en maintenance", xp_boost: "Boost d'XP", event: "Événement", streams: "Streams", boosters: "Boosters", discord: "Discord", god: "GOD pack", gift: "Cadeau", pumpkins: "Citrouilles" };
 const actionTxt = a => ACTIONS[a] || a;
 async function loadLog() {
   let l;

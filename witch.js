@@ -28,6 +28,11 @@ async function renderWitch() {
           ${q.claimed ? `<em>✓ +${q.reward} 🎃</em>` : q.progress >= q.goal ? `<button class="btn primary" data-q="${q.key}">+${q.reward} 🎃</button>` : `<em>+${q.reward} 🎃</em>`}</div>`).join("")}
         <p class="wz-note">Les quêtes reviennent chaque jour à minuit.</p></div>
     </div>
+    <section class="wz-sec wz-shop" aria-labelledby="wzShopT">
+      <h3 id="wzShopT">Le marché aux citrouilles</h3>
+      <p class="sub">Besoin de plus de magie ? Les citrouilles servent au chaudron et à l'élixir, et seulement pendant l'événement : dépense-les avant la fin.</p>
+      <div class="wz-packs" id="wzPacks"></div>
+    </section>
     <section class="wz-sec" aria-labelledby="wzCauldT">
       <h3 id="wzCauldT">Chaudron de transmutation</h3>
       <p class="sub">Jette 5 titres de la même rareté : il en sort un titre de la rareté au-dessus. Les cartes Shiny, gradées ou de collection ne vont pas dans le chaudron.</p>
@@ -49,7 +54,31 @@ async function renderWitch() {
   });
   $("#wzIntro").onclick = () => window.halloweenIntro?.();
   box.querySelectorAll(".wz-rec").forEach(b => b.onclick = () => { W.tier = +b.dataset.t; W.sel = []; renderWitch(); });
-  drawPot(); drawElixir();
+  drawPot(); drawElixir(); drawPumpkinShop();
+}
+// the pumpkin packs: paid in euros (Stripe, or through the Discord while card payments are off) or in Vinyles
+async function drawPumpkinShop() {
+  const box = $("#wzPacks"); if (!box) return;
+  let packs = []; try { packs = await rpc("pumpkin_packs"); } catch (e) {}
+  if (!packs.length) { box.closest(".wz-shop").remove(); return; }
+  const base = packs[0].pumpkins / packs[0].cents;
+  box.innerHTML = packs.map((p, i) => { const bonus = Math.round((p.pumpkins / p.cents / base - 1) * 100);
+    return `<div class="wz-pack${i === 2 ? " hot" : ""}">${i === 2 ? `<span class="wz-tag">Populaire</span>` : ""}
+      <span class="wz-pile" aria-hidden="true">${"🎃".repeat(Math.min(i + 1, 4))}</span>
+      <b>${fmt(p.pumpkins)}</b><small>citrouilles</small>${bonus > 0 ? `<em>+${bonus} % offertes</em>` : `<em class="none">&nbsp;</em>`}
+      <button class="vs-buy" data-eur="${esc(p.id)}">${euro(p.cents / 100)}</button>
+      ${p.vinyls ? `<button class="ps-link" data-vin="${esc(p.id)}" data-n="${p.vinyls}">ou ${fmt(p.vinyls)} <i class="vin" aria-hidden="true"></i></button>` : ""}</div>`; }).join("");
+  box.querySelectorAll("[data-eur]").forEach(b => b.onclick = () => checkout(b.dataset.eur, b));
+  box.querySelectorAll("[data-vin]").forEach(b => b.onclick = async () => {
+    const n = +b.dataset.n;
+    if ((S.vinyls || 0) < n) return toast(`Il te faut ${fmt(n)} Vinyles, tu en as ${fmt(S.vinyls || 0)}.`);
+    if (!confirm(`Acheter ces citrouilles pour ${fmt(n)} Vinyles ?`)) return;
+    b.disabled = true;
+    try { const pk = await rpc("buy_pumpkins", { p_pack: b.dataset.vin }); toast(`Tu as maintenant ${fmt(pk)} 🎃 !`); }
+    catch (e) { toast(message(e)); b.disabled = false; return; }
+    try { await loadProfile(); } catch (e) {}
+    refreshViews(); renderWitch();
+  });
 }
 // the cards that can go in the cauldron: track copies of the rarity, not Shiny, graded nor collector
 function potCopies() {
