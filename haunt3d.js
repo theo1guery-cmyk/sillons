@@ -1,6 +1,6 @@
 /* Zik Hunter — the reveal of a Collection Hantée card in 3D: a graveyard in green fog, lightning, a coffin rattles,
-   green light leaks out, its lid flies open, bats burst out, the cursed card rises out of it spinning, then green
-   fire eats its cover and the card shows. Coffin: "Coffin" by ✞BloodTea✞ (https://sketchfab.com/bloodtea), CC BY 4.0.
+   green light leaks out, its lid flies open and bats burst out; seen from above, the cursed card lies face down in the
+   satin and trembles; then in front, it rises spinning, turns to us, and green fire eats its cover: the card shows. Coffin: "Coffin" by ✞BloodTea✞ (https://sketchfab.com/bloodtea), CC BY 4.0.
    Loaded only when a booster holds such a card. play() resolves when the film is over; the page then shows the HTML
    card in its place. */
 const CDN = "https://cdn.jsdelivr.net/npm/three@0.160.0/";
@@ -189,47 +189,60 @@ export async function play(host, card) {
   const resize = () => { const w = host.clientWidth || innerWidth, h = host.clientHeight || innerHeight; renderer.setSize(w, h, false); composer.setSize(w, h); camera.aspect = w / h; camera.updateProjectionMatrix(); };
   resize(); addEventListener("resize", resize);
   const portrait = () => camera.aspect < .8;
-  const T = 7.6;
+  const T = 8.4;
   let raf = 0, t0 = 0, done;
   const finished = new Promise(r => done = r);
-  const target = new THREE.Vector3();
+  const target = new THREE.Vector3(), UP = new THREE.Vector3(0, 1, 0), DOWN_UP = new THREE.Vector3(0, 0, -1);
+  cardG.rotation.order = "YXZ";                              // lying: turned along the coffin, back up; standing: facing us
+  // three shots: the graveyard (the coffin opens), from above (the card lies face down in the satin), then in front
+  const SHOT2 = 2.5, SHOT3 = 4.3;
   const frame = now => {
     if (!t0) t0 = now;
     const t = !host.isConnected ? T : window.__hxT ?? (now - t0) / 1000;   // host gone: skip to the end (__hxT: a frozen instant, for tests)
-    const rise = ease.out(seg(t, 2.3, 3.5));                 // up first, then it stands: it never goes through the box
-    // the camera comes to the coffin, then follows the card up
-    const far = portrait() ? 14 : 7.2, near = portrait() ? 8.4 : 4.2;
-    const app = ease.inOut(seg(t, 0, 2.4)), up = ease.inOut(seg(t, 2.3, 4)), push = ease.out(seg(t, 5.2, 6.6));
-    camera.position.set(Math.sin(t * .2) * .5, lerp(lerp(3.1, 2.6, app), 1.75, up), lerp(far, near + 1, app) - up * 1 - push * (portrait() ? .9 : 1));
-    target.set(0, lerp(.4, 1.55, up), lerp(.1, .45, up)); camera.lookAt(target);
+    if (t < SHOT2) {                                         // 1. wide: we come closer to the coffin
+      const app = ease.inOut(seg(t, 0, SHOT2)), far = portrait() ? 14 : 7.2, near = portrait() ? 9.5 : 5;
+      camera.up.copy(UP); camera.position.set(Math.sin(t * .2) * .5, lerp(3.1, 2.4, app), lerp(far, near, app));
+      target.set(0, .45, .1);
+    } else if (t < SHOT3) {                                  // 2. straight above the card, slowly coming down, a slight turn
+      const k = ease.inOut(seg(t, SHOT2, SHOT3)), h = (portrait() ? 3.6 : 2.4) - k * .7;
+      camera.up.copy(DOWN_UP).applyAxisAngle(UP, .25 - k * .35);
+      camera.position.set(0, CARD_Y + h, .1 + .001); target.set(0, CARD_Y, .1);
+    } else {                                                 // 3. in front, low: the card rises and turns to us
+      const push = ease.out(seg(t, 6.6, 7.8)), dist = portrait() ? 8.4 : 5.2;
+      camera.up.copy(UP); camera.position.set(Math.sin(t * .2) * .3, 1.25 + (t - SHOT3) * .04, dist - push * (portrait() ? 1.2 : 1.1));
+      target.set(0, lerp(.9, 1.5, ease.out(seg(t, SHOT3, 5.2))), .45);
+    }
+    camera.lookAt(target);
     // lightning twice, the coffin rattles, green light leaks out
     const bolt = Math.max(0, 1 - Math.abs(t - .45) * 14) + Math.max(0, 1 - Math.abs(t - 1.05) * 10) * .7;
-    flash.intensity = bolt * 3; bloom.strength = .55 + bolt * .6 + seg(t, 4.3, 5) * 1.1 * (1 - seg(t, 5.2, 6.3));
+    flash.intensity = bolt * 3; bloom.strength = .55 + bolt * .6 + seg(t, 5.7, 6.4) * 1.1 * (1 - seg(t, 6.6, 7.7));
     const shake = seg(t, .6, 1.5) * (1 - seg(t, 1.45, 1.6));
     coffin.rotation.z = Math.sin(t * 55) * .01 * shake; coffin.position.y = Math.abs(Math.sin(t * 38)) * .02 * shake;
     seamMat.opacity = seg(t, .5, 1.3) * (.6 + .4 * Math.sin(t * 20)) * (1 - seg(t, 1.6, 2));
     // the lid flies open (a little bounce), light and mist pour out
     const open = seg(t, 1.5, 2.3);
     lidPivot.rotation.x = -(ease.out(open) * 1.95 - Math.sin(open * Math.PI) * .12 * (open > .7 ? 1 : 0));
-    inner.intensity = ease.out(seg(t, 1.4, 2.2)) * 4 * (1 - seg(t, 5, 6) * .5);
-    glow.intensity = seg(t, 1.5, 2.3) * 1.2 + seg(t, 4.2, 5) * 5 * (1 - seg(t, 5.2, 6.4));
+    inner.intensity = ease.out(seg(t, 1.4, 2.2)) * 4 * (1 - seg(t, 6.4, 7.4) * .5);
+    glow.intensity = seg(t, 1.5, 2.3) * 1.2 + seg(t, 5.6, 6.4) * 5 * (1 - seg(t, 6.6, 7.8));
     embers.material.opacity = ease.out(seg(t, 1.6, 2.4)) * .9;
-    for (let k = 0; k < EMB; k++) { ePos[k * 3 + 1] += eSpd[k] * .016 * (seg(t, 1.6, 2) + seg(t, 4.4, 5.2) * 2); if (ePos[k * 3 + 1] > 3.4) resetEmber(k); }
+    for (let k = 0; k < EMB; k++) { ePos[k * 3 + 1] += eSpd[k] * .016 * (seg(t, 1.6, 2) + seg(t, 5.8, 6.6) * 2); if (ePos[k * 3 + 1] > 3.4) resetEmber(k); }
     embGeo.attributes.position.needsUpdate = true;
     for (const s of mist) { s.position.x += s.userData.v * .016; if (Math.abs(s.position.x) > 5) s.userData.v *= -1; }
-    // the card: lying in the coffin, it rises, turns twice and stands facing us
-    cardG.position.set(0, lerp(CARD_Y, 1.55, rise) + Math.sin(t * 2) * .03 * seg(t, 3.9, 4.3), lerp(.1, .45, rise));
-    cardG.rotation.set(lerp(-Math.PI / 2, 0, ease.inOut(seg(t, 2.6, 3.6))), (1 - ease.out(seg(t, 2.3, 4))) * Math.PI * 4, lerp(Math.PI / 2, 0, ease.out(seg(t, 2.3, 3.2))) + Math.sin(t * 1.6) * .03 * seg(t, 3.9, 5));
-    cardG.scale.setScalar(.82 + rise * .18 + ease.out(seg(t, 5.2, 6.4)) * .06);
-    halo.position.copy(cardG.position); halo.position.z -= .25; halo.material.opacity = seg(t, 2.8, 3.6) * .3 + seg(t, 4.2, 5) * .5 * (1 - seg(t, 5.4, 6.8));
+    // the card: face down in the satin; it trembles, lifts a little, then rises, spins and stands facing us
+    const tremble = seg(t, 3.2, SHOT3) * (t < SHOT3 ? 1 : 0), lift = ease.inOut(seg(t, 3.7, SHOT3)) * .18;
+    const rise = ease.out(seg(t, SHOT3, 5.2)), stand = ease.inOut(seg(t, SHOT3 + .2, 5.1));
+    cardG.position.set(Math.sin(t * 47) * .008 * tremble, lerp(CARD_Y + lift, 1.55, rise) + Math.sin(t * 2) * .03 * seg(t, 5.2, 5.6), lerp(.1, .45, rise));
+    cardG.rotation.set(lerp(Math.PI / 2, 0, stand) + Math.sin(t * 31) * .02 * tremble, lerp(Math.PI / 2 + Math.PI * 4, 0, ease.out(seg(t, SHOT3, 5.4))), Math.sin(t * 1.6) * .03 * seg(t, 5.2, 6.4));
+    cardG.scale.setScalar(.85 + rise * .15 + ease.out(seg(t, 6.6, 7.8)) * .06);
+    halo.position.copy(cardG.position); halo.position.z -= .25; halo.material.opacity = seg(t, 4.6, 5.2) * .3 + seg(t, 5.6, 6.4) * .5 * (1 - seg(t, 6.8, 8.2));
     rimMesh.material.opacity = .6 + .4 * Math.sin(t * 9);
     // the burn
-    uBurn.value = ease.inOut(seg(t, 4.2, 5.4));
-    sheetMat.emissiveIntensity = .8 + seg(t, 3.6, 4.2) * .5;
+    uBurn.value = ease.inOut(seg(t, 5.6, 6.8));
+    sheetMat.emissiveIntensity = .8 + seg(t, 5, 5.6) * .5;
     // the bats burst out of the coffin when it opens, and circle away
-    const fly = seg(t, 1.6, 6.6);
+    const fly = seg(t, 1.6, 7);
     bats.forEach(b => {
-      const u = b.userData; b.visible = t > 1.6 && t < 6.6;
+      const u = b.userData; b.visible = t > 1.6 && t < 7 && (t < SHOT2 || t > SHOT3);
       const a = u.a + fly * u.s * 5, r = .2 + ease.out(fly) * u.r * 1.6;
       b.position.set(Math.cos(a) * r, .5 + (u.y + .4) * ease.out(fly) + fly * 1.2, Math.sin(a) * r * .6 + .4);
       b.scale.y = .45 + .55 * Math.abs(Math.sin(t * 16 + u.ph)); b.lookAt(camera.position);
