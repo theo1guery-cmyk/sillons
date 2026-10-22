@@ -44,7 +44,7 @@ export async function play(host, card) {
   /* ---------- the ground, the graves, the moon ---------- */
   scene.add(new THREE.AmbientLight(0x1a3a28, 1.1));
   const moon = new THREE.DirectionalLight(0x9fffd0, 1.1); moon.position.set(-3, 6, -4); scene.add(moon);
-  const glow = new THREE.PointLight(0x39ff88, 0, 9, 1.6); glow.position.set(0, .4, 0); scene.add(glow);
+  const glow = new THREE.PointLight(0x39ff88, 0, 9, 1.6); glow.position.set(0, 1.4, .6); scene.add(glow);
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.MeshStandardMaterial({ color: 0x06100a, roughness: .38, metalness: .25 }));
   ground.rotation.x = -Math.PI / 2; scene.add(ground);
   const stone = new THREE.MeshStandardMaterial({ color: 0x0c1410, roughness: .9 });
@@ -79,7 +79,7 @@ export async function play(host, card) {
   const woodTex = texOf(wc); woodTex.wrapS = woodTex.wrapT = THREE.RepeatWrapping; woodTex.repeat.set(1.6, .9);
   const wood = new THREE.MeshPhysicalMaterial({ map: woodTex, roughness: .42, metalness: .05, clearcoat: .8, clearcoatRoughness: .25 });
   const brass = new THREE.MeshStandardMaterial({ color: 0xb8892f, metalness: 1, roughness: .32 });
-  const satin = new THREE.MeshStandardMaterial({ color: 0x3b1252, roughness: .38, metalness: .1, emissive: 0x1a0626, side: THREE.DoubleSide });
+  const satin = new THREE.MeshStandardMaterial({ color: 0x2a0c3a, roughness: .45, metalness: .1, emissive: 0x0d0314, side: THREE.DoubleSide });
   const outline = (k = 1) => { const sh = new THREE.Shape(), P = [[-.3, -1.1], [.3, -1.1], [.44, -.48], [.24, 1.1], [-.24, 1.1], [-.44, -.48]];
     P.forEach(([x, z], n) => sh[n ? "lineTo" : "moveTo"](x * k, z * k)); sh.closePath(); return sh; };
   const slab = (sh, depth, bevel = 0) => { const g = new THREE.ExtrudeGeometry(sh, { depth, bevelEnabled: bevel > 0, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 2, curveSegments: 4 }); g.rotateX(Math.PI / 2); g.translate(0, depth, 0); return g; };
@@ -105,7 +105,7 @@ export async function play(host, card) {
   const crossH = new THREE.Mesh(new THREE.BoxGeometry(.36, .025, .06), brass); crossH.position.set(0, .105, -.42); lid.add(crossH);
   coffin.scale.setScalar(1.18); coffin.rotation.y = -Math.PI / 2; coffin.position.set(0, 0, .1);   // lying across, the hinge at the back: the lid opens away from us
   coffin.traverse(o => { if (o.isMesh) o.castShadow = true; });
-  const key = new THREE.SpotLight(0xd8ffe8, 8, 12, .5, .6, 1.2); key.position.set(1.5, 4.5, 3.5); key.target = coffin; scene.add(key);
+  const key = new THREE.SpotLight(0xd8ffe8, 5, 12, .45, .6, 1.2); key.position.set(1.5, 4.5, 3.5); key.target = coffin; scene.add(key);
   scene.add(coffin);
   const inner = new THREE.PointLight(0x39ff88, 0, 5, 1.6); inner.position.set(0, .35, .1); scene.add(inner);
   const flash = new THREE.HemisphereLight(0xbfffe0, 0x0a1a10, 0); scene.add(flash);   // the lightning
@@ -212,9 +212,9 @@ export async function play(host, card) {
     const t = !host.isConnected ? T : window.__hxT ?? (now - t0) / 1000;   // host gone: skip to the end (__hxT: a frozen instant, for tests)
     const rise = ease.inOut(seg(t, 2.3, 3.9));
     // the camera comes to the coffin, then follows the card up
-    const far = portrait() ? 9.5 : 7.2, near = portrait() ? 5.6 : 4.2;
+    const far = portrait() ? 14 : 7.2, near = portrait() ? 8.4 : 4.2;
     const app = ease.inOut(seg(t, 0, 2.4)), up = ease.inOut(seg(t, 2.3, 4)), push = ease.out(seg(t, 5.2, 6.6));
-    camera.position.set(Math.sin(t * .2) * .5, lerp(lerp(3.1, 2.6, app), 1.75, up), lerp(far, near + 1, app) - up * 1 - push * (portrait() ? 1.4 : 1));
+    camera.position.set(Math.sin(t * .2) * .5, lerp(lerp(3.1, 2.6, app), 1.75, up), lerp(far, near + 1, app) - up * 1 - push * (portrait() ? .9 : 1));
     target.set(0, lerp(.4, 1.55, up), lerp(.1, .45, up)); camera.lookAt(target);
     // lightning twice, the coffin rattles, green light leaks out
     const bolt = Math.max(0, 1 - Math.abs(t - .45) * 14) + Math.max(0, 1 - Math.abs(t - 1.05) * 10) * .7;
@@ -225,8 +225,8 @@ export async function play(host, card) {
     // the lid flies open (a little bounce), light and mist pour out
     const open = seg(t, 1.5, 2.3);
     lidPivot.rotation.z = (ease.out(open) * 2.05 - Math.sin(open * Math.PI) * .12 * (open > .7 ? 1 : 0));
-    inner.intensity = ease.out(seg(t, 1.4, 2.2)) * 7 * (1 - seg(t, 5, 6) * .5);
-    glow.intensity = seg(t, 1.5, 2.3) * 2.5 + seg(t, 4.2, 5) * 5 * (1 - seg(t, 5.2, 6.4));
+    inner.intensity = ease.out(seg(t, 1.4, 2.2)) * 4 * (1 - seg(t, 5, 6) * .5);
+    glow.intensity = seg(t, 1.5, 2.3) * 1.2 + seg(t, 4.2, 5) * 5 * (1 - seg(t, 5.2, 6.4));
     embers.material.opacity = ease.out(seg(t, 1.6, 2.4)) * .9;
     for (let k = 0; k < EMB; k++) { ePos[k * 3 + 1] += eSpd[k] * .016 * (seg(t, 1.6, 2) + seg(t, 4.4, 5.2) * 2); if (ePos[k * 3 + 1] > 3.4) resetEmber(k); }
     embGeo.attributes.position.needsUpdate = true;
@@ -235,7 +235,7 @@ export async function play(host, card) {
     cardG.position.set(0, lerp(.42, 1.55, rise) + Math.sin(t * 2) * .03 * seg(t, 3.9, 4.3), lerp(.1, .45, rise));
     cardG.rotation.set(lerp(-Math.PI / 2, 0, ease.out(seg(t, 2.3, 3.4))), (1 - ease.out(seg(t, 2.3, 4))) * Math.PI * 4, lerp(Math.PI / 2, 0, ease.out(seg(t, 2.3, 3.2))) + Math.sin(t * 1.6) * .03 * seg(t, 3.9, 5));
     cardG.scale.setScalar(.82 + rise * .18 + ease.out(seg(t, 5.2, 6.4)) * .06);
-    halo.position.copy(cardG.position); halo.position.z -= .25; halo.material.opacity = seg(t, 1.8, 2.6) * .3 + seg(t, 4.2, 5) * .5 * (1 - seg(t, 5.4, 6.8));
+    halo.position.copy(cardG.position); halo.position.z -= .25; halo.material.opacity = seg(t, 2.8, 3.6) * .3 + seg(t, 4.2, 5) * .5 * (1 - seg(t, 5.4, 6.8));
     rimMesh.material.opacity = .6 + .4 * Math.sin(t * 9);
     // the burn
     uBurn.value = ease.inOut(seg(t, 4.2, 5.4));
