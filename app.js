@@ -496,7 +496,7 @@ function artistCardEl(c, holo) {
     const fans = c.rank >= 1e6 ? (c.rank / 1e6).toFixed(1).replace(".", ",") + " M" : fmtFans(c.rank);
     const el = document.createElement("div");
     el.className = "dcard" + (dia ? "" : " pcard") + (shiny ? dia ? " bd" : " shiny" : "") + (c.collector ? " collector" : ""); el.dataset.cert = c.tier; el.dataset.r = c.tier;
-    el.innerHTML = `${dia ? `<div class="pave"></div>${"<i class=\"tw\"></i>".repeat(6)}` : ""}<div class="in"><img class="photo" src="${esc(c.cov.replace(/\/\d+x\d+-/, "/1000x1000-"))}" alt="Photo de ${esc(c.t)}" loading="lazy" decoding="async">${dia ? '<div class="ice"></div>' : ""}<div class="shade"></div>
+    el.innerHTML = `${dia ? `<div class="pave"></div>${"<i class=\"tw\"></i>".repeat(6)}` : ""}<div class="in"><img class="photo" src="${esc(c.cov.replace(/\/\d+x\d+-/, "/1000x1000-"))}" alt="Photo de ${esc(c.t)}" loading="lazy" decoding="async">${dia ? '<div class="ice"></div>' : ""}<div class="shade"></div>${dia && shiny ? `<div class="wv" style="--wvp:${c.aid * 37 % 100}% ${c.aid * 53 % 100}%"></div>` : ""}
       <div class="vname"><span class="chrome" style="font-size:${nfs.toFixed(2)}cqw">${dia ? `<span class="depth">${esc(name)}</span>` : ""}<span class="face">${esc(name)}</span></span></div>
       <div class="head"><span class="badge">${dia ? '<span class="gem"></span>' : '<span class="vinyl"></span>'}${!dia ? "PLATINE" : shiny ? "BLACK DIAMOND" : "DIAMANT"}</span><span class="pw" title="Puissance">${st.pw}</span></div>
       <div class="foot">${dia ? `<div class="sig" style="font-size:${sfs.toFixed(2)}cqw">${esc(sig)}</div>` : ""}<div class="fans">${fans}<small>FANS SUR DEEZER</small></div>

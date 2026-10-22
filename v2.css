@@ -429,3 +429,11 @@ body.op-on{overflow:hidden}
 @keyframes wvflow{to{--wvx:-300%}}
 .card.legend.shiny .lfoot{filter:drop-shadow(0 .4cqw 1.2cqw #000)}
 @media (prefers-reduced-motion:reduce){.card.legend.shiny .wv{animation:none}}
+/* Black Diamond (Shiny Diamant): the same gold contour lines, under the photo */
+.dcard.bd .wv{position:absolute;inset:0;z-index:4;pointer-events:none;
+  background:linear-gradient(115deg,rgba(240,214,150,.7) 0 40%,#fffaf0 47%,#ffe9b0 50%,rgba(240,214,150,.7) 57% 100%) var(--wvx) 0/300% 100%;
+  -webkit-mask:url(brand/topo.svg) var(--wvp,30% 40%)/135% 135%,linear-gradient(180deg,transparent 46%,rgba(0,0,0,.55) 60%,#000 76%);
+  -webkit-mask-composite:source-in;mask:url(brand/topo.svg) var(--wvp,30% 40%)/135% 135%,linear-gradient(180deg,transparent 46%,rgba(0,0,0,.55) 60%,#000 76%);mask-composite:intersect;
+  opacity:.7;animation:wvflow 8s linear infinite}
+.dcard.bd .foot{filter:drop-shadow(0 .4cqw 1.2cqw #000)}
+@media (prefers-reduced-motion:reduce){.dcard.bd .wv{animation:none}}
