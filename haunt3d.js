@@ -163,7 +163,7 @@ export async function play(host, card) {
       if (Math.hypot(x - 512, y - 512) > 505) break;
     }
   };
-  for (let k = 0; k < 11; k++) { const a = k / 11 * Math.PI * 2 + Math.random() * .4; branch(512 + Math.cos(a) * 56, 512 + Math.sin(a) * 56, a, 520, 5, 0); }
+  for (let k = 0; k < 11; k++) { const a = k / 11 * Math.PI * 2 + Math.random() * .4; branch(512 + Math.cos(a) * 56, 512 + Math.sin(a) * 56, a, 520, 3, 0); }
   kg.filter = "blur(2px)"; kg.drawImage(kc, 0, 0); kg.filter = "none";
   const crackTex = new THREE.CanvasTexture(kc);
   const uCrack = { value: 0 }, uCrackGlow = { value: 0 };
@@ -182,7 +182,7 @@ export async function play(host, card) {
   const REC_Z = P_TOP;
   // the shards it bursts into: wedges of the same record, their broken edges glowing
   const shards = [];
-  { let a0 = 0; const glowEdge = new THREE.MeshBasicMaterial({ color: 0x39ff88 });
+  { let a0 = 0; const glowEdge = new THREE.MeshBasicMaterial({ color: 0x1fa85a });
     while (a0 < Math.PI * 2 - .01) {
       const a1 = Math.min(Math.PI * 2, a0 + .35 + Math.random() * .5), sh = new THREE.Shape();
       sh.moveTo(Math.cos(a0) * .012, Math.sin(a0) * .012);
@@ -304,7 +304,7 @@ export async function play(host, card) {
   const noise = new THREE.CanvasTexture(nc);
   const uBurn = { value: 0 };
   const geo = new THREE.PlaneGeometry(CW, CH);
-  const faceMat = new THREE.MeshStandardMaterial({ map: texOf(fc), alphaMap: alpha, alphaTest: .5, roughness: .55, metalness: .1, emissive: 0xffffff, emissiveMap: texOf(fc), emissiveIntensity: .75 });
+  const faceMat = new THREE.MeshStandardMaterial({ map: texOf(fc), alphaMap: alpha, alphaTest: .5, roughness: .55, metalness: .1, emissive: 0xffffff, emissiveMap: texOf(fc), emissiveIntensity: .9, fog: false });
   const sheetMat = new THREE.MeshStandardMaterial({ map: texOf(bc), alphaMap: alpha, alphaTest: .5, roughness: .8, emissive: 0xffffff, emissiveMap: texOf(bc), emissiveIntensity: .8, transparent: true });
   sheetMat.onBeforeCompile = sh => {
     sh.uniforms.uBurn = uBurn; sh.uniforms.uNoise = { value: noise };
@@ -339,7 +339,7 @@ export async function play(host, card) {
   const camPath = () => {
     const k = pk(), side = portrait() ? .45 : 1, V = (x, y, z) => new THREE.Vector3(x, y, z);
     return {
-      p: new THREE.CatmullRomCurve3([V(2.6 * side, .55, 3.1 * k), V(1.9 * side, .95, 2.7 * k), V(1.2 * side, 1.6, 3.2 * k), V(.6 * side, 1.7, 3.6 * k), V(.25 * side, 1.25, 2.9 * k)]),
+      p: new THREE.CatmullRomCurve3([V(2.6 * side, .55, 3.1 * k), V(1.9 * side, .95, 2.7 * k), V(1.2 * side, 1.6, 3.2 * k), V(.6 * side, 1.75, 3.9 * k), V(.3 * side, 1.35, 3.7 * k)]),
       l: new THREE.CatmullRomCurve3([V(-.1, .1, 0), V(0, .08, 0), V(0, .15, 0), V(0, .5, 0), V(0, .95, 0)]),
     };
   };
@@ -367,22 +367,22 @@ export async function play(host, card) {
     const speed = seg(t, 3.3, 3.9) * .55 + seg(t, 3.9, 5.6) * 1.6;
     spinA += speed * Math.PI * 2 * dt; platterNode.rotation.z = spinA;                // backwards: anticlockwise seen from above
     // the cracks spread, then glow brighter; the record bursts
-    uCrack.value = lerp(.1, 1.05, ease.inOut(seg(t, 3.7, 5.5))); uCrackGlow.value = seg(t, 3.6, 4) * (1.2 + seg(t, 5.1, 5.7) * 2.5);
+    uCrack.value = lerp(.1, 1.05, ease.inOut(seg(t, 3.7, 5.5))); uCrackGlow.value = seg(t, 3.6, 4) * (.7 + seg(t, 5.1, 5.7) * 1.1);
     const burst = seg(t, 5.8, 7.6), broken = t >= 5.8;
     recTop.visible = label.visible = recEdge.visible = cracks.visible = !broken;
     shards.forEach(s => {
       s.visible = broken;
       if (!broken) return;
       const d = s.userData, tt = burst * 1.8;
-      s.position.copy(d.dir).multiplyScalar(d.out * tt * .35).setZ(REC_Z + d.up * tt * .3 - tt * tt * .08);
-      s.rotation.set(d.spin.x * tt * .4, d.spin.y * tt * .4, d.spin.z * tt * .4);
+      s.position.copy(d.dir).multiplyScalar(d.out * tt * .09).setZ(REC_Z + Math.max(0, d.up * tt * .1 - tt * tt * .045));
+      s.rotation.set(d.spin.x * tt * .25, d.spin.y * tt * .25, d.spin.z * tt * .3);
     });
-    greenLight.intensity = uCrackGlow.value * 1.4 + Math.max(0, 1 - Math.abs(t - 5.85) * 4) * 14 + seg(t, 6, 7) * 3;
+    greenLight.intensity = uCrackGlow.value * 1.2 + Math.max(0, 1 - Math.abs(t - 5.85) * 4) * 9 + seg(t, 6, 7) * 1.2;
     key.intensity = 6 * (1 - out * .6);
-    beamMat.uniforms.strength.value = seg(t, 5.8, 6.6) * .7; motes.material.opacity = seg(t, 5.9, 6.8) * .8;
+    beamMat.uniforms.strength.value = seg(t, 5.8, 6.6) * .32 * (1 - seg(t, 7.6, 8.6) * .5); motes.material.opacity = seg(t, 5.9, 6.8) * .8;
     for (let i = 0; i < DUST; i++) { dPos[i * 3 + 1] = (dBase[i * 3 + 1] + t * .25 * (1 + (dSeed[i] % 1))) % 3; dPos[i * 3] = dBase[i * 3] + Math.sin(t * .6 + dSeed[i]) * .04; }
     dGeo.attributes.position.needsUpdate = true;
-    if (bloom) bloom.strength = .45 + uCrackGlow.value * .12 + Math.max(0, 1 - Math.abs(t - 5.85) * 3) * 1.2;
+    if (bloom) bloom.strength = .4 + uCrackGlow.value * .08 + Math.max(0, 1 - Math.abs(t - 5.85) * 3) * .8;
     // the card rises out of the shards, turning, and stops facing the camera
     const rise = ease.out(seg(t, 5.9, 7.3));
     cardG.visible = t >= 5.85;
@@ -393,7 +393,7 @@ export async function play(host, card) {
     qa.copy(flat).slerp(new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().lookAt(endCam, cardEnd, Y)), Math.min(1, rise * 1.3));
     qs.setFromAxisAngle(Y, (1 - rise) * Math.PI * 4); cardG.quaternion.copy(qa).multiply(qs);
     cardG.scale.setScalar(CARD_S * lerp(.35, 1, rise));
-    halo.position.copy(cardG.position); halo.material.opacity = seg(t, 6.3, 7.2) * .35 + seg(t, 7.8, 8.4) * .3 * (1 - seg(t, 8.6, 9.4));
+    halo.position.copy(cardG.position); halo.material.opacity = seg(t, 6.3, 7.2) * .12 + seg(t, 7.8, 8.4) * .12 * (1 - seg(t, 8.6, 9.4));
     halo.scale.set(3.2 * CARD_S, 3.6 * CARD_S, 1);
     rimMesh.material.opacity = .6 + .4 * Math.sin(t * 9);
     uBurn.value = ease.inOut(seg(t, 7.7, 8.8)); sheetMat.emissiveIntensity = .8 + seg(t, 7.2, 7.7) * .5;
