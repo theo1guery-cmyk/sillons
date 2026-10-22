@@ -477,7 +477,7 @@ async function checkout(pack, btn) {
   if (!r) return;
   q.delete("achat"); history.replaceState(null, "", location.pathname + (q.toString() ? "?" + q : "") + location.hash);
   if (r !== "ok") return setTimeout(() => toast("Paiement annulé : rien n'a été débité."), 800);
-  setTimeout(() => toast("Paiement reçu, merci ! Tes Vinyles arrivent dans quelques secondes."), 800);
+  setTimeout(() => toast("Paiement reçu, merci ! Ton achat arrive dans quelques secondes."), 800);
   let n = 0;
   const poll = setInterval(async () => {
     if (++n > 8) return clearInterval(poll);
