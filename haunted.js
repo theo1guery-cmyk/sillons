@@ -48,6 +48,7 @@ window.Haunted = Haunted;
 async function drawHaunted(box) {
   let d; try { d = await rpc("haunted_collection"); } catch (e) { box.remove(); return; }
   if (!d?.editions?.length) { box.remove(); return; }
+  if (d.paused) { box.innerHTML = `<h3 id="hxT">Collection Hantée</h3><p class="sub">🛠️ La Collection Hantée est en maintenance le temps d'embellir ses cartes. Elle revient très vite, et les cartes déjà trouvées restent à leurs propriétaires.</p>`; return; }
   const out = d.editions.reduce((a, e) => a + e.copies.length, 0), all = d.editions.reduce((a, e) => a + e.of, 0);
   const pk = typeof W !== "undefined" ? W.st?.pumpkins || 0 : 0;
   box.innerHTML = `<h3 id="hxT">Collection Hantée <button class="ps-link wz-replay" id="hxIntro">▶ Revoir l'annonce</button></h3>
@@ -84,7 +85,7 @@ setInterval(hauntedIntroMaybe, 4500);
 async function hauntedIntro() {
   HXI.shown = true;
   let d = null; try { d = await rpc("haunted_collection"); } catch (e) {}
-  if (!d?.editions?.length) { HXI.shown = false; return; }
+  if (!d?.editions?.length || d.paused) { HXI.shown = false; return; }
   try { localStorage.setItem(HXI.KEY, "1"); } catch (e) {}
   const ed = s => d.editions.find(e => e.slot === s) || d.editions[0];
   const card = (e, no, cls = "") => { const w = hauntedCardEl({ t: e.title, a: e.artist, cov: e.cover || "", no, of: e.of }); return `<div class="hxi-c ${cls}">${w.innerHTML}</div>`; };
