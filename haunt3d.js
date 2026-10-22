@@ -25,7 +25,7 @@ const GREEN = "#39ff88";
 export async function play(host, card) {
   const mobile = Math.min(innerWidth, innerHeight) < 600 || /Android|iPhone|iPad/.test(navigator.userAgent);
   const renderer = new THREE.WebGLRenderer({ antialias: !mobile, powerPreference: "high-performance" });
-  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, mobile ? 1.5 : 1.75));
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, mobile ? 1.25 : 1.5));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.setClearColor(0x020604, 1);
@@ -37,10 +37,16 @@ export async function play(host, card) {
   scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), .04).texture;   // soft reflections on the wood and the brass
   scene.environmentIntensity = .35;
   const camera = new THREE.PerspectiveCamera(34, 1, .05, 60);
-  const composer = new EffectComposer(renderer);
-  composer.addPass(new RenderPass(scene, camera));
-  const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), .55, .6, .72);
-  composer.addPass(bloom); composer.addPass(new OutputPass());
+  // the glow pass only on computers, at a lower resolution (as the hit film does): phones render straight
+  const composer = mobile ? null : new EffectComposer(renderer);
+  let bloom = null;
+  if (composer) {
+    composer.setPixelRatio(1);
+    composer.addPass(new RenderPass(scene, camera));
+    bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), .55, .6, .72);
+    composer.addPass(bloom); composer.addPass(new OutputPass());
+  }
+  const draw = () => composer ? composer.render() : renderer.render(scene, camera);
   const texOf = cv => { const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = renderer.capabilities.getMaxAnisotropy(); return t; };
 
   const [cover, bat, torn, rim, logo, gltf] = await Promise.all([loadImg(card.cover, true), loadImg("brand/bat.svg"), loadImg("brand/torn.svg"), loadImg("brand/torn-rim.svg"), loadImg("brand/zikhunter-icon.svg"),
@@ -102,12 +108,12 @@ export async function play(host, card) {
   sg.fillStyle = sgr; sg.fillRect(0, 0, 128, 128);
   const soft = texOf(sc); seamMat.map = soft; seam.scale.set(3.3, .22, 1);
   const mist = [];
-  for (let k = 0; k < (mobile ? 14 : 26); k++) {
+  for (let k = 0; k < (mobile ? 8 : 14); k++) {
     const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: soft, color: k % 3 ? 0x2f8a57 : 0x6a4a9a, transparent: true, opacity: .16, depthWrite: false }));
     s.position.set((Math.random() - .5) * 9, .2 + Math.random() * .5, -Math.random() * 5 + 1); s.scale.setScalar(2.5 + Math.random() * 2.5);
     s.material.opacity = .09; s.userData.v = (Math.random() - .5) * .25; scene.add(s); mist.push(s);
   }
-  const EMB = mobile ? 90 : 180, ePos = new Float32Array(EMB * 3), eSpd = new Float32Array(EMB);
+  const EMB = mobile ? 60 : 110, ePos = new Float32Array(EMB * 3), eSpd = new Float32Array(EMB);
   const resetEmber = (k, y) => { const a = Math.random() * 7, r = Math.random() * .5; ePos[k * 3] = Math.cos(a) * r; ePos[k * 3 + 1] = y ?? Math.random() * .3; ePos[k * 3 + 2] = Math.sin(a) * r; eSpd[k] = .4 + Math.random() * .9; };
   for (let k = 0; k < EMB; k++) resetEmber(k, Math.random() * 3);
   const embGeo = new THREE.BufferGeometry(); embGeo.setAttribute("position", new THREE.BufferAttribute(ePos, 3));
@@ -186,7 +192,7 @@ export async function play(host, card) {
   });
 
   /* ---------- the film ---------- */
-  const resize = () => { const w = host.clientWidth || innerWidth, h = host.clientHeight || innerHeight; renderer.setSize(w, h, false); composer.setSize(w, h); camera.aspect = w / h; camera.updateProjectionMatrix(); };
+  const resize = () => { const w = host.clientWidth || innerWidth, h = host.clientHeight || innerHeight; renderer.setSize(w, h, false); composer?.setSize(w, h); camera.aspect = w / h; camera.updateProjectionMatrix(); };
   resize(); addEventListener("resize", resize);
   const portrait = () => camera.aspect < .8;
   const T = 8.4;
@@ -196,9 +202,8 @@ export async function play(host, card) {
   cardG.rotation.order = "YXZ";                              // lying: turned along the coffin, back up; standing: facing us
   // three shots: the graveyard (the coffin opens), from above (the card lies face down in the satin), then in front
   const SHOT2 = 2.5, SHOT3 = 4.3;
-  const frame = now => {
-    if (!t0) t0 = now;
-    const t = !host.isConnected ? T : window.__hxT ?? (now - t0) / 1000;   // host gone: skip to the end (__hxT: a frozen instant, for tests)
+  let last = 0;
+  const step = (t, dt = .016) => {
     const top = t >= SHOT2 && t < SHOT3;                    // the shot from above
     if (t < SHOT2) {                                         // 1. wide: we come closer to the coffin
       const app = ease.inOut(seg(t, 0, SHOT2)), far = portrait() ? 14 : 7.2, near = portrait() ? 9.5 : 5;
@@ -216,7 +221,7 @@ export async function play(host, card) {
     camera.lookAt(target);
     // lightning twice, the coffin rattles, green light leaks out
     const bolt = Math.max(0, 1 - Math.abs(t - .45) * 14) + Math.max(0, 1 - Math.abs(t - 1.05) * 10) * .7;
-    flash.intensity = bolt * 3; bloom.strength = (top ? .3 : .55) + bolt * .6 + seg(t, 5.7, 6.4) * 1.1 * (1 - seg(t, 6.6, 7.7));
+    flash.intensity = bolt * 3; if (bloom) bloom.strength = (top ? .3 : .55) + bolt * .6 + seg(t, 5.7, 6.4) * 1.1 * (1 - seg(t, 6.6, 7.7));
     const shake = seg(t, .6, 1.5) * (1 - seg(t, 1.45, 1.6));
     coffin.rotation.z = Math.sin(t * 55) * .01 * shake; coffin.position.y = Math.abs(Math.sin(t * 38)) * .02 * shake;
     seamMat.opacity = seg(t, .5, 1.3) * (.6 + .4 * Math.sin(t * 20)) * (1 - seg(t, 1.6, 2));
@@ -226,9 +231,9 @@ export async function play(host, card) {
     inner.intensity = ease.out(seg(t, 1.4, 2.2)) * (top ? 1.2 : 4) * (1 - seg(t, 6.4, 7.4) * .5);
     glow.intensity = seg(t, 1.5, 2.3) * 1.2 + seg(t, 5.6, 6.4) * 5 * (1 - seg(t, 6.6, 7.8));
     embers.visible = !top; embers.material.opacity = ease.out(seg(t, 1.6, 2.4)) * .9;
-    for (let k = 0; k < EMB; k++) { ePos[k * 3 + 1] += eSpd[k] * .016 * (seg(t, 1.6, 2) + seg(t, 5.8, 6.6) * 2); if (ePos[k * 3 + 1] > 3.4) resetEmber(k); }
+    for (let k = 0; k < EMB; k++) { ePos[k * 3 + 1] += eSpd[k] * dt * (seg(t, 1.6, 2) + seg(t, 5.8, 6.6) * 2); if (ePos[k * 3 + 1] > 3.4) resetEmber(k); }
     embGeo.attributes.position.needsUpdate = true;
-    for (const s of mist) { s.position.x += s.userData.v * .016; if (Math.abs(s.position.x) > 5) s.userData.v *= -1; }
+    for (const s of mist) { s.position.x += s.userData.v * dt; if (Math.abs(s.position.x) > 5) s.userData.v *= -1; }
     // the card: face down in the satin; it trembles, lifts a little, then rises, spins and stands facing us
     const tremble = seg(t, 3.2, SHOT3) * (t < SHOT3 ? 1 : 0), lift = ease.inOut(seg(t, 3.7, SHOT3)) * .18;
     const rise = ease.out(seg(t, SHOT3, 5.2)), stand = ease.inOut(seg(t, SHOT3 + .2, 5.1));
@@ -248,12 +253,21 @@ export async function play(host, card) {
       b.position.set(Math.cos(a) * r, .5 + (u.y + .4) * ease.out(fly) + fly * 1.2, Math.sin(a) * r * .6 + .4);
       b.scale.y = .45 + .55 * Math.abs(Math.sin(t * 16 + u.ph)); b.lookAt(camera.position);
     });
-    composer.render();
+    draw();
+  };
+  const frame = now => {
+    if (!t0) t0 = now;
+    const t = !host.isConnected ? T : window.__hxT ?? (now - t0) / 1000;   // host gone: skip to the end (__hxT: a frozen instant, for tests)
+    step(t, Math.min(.05, (now - (last || now)) / 1000) || .016); last = now;
     if (t < T) raf = requestAnimationFrame(frameSafe); else done();
   };
   const frameSafe = now => { try { frame(now); } catch (e) { done(); throw e; } };
+  // warm-up, out of sight: every shot drawn once (shaders compiled, textures sent to the GPU) before the clock starts
+  canvas.style.visibility = "hidden"; renderer.compile(scene, camera);
+  for (const w of [.3, 2, 3, 4.8, 6.2]) { step(w, 0); await new Promise(r => requestAnimationFrame(r)); }
+  canvas.style.visibility = "";
   raf = requestAnimationFrame(frameSafe);
   await finished;
   cancelAnimationFrame(raf); removeEventListener("resize", resize);
-  canvas.remove(); renderer.dispose(); composer.dispose?.();
+  canvas.remove(); renderer.dispose(); composer?.dispose?.();
 }

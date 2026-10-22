@@ -170,3 +170,6 @@
 @keyframes hx3dIn{from{opacity:0}}
 .hx3d-gl{position:absolute;inset:0;width:100%;height:100%;display:block}
 .hx3d-skip{position:absolute;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));padding:8px 14px;border-radius:999px;border:1px solid rgba(57,255,136,.4);background:rgba(0,0,0,.5);color:#b8ffcf;font:500 .8rem var(--mono);letter-spacing:.1em;cursor:pointer}
+
+/* while the 3D film plays, nothing else on the page is painted (its animations and blurs cost frames) */
+body.hx3d-on > *:not(.hx3d){visibility:hidden}
