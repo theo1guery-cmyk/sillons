@@ -140,7 +140,9 @@ Object.assign(Haunted, {
       <div class="hx-bats-s" aria-hidden="true">${"<i></i>".repeat(6)}</div>`;
     el.querySelector(".hx-front").appendChild(hauntedCardEl({ t: c.title, a: c.artist, cov: c.cover, no: c.no, of: c.of }));
     box.appendChild(el); op.classList.add("hx-on");
-    const film = matchMedia("(prefers-reduced-motion: reduce)").matches ? null : import("./haunt3d.js?v=15").catch(() => null);   // loads while the back shakes
+    const film = matchMedia("(prefers-reduced-motion: reduce)").matches ? null : import("./haunt3d.js?v=17").catch(() => null);   // loads while the back shakes
+    if (film) ["scene.gltf?v=1", "scene.bin", "textures/coffin1_baseColor.jpg", "textures/phongE3_baseColor.jpg", "textures/phongE4_baseColor.jpg", "textures/phongE4_normal.jpg"]
+      .forEach(f => fetch("brand/3d/coffin/" + f).catch(() => {}));   // the coffin too, so the film starts at once
     $o(".op-sub").textContent = "Carte bonus · Collection Hantée";
     opHint("Une présence hante ce booster… touche la carte");
     OP.step = async () => {
@@ -152,10 +154,10 @@ Object.assign(Haunted, {
       if (m) {
         const host = document.createElement("div"); host.className = "hx3d"; host.setAttribute("aria-hidden", "true");
         host.innerHTML = `<button class="hx3d-skip" type="button">Passer</button>`;
-        document.body.appendChild(host); document.body.classList.add("fx-on");
+        document.body.appendChild(host); document.body.classList.add("fx-on", "hx3d-on");
         host.querySelector("button").onclick = () => host.remove();
         try { await m.play(host, c); shown = true; } catch (e) { console.warn("Carte hantée 3D :", e); }
-        host.remove(); document.body.classList.remove("fx-on");
+        host.remove(); document.body.classList.remove("fx-on", "hx3d-on");
       }
       if (shown) el.classList.add("burning", "done");
       else { el.classList.add("burning"); await wait(1900); el.classList.add("done"); }
