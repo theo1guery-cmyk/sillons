@@ -2,7 +2,9 @@
 /* Zik Hunter — Halloween at the witch's (only while the event is on, with an account): pumpkins won with the quests of
    the day, the transmutation cauldron (5 cards of a rarity → 1 of the next) and the restoration elixir (+1 to a graded
    card, never above 9). The server decides everything; this file shows the page and the two magic films. */
-const W = { st: null, tier: 2, sel: [], elix: null, busy: false };
+const W = { st: null, tier: 2, sel: [], elix: null, busy: false, sub: "hx" };
+// the sub-sections of the page, one at a time: [key, label]
+const WZ_SUBS = [["hx", "🦇 Collection Hantée"], ["quests", "🎃 Quêtes"], ["cauldron", "🧪 Chaudron"], ["elixir", "✨ Élixir"], ["shop", "🛒 Citrouilles"]];
 const CAULDRON = { 2: [3, 20, 100], 3: [4, 40, 100], 4: [5, 80, 50] };   // from: [to, pumpkins, % of success]
 const ELIXIR = g => g <= 5 ? 70 : g === 6 ? 50 : g === 7 ? 35 : g === 8 ? 20 : 0;
 
@@ -20,21 +22,25 @@ async function renderWitch() {
   if (!st.active) { box.innerHTML = `<h2>Le chaudron est froid</h2><p class="sub">La sorcière revient au prochain événement.</p>`; return; }
   box.innerHTML = `<h2>Chez la sorcière <button class="ps-link wz-replay" id="wzIntro">▶ Revoir l'annonce</button></h2>
     <p class="sub">Gagne des citrouilles avec les quêtes de la nuit, puis fais bouillir tes cartes dans le chaudron ou verse l'élixir sur tes cartes gradées. La magie ne dure que pendant l'événement.</p>
-    <div class="wz-top">
+    <div class="wz-bar">
       <div class="wz-purse"><span class="wz-pk" aria-hidden="true">🎃</span><b id="wzPk">${fmt(st.pumpkins)}</b><small>citrouilles</small></div>
+      <div class="wz-tabs" role="tablist" aria-label="Chez la sorcière">${WZ_SUBS.map(([k, t]) => `<button role="tab" data-sub="${k}" aria-selected="${W.sub === k}">${t}${k === "quests" && st.quests.some(q => !q.claimed && q.progress >= q.goal) ? `<i class="wz-dot" aria-label="à récupérer"></i>` : ""}</button>`).join("")}</div>
+    </div>
+    <section class="wz-sec wz-qsec" data-sub="quests" aria-label="Quêtes">
+      <h3>Les quêtes de la nuit</h3>
       <div class="wz-quests">${st.quests.map(q => `<div class="wz-q${q.claimed ? " done" : q.progress >= q.goal ? " ready" : ""}">
           <span>${esc(q.label)}</span><div class="meter"><s style="width:${Math.round(100 * q.progress / q.goal)}%"></s></div>
           <small>${q.progress} / ${q.goal}</small>
           ${q.claimed ? `<em>✓ +${q.reward} 🎃</em>` : q.progress >= q.goal ? `<button class="btn primary" data-q="${q.key}">+${q.reward} 🎃</button>` : `<em>+${q.reward} 🎃</em>`}</div>`).join("")}
-        <p class="wz-note">Les quêtes reviennent chaque jour à minuit.</p></div>
-    </div>
-    <section class="wz-sec hx-sec" id="hxSec" aria-labelledby="hxT"></section>
-    <section class="wz-sec wz-shop" aria-labelledby="wzShopT">
+        <p class="wz-note">Les quêtes reviennent chaque jour à minuit. Tu trouves aussi des citrouilles cachées dans les boosters.</p></div>
+    </section>
+    <section class="wz-sec hx-sec" id="hxSec" data-sub="hx" aria-labelledby="hxT"></section>
+    <section class="wz-sec wz-shop" data-sub="shop" aria-labelledby="wzShopT">
       <h3 id="wzShopT">Le marché aux citrouilles</h3>
       <p class="sub">Besoin de plus de magie ? Les citrouilles servent au chaudron et à l'élixir, et seulement pendant l'événement : dépense-les avant la fin.</p>
       <div class="wz-packs" id="wzPacks"></div>
     </section>
-    <section class="wz-sec" aria-labelledby="wzCauldT">
+    <section class="wz-sec" data-sub="cauldron" aria-labelledby="wzCauldT">
       <h3 id="wzCauldT">Chaudron de transmutation</h3>
       <p class="sub">Jette 5 titres de la même rareté : il en sort un titre de la rareté au-dessus. Les cartes Shiny, gradées ou de collection ne vont pas dans le chaudron.</p>
       <div class="wz-recipes">${[2, 3, 4].map(t => `<button class="wz-rec${W.tier === t ? " on" : ""}" data-t="${t}" style="--a:${RCOL[t]};--b:${RCOL[t + 1]}">
@@ -45,7 +51,7 @@ async function renderWitch() {
       </div>
       <div class="wz-pick" id="wzPick"></div>
     </section>
-    <section class="wz-sec" aria-labelledby="wzElixT">
+    <section class="wz-sec" data-sub="elixir" aria-labelledby="wzElixT">
       <h3 id="wzElixT">Élixir de restauration · 30 🎃</h3>
       <p class="sub">Verse-le sur une carte gradée : elle tente de gagner +1 à sa note (jamais au-delà de 9). Si ça rate, tu ne perds que les citrouilles : la note, la boîte et son numéro restent.</p>
       <div class="wz-elix" id="wzElix"></div>
@@ -56,6 +62,13 @@ async function renderWitch() {
   $("#wzIntro").onclick = () => window.halloweenIntro?.();
   box.querySelectorAll(".wz-rec").forEach(b => b.onclick = () => { W.tier = +b.dataset.t; W.sel = []; renderWitch(); });
   drawPot(); drawElixir(); drawPumpkinShop(); drawHaunted($("#hxSec"));
+  box.querySelectorAll(".wz-tabs [data-sub]").forEach(b => b.onclick = () => { W.sub = b.dataset.sub; wzSub(); });
+  wzSub();
+}
+function wzSub() {
+  const box = views.witch;
+  box.querySelectorAll(".wz-tabs [data-sub]").forEach(b => b.setAttribute("aria-selected", b.dataset.sub === W.sub));
+  box.querySelectorAll("section[data-sub]").forEach(s => s.hidden = s.dataset.sub !== W.sub);
 }
 // the pumpkin packs: paid in euros (Stripe, or through the Discord while card payments are off) or in Vinyles
 async function drawPumpkinShop() {

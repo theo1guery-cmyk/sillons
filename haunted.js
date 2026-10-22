@@ -47,16 +47,22 @@ window.Haunted = Haunted;
 
 /* the board at the witch's: the 13 sounds, the copies still to come, who holds which number; and the Pack Hanté */
 async function drawHaunted(box) {
-  let d; try { d = await rpc("haunted_collection"); } catch (e) { box.remove(); return; }
-  if (!d?.editions?.length) { box.remove(); return; }
+  const gone = () => { box.remove(); if (W.sub === "hx") { W.sub = "quests"; wzSub(); } };
+  let d; try { d = await rpc("haunted_collection"); } catch (e) { gone(); return; }
+  if (!d?.editions?.length) { gone(); return; }
   if (d.paused) { box.innerHTML = `<h3 id="hxT">Collection Hantée</h3><p class="sub">🛠️ La Collection Hantée est en maintenance le temps d'embellir ses cartes. Elle revient très vite, et les cartes déjà trouvées restent à leurs propriétaires.</p>`; return; }
   const out = d.editions.reduce((a, e) => a + e.copies.length, 0), all = d.editions.reduce((a, e) => a + e.of, 0);
   const pk = typeof W !== "undefined" ? W.st?.pumpkins || 0 : 0;
   box.innerHTML = `<h3 id="hxT">Collection Hantée <button class="ps-link wz-replay" id="hxIntro">▶ Revoir l'annonce</button></h3>
     <p class="sub">13 cartes à tirage limité, numérotées, qui n'existeront jamais ailleurs. Elles se cachent dans les boosters jusqu'au 2 novembre à minuit : toutes sortiront avant la fin, à toi de les trouver. <b>Thriller n'existe qu'en un seul exemplaire.</b></p>
-    <div class="hx-bar"><div><b>${out}</b> / ${all} cartes sorties</div>
-      <button class="btn primary hx-buy" id="hxPack"${pk < 100 ? " disabled" : ""}>🦇 Ouvrir un Pack Hanté · 100 🎃</button>
-      <small>5 cartes Rare ou mieux · 20 fois plus de chances de trouver une carte Hantée</small></div>
+    <div class="hx-top">
+      <button class="pack hx-pack" id="hxPackArt" aria-label="Ouvrir un Pack Hanté"><span class="pack-shine"></span><canvas class="pack-gl" aria-hidden="true"></canvas><img class="pack-logo" src="brand/zikhunter-icon.svg" alt=""></button>
+      <div class="hx-pinfo"><p class="hx-pk">Le Pack Hanté</p>
+        <p>5 cartes <b>Rare ou mieux</b>, et <b>20 fois plus de chances</b> qu'un booster de cacher une carte de la Collection Hantée.</p>
+        <button class="btn primary hx-buy" id="hxPack"${pk < 100 ? " disabled" : ""}>Ouvrir · 100 🎃</button>
+        ${pk < 100 ? `<small>Il te manque ${100 - pk} 🎃 : fais les quêtes ou passe au marché aux citrouilles.</small>` : ""}
+        <div class="hx-count"><b>${out}</b> / ${all} cartes Hantées sorties</div></div>
+    </div>
     <div class="hx-board">${d.editions.map(e => {
       const mine = e.copies.filter(c => c.mine), left = e.of - e.copies.length;
       return `<div class="hx-slot${mine.length ? " mine" : ""}${left ? "" : " out"}" data-slot="${e.slot}">
@@ -71,6 +77,7 @@ async function drawHaunted(box) {
     s.querySelector(".hx-card").appendChild(w);
   });
   box.querySelector("#hxPack").onclick = () => startOpening(HAUNTED);
+  const art = box.querySelector("#hxPackArt"); skin(art, "pack-haunted", { sway: true }); art.onclick = () => pk >= 100 ? startOpening(HAUNTED) : toast(`Il te faut 100 🎃 pour le Pack Hanté.`);
   box.querySelector("#hxIntro").onclick = () => hauntedIntro();
 }
 

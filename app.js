@@ -808,7 +808,7 @@ const opHost = $o(".op-pack");
 const opPhase = ph => { op.dataset.phase = ph; };
 const opHint = t => { $o(".op-hint").textContent = t; };
 let opReady = false;
-const packDesign = p => p.big ? "pack-big" : p.g >= 0 ? "pack-" + TYPES[p.g].k : classicName();
+const packDesign = p => p.big ? "pack-big" : p.haunted ? "pack-haunted" : p.g >= 0 ? "pack-" + TYPES[p.g].k : classicName();
 const packLabel = p => p === BIG ? ["Édition Deluxe", "15 cartes · toutes Rare ou mieux"]
   : p.haunted ? ["Pack Hanté", "100 🎃 · 5 cartes Rare ou mieux · 20 fois plus de chances de trouver une carte Hantée"]
   : p.g >= 0 ? ["Booster " + p.n, (p.pay === "vinyls" ? STORE_VINYLS + " Vinyles" : STORE_PRICE + " Streams") + " · 5 cartes"]

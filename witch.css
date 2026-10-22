@@ -118,3 +118,17 @@
 .wz-pack em{font-style:normal;font-size:.75rem;color:#ffb15a;font-weight:600}
 .wz-pack em.none{visibility:hidden}
 .wz-pack .vs-buy{margin-top:6px;width:100%}
+
+/* the page in sub-sections: the purse and a bar of tabs on top, one section at a time */
+.wz-bar{position:sticky;top:64px;z-index:3;display:flex;flex-wrap:wrap;align-items:center;gap:12px 16px;margin:6px 0 18px;padding:10px 0;background:linear-gradient(180deg,var(--bg,#0b0810) 70%,transparent)}
+.wz-bar .wz-purse{flex-direction:row;display:flex;gap:8px;padding:10px 16px;border-radius:999px}
+.wz-bar .wz-purse b{font-size:1.4rem}
+.wz-bar .wz-pk{font-size:1.3rem}
+.wz-tabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;flex:1;min-width:0;padding:4px;border-radius:999px;background:rgba(255,255,255,.04);box-shadow:inset 0 0 0 1px rgba(255,138,42,.2)}
+.wz-tabs::-webkit-scrollbar{display:none}
+.wz-tabs button{position:relative;flex:none;padding:9px 16px;border:0;border-radius:999px;background:none;color:#c9a6e0;font:600 .88rem var(--body);cursor:pointer;white-space:nowrap}
+.wz-tabs button[aria-selected="true"]{background:linear-gradient(180deg,#ff9a3c,#c2410c);color:#1a0b00;box-shadow:0 0 18px -4px rgba(255,138,42,.8)}
+.wz-tabs button:not([aria-selected="true"]):hover{color:#fff;background:rgba(255,255,255,.06)}
+.wz-dot{position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:#39ff88;box-shadow:0 0 8px #39ff88}
+.wz-qsec h3{margin-bottom:12px}
+@media (max-width:640px){.wz-bar{gap:8px;top:56px}.wz-bar .wz-purse{padding:8px 14px}.wz-tabs{flex-basis:100%}}
