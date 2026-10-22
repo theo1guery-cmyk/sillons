@@ -196,7 +196,7 @@ export async function play(host, card) {
   const frame = now => {
     if (!t0) t0 = now;
     const t = !host.isConnected ? T : window.__hxT ?? (now - t0) / 1000;   // host gone: skip to the end (__hxT: a frozen instant, for tests)
-    const rise = ease.inOut(seg(t, 2.3, 3.9));
+    const rise = ease.out(seg(t, 2.3, 3.5));                 // up first, then it stands: it never goes through the box
     // the camera comes to the coffin, then follows the card up
     const far = portrait() ? 14 : 7.2, near = portrait() ? 8.4 : 4.2;
     const app = ease.inOut(seg(t, 0, 2.4)), up = ease.inOut(seg(t, 2.3, 4)), push = ease.out(seg(t, 5.2, 6.6));
@@ -219,7 +219,7 @@ export async function play(host, card) {
     for (const s of mist) { s.position.x += s.userData.v * .016; if (Math.abs(s.position.x) > 5) s.userData.v *= -1; }
     // the card: lying in the coffin, it rises, turns twice and stands facing us
     cardG.position.set(0, lerp(CARD_Y, 1.55, rise) + Math.sin(t * 2) * .03 * seg(t, 3.9, 4.3), lerp(.1, .45, rise));
-    cardG.rotation.set(lerp(-Math.PI / 2, 0, ease.out(seg(t, 2.3, 3.4))), (1 - ease.out(seg(t, 2.3, 4))) * Math.PI * 4, lerp(Math.PI / 2, 0, ease.out(seg(t, 2.3, 3.2))) + Math.sin(t * 1.6) * .03 * seg(t, 3.9, 5));
+    cardG.rotation.set(lerp(-Math.PI / 2, 0, ease.inOut(seg(t, 2.6, 3.6))), (1 - ease.out(seg(t, 2.3, 4))) * Math.PI * 4, lerp(Math.PI / 2, 0, ease.out(seg(t, 2.3, 3.2))) + Math.sin(t * 1.6) * .03 * seg(t, 3.9, 5));
     cardG.scale.setScalar(.82 + rise * .18 + ease.out(seg(t, 5.2, 6.4)) * .06);
     halo.position.copy(cardG.position); halo.position.z -= .25; halo.material.opacity = seg(t, 2.8, 3.6) * .3 + seg(t, 4.2, 5) * .5 * (1 - seg(t, 5.4, 6.8));
     rimMesh.material.opacity = .6 + .4 * Math.sin(t * 9);
