@@ -51,10 +51,14 @@ async function drawHaunted(box) {
   const gone = () => { box.remove(); if (W.sub === "hx") { W.sub = "quests"; wzSub(); } };
   let d; try { d = await rpc("haunted_collection"); } catch (e) { gone(); return; }
   if (!d?.editions?.length) { gone(); return; }
-  if (d.paused) { box.innerHTML = `<h3 id="hxT">Collection Hantée</h3><p class="sub">🛠️ La Collection Hantée est en maintenance le temps d'embellir ses cartes. Elle revient très vite, et les cartes déjà trouvées restent à leurs propriétaires.</p>`; return; }
+  if (d.paused) {
+    box.innerHTML = `<h3 id="hxT">Collection Hantée${typeof ADM !== "undefined" && ADM.admin ? ` <button class="ps-link wz-replay" id="hxDemo">🎬 Tester l'apparition (admin)</button>` : ""}</h3><p class="sub">🛠️ La Collection Hantée est en maintenance le temps d'embellir ses cartes. Elle revient très vite, et les cartes déjà trouvées restent à leurs propriétaires.</p>`;
+    const demo = box.querySelector("#hxDemo"); if (demo) demo.onclick = () => Haunted.demo();
+    return;
+  }
   const out = d.editions.reduce((a, e) => a + e.copies.length, 0), all = d.editions.reduce((a, e) => a + e.of, 0);
   const pk = typeof W !== "undefined" ? W.st?.pumpkins || 0 : 0;
-  box.innerHTML = `<h3 id="hxT">Collection Hantée <button class="ps-link wz-replay" id="hxIntro">▶ Revoir l'annonce</button></h3>
+  box.innerHTML = `<h3 id="hxT">Collection Hantée <button class="ps-link wz-replay" id="hxIntro">▶ Revoir l'annonce</button>${typeof ADM !== "undefined" && ADM.admin ? ` <button class="ps-link wz-replay" id="hxDemo">🎬 Tester l'apparition (admin)</button>` : ""}</h3>
     <p class="sub">13 cartes à tirage limité, numérotées, qui n'existeront jamais ailleurs. Elles se cachent dans les boosters jusqu'au 2 novembre à minuit : toutes sortiront avant la fin, à toi de les trouver. <b>Thriller n'existe qu'en un seul exemplaire.</b></p>
     <div class="hx-top">
       <button class="pack hx-pack" id="hxPackArt" aria-label="Ouvrir un Pack Hanté"><span class="pack-shine"></span><canvas class="pack-gl" aria-hidden="true"></canvas><img class="pack-logo" src="brand/zikhunter-icon.svg" alt=""></button>
@@ -80,6 +84,7 @@ async function drawHaunted(box) {
   box.querySelector("#hxPack").onclick = () => startOpening(HAUNTED);
   const art = box.querySelector("#hxPackArt"); skin(art, "pack-haunted", { sway: true }); art.onclick = () => pk >= 100 ? startOpening(HAUNTED) : toast(`Il te faut 100 🎃 pour le Pack Hanté.`);
   box.querySelector("#hxIntro").onclick = () => hauntedIntro();
+  const demo = box.querySelector("#hxDemo"); if (demo) demo.onclick = () => Haunted.demo();
 }
 
 /* the announcement of the Collection Hantée: stories (event-intro.js), once per player, after the Halloween one */
@@ -155,7 +160,8 @@ Object.assign(Haunted, {
       if (shown) el.classList.add("burning", "done");
       else { el.classList.add("burning"); await wait(1900); el.classList.add("done"); }
       opHint(`${c.title} · N° ${hxNo(c)}/${c.of}${c.of === 1 ? " · exemplaire unique !" : ""} — touche pour voir tout le booster`);
-      OP.step = async () => { OP.hAudio?.pause(); op.classList.remove("hx-on"); el.classList.add("leave"); setTimeout(() => el.remove(), 380); opRecap(); };
+      OP.step = async () => { OP.hAudio?.pause(); op.classList.remove("hx-on"); el.classList.add("leave"); setTimeout(() => el.remove(), 380);
+        if (OP.demo) { OP.demo = false; OP.haunted = null; OP.step = null; closeOpening(); } else opRecap(); };
     };
   },
   // the layout of the whole booster: the haunted copy at the end (burnt in front of you if skipped with "Tout révéler")
@@ -167,6 +173,19 @@ Object.assign(Haunted, {
     rc.appendChild(slot);
   },
 });
+
+/* admins: the whole reveal with a sound of the collection, nothing drawn nor saved */
+Haunted.demo = async () => {
+  if (busy || !op.hidden) return;
+  let d = HXM.d; try { d = await rpc("haunted_collection"); } catch (e) {}
+  const eds = (d?.editions || []).filter(e => e.cover); if (!eds.length) return toast("Pas encore de carte à montrer.");
+  const e = eds[Math.random() * eds.length | 0];
+  Object.assign(OP, { p: HAUNTED, pulls: [], i: 0, seen: -1, haunted: { title: e.title, artist: e.artist, cover: e.cover, preview: e.preview, no: 1, of: e.of }, hDone: false, demo: true });
+  $o(".op-title").textContent = "Aperçu · Collection Hantée"; $o(".op-cards").innerHTML = ""; $o(".op-recap").innerHTML = ""; $o(".op-tray").innerHTML = "";
+  op.classList.remove("god", "err"); op.hidden = false; document.body.classList.add("op-on"); addEventListener("keydown", opKeys, true);
+  opPhase("cards");
+  Haunted.inPack(OP);
+};
 
 /* the collection page: my haunted cards on top (refreshed at most every 30 s) */
 const HXM = { at: 0, d: null, busy: false };

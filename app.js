@@ -874,7 +874,7 @@ async function opGo() {
   try { await s(); } finally { OP.busy = false; }
 }
 function opCards(pulls) {
-  OP.pulls = pulls; OP.i = -1; OP.seen = -1; OP.haunted = pulls.haunted || null; OP.hDone = false;
+  OP.pulls = pulls; OP.i = -1; OP.seen = -1; OP.haunted = pulls.haunted || null; OP.hDone = false; OP.demo = false;
   opPhase("cards");
   const best = Math.max(...pulls.map(pl => pl.c.tier));
   op.style.setProperty("--best", RCOL[best]);
