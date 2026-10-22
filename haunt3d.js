@@ -192,7 +192,7 @@ export async function play(host, card) {
   const T = 8.4;
   let raf = 0, t0 = 0, done;
   const finished = new Promise(r => done = r);
-  const target = new THREE.Vector3(), UP = new THREE.Vector3(0, 1, 0), DOWN_UP = new THREE.Vector3(0, 0, -1);
+  const target = new THREE.Vector3(), UP = new THREE.Vector3(0, 1, 0), DOWN_UP = new THREE.Vector3(1, 0, 0);   // from above, the coffin stands upright on the screen and the card reads the right way
   cardG.rotation.order = "YXZ";                              // lying: turned along the coffin, back up; standing: facing us
   // three shots: the graveyard (the coffin opens), from above (the card lies face down in the satin), then in front
   const SHOT2 = 2.5, SHOT3 = 4.3;
@@ -205,8 +205,8 @@ export async function play(host, card) {
       camera.up.copy(UP); camera.position.set(Math.sin(t * .2) * .5, lerp(3.1, 2.4, app), lerp(far, near, app));
       target.set(0, .45, .1);
     } else if (t < SHOT3) {                                  // 2. straight above the card, slowly coming down, a slight turn
-      const k = ease.inOut(seg(t, SHOT2, SHOT3)), h = (portrait() ? 4.6 : 3.2) - k * .7;
-      camera.up.copy(DOWN_UP).applyAxisAngle(UP, .25 - k * .35);
+      const k = ease.inOut(seg(t, SHOT2, SHOT3)), h = (portrait() ? 3.4 : 3.6) - k * .6;
+      camera.up.copy(DOWN_UP).applyAxisAngle(UP, .12 - k * .2);
       camera.position.set(0, CARD_Y + h, .1 + .001); target.set(0, CARD_Y, .1);
     } else {                                                 // 3. in front, low: the card rises and turns to us
       const push = ease.out(seg(t, 6.6, 7.8)), dist = portrait() ? 8.4 : 5.2;
@@ -234,7 +234,7 @@ export async function play(host, card) {
     const rise = ease.out(seg(t, SHOT3, 5.2)), stand = ease.inOut(seg(t, SHOT3 + .2, 5.1));
     cardG.position.set(Math.sin(t * 47) * .008 * tremble, lerp(CARD_Y + lift, 1.55, rise) + Math.sin(t * 2) * .03 * seg(t, 5.2, 5.6), lerp(.1, .45, rise));
     cardG.rotation.set(lerp(Math.PI / 2, 0, stand) + Math.sin(t * 31) * .02 * tremble, lerp(Math.PI / 2 + Math.PI * 4, 0, ease.out(seg(t, SHOT3, 5.4))), Math.sin(t * 1.6) * .03 * seg(t, 5.2, 6.4));
-    cardG.scale.setScalar(.85 + rise * .15 + ease.out(seg(t, 6.6, 7.8)) * .06);
+    cardG.scale.setScalar(lerp(.6, 1, ease.out(seg(t, SHOT3, 5))) + ease.out(seg(t, 6.6, 7.8)) * .06);   // small enough to lie inside
     halo.position.copy(cardG.position); halo.position.z -= .25; halo.material.opacity = seg(t, 4.6, 5.2) * .3 + seg(t, 5.6, 6.4) * .5 * (1 - seg(t, 6.8, 8.2));
     rimMesh.material.opacity = .6 + .4 * Math.sin(t * 9);
     // the burn
