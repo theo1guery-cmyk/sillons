@@ -1,8 +1,7 @@
 {
-  "id": "2026-10-22.7",
-  "title": "L'extrait des cartes Hantées se lance au premier toucher",
+  "id": "2026-10-22.8",
+  "title": "L'extrait des cartes Hantées, cette fois pour de bon",
   "notes": [
-    "L'extrait est préparé dès que tu ouvres la carte : « Écouter l'extrait » lance la musique tout de suite, aussi sur téléphone",
-    "La musique d'une carte Hantée qui sort d'un booster est prête avant que tu touches la carte"
+    "« Écouter l'extrait » va chercher la musique comme pour les autres cartes, avec plusieurs solutions de secours si Deezer ne la trouve pas"
   ]
 }
