@@ -25,17 +25,21 @@ function hauntedCardEl(c) {
    each time (the track is found once by its title and artist, then remembered) */
 const HX_TRACK = {};
 async function hxPreview(c) {
-  const k = c.title + "|" + c.artist;
-  if (!HX_TRACK[k]) {
-    const r = await dz("search", { q: `artist:"${c.artist}" track:"${c.title}"`, limit: 10 }, true).catch(() => null);
-    const all = r?.data || [], l = all.some(x => x.preview) ? all.filter(x => x.preview) : all, low = x => (x || "").toLowerCase();   // a version that has an extract
-    const t = l.find(x => low(x.title) === low(c.title) && low(x.artist?.name) === low(c.artist)) || l.find(x => low(x.title) === low(c.title)) || l[0];
-    if (!t) return null;
-    HX_TRACK[k] = t.id;
-    if (t.preview) return t.preview;
+  const k = c.title + "|" + c.artist, low = x => (x || "").toLowerCase();
+  const ed = (HXM.d?.editions || []).find(e => low(e.title) === low(c.title) && low(e.artist) === low(c.artist));
+  const fresh = async id => { const t = id && await dz("track/" + id, {}, true).catch(() => null); return t?.preview || null; };
+  // 1. the track the server found for this sound (the same way as the other cards' extracts)
+  let u = await fresh(c.track_id || ed?.track_id || HX_TRACK[k]);
+  if (u) return u;
+  // 2. a search by artist and title, then by plain words; a version that has an extract
+  for (const q of [`artist:"${c.artist}" track:"${c.title}"`, `${c.artist} ${c.title}`]) {
+    const r = await dz("search", { q, limit: 15 }, true).catch(() => null);
+    const l = (r?.data || []).filter(x => x.preview);
+    const t = l.find(x => low(x.title) === low(c.title) && low(x.artist?.name) === low(c.artist)) || l.find(x => low(x.title).startsWith(low(c.title))) || l[0];
+    if (t) { HX_TRACK[k] = t.id; return t.preview; }
   }
-  const t = await dz("track/" + HX_TRACK[k], {}, true).catch(() => null);
-  return t?.preview || null;
+  // 3. the link saved with the sound (it may have expired)
+  return c.preview || ed?.preview || null;
 }
 
 /* the copy found in a booster: the room goes dark, bats cross, the card rises out of the fog with its number */
@@ -67,7 +71,7 @@ window.Haunted = Haunted;
 /* the board at the witch's: the 13 sounds, the copies still to come, who holds which number; and the Pack Hanté */
 async function drawHaunted(box) {
   const gone = () => { box.remove(); if (W.sub === "hx") { W.sub = "quests"; wzSub(); } };
-  let d; try { d = await rpc("haunted_collection"); } catch (e) { gone(); return; }
+  let d; try { d = await rpc("haunted_collection"); HXM.d = d; HXM.at = Date.now(); } catch (e) { gone(); return; }
   if (!d?.editions?.length) { gone(); return; }
   if (d.paused) {
     box.innerHTML = `<h3 id="hxT">Collection Hantée${typeof ADM !== "undefined" && ADM.admin ? ` <button class="ps-link wz-replay" id="hxDemo">🎬 Tester l'apparition (admin)</button>` : ""}</h3><p class="sub">🛠️ La Collection Hantée est en maintenance le temps d'embellir ses cartes. Elle revient très vite, et les cartes déjà trouvées restent à leurs propriétaires.</p>`;
@@ -253,7 +257,7 @@ window.drawMyHaunted = drawMyHaunted;
 
 /* ---------- graded, listened to, sold ---------- */
 const HX_GRADE = 600;                          // Streams (haunted_grade on the server)
-const hxCard = (e, cp) => ({ title: e.title, artist: e.artist, cover: e.cover, preview: e.preview, no: cp.no, of: e.of, slot: e.slot,
+const hxCard = (e, cp) => ({ track_id: e.track_id, title: e.title, artist: e.artist, cover: e.cover, preview: e.preview, no: cp.no, of: e.of, slot: e.slot,
   id: cp.id, mine: cp.mine, pseudo: cp.pseudo, grade: cp.grade, cert: cp.cert, sale: cp.sale });
 // the card in its case, like the graded cards: the label says the sound, the collection, the number and the grade
 function hxSlabEl(c) {
