@@ -40,3 +40,41 @@
 .hcard.one .hc-no{font-size:7cqw;background:linear-gradient(180deg,#fff,#ffd29a 50%,#ff8a2a);-webkit-background-clip:text;background-clip:text;color:transparent}
 .hcard.one .hc-head{color:#ffd29a}
 @media (prefers-reduced-motion:reduce){.hc-fog,.hc-bats i,.hcard.one{animation:none}}
+/* a sound not found yet: its window stays dark */
+.hcard.hc-ghost .hc-art{filter:grayscale(1) brightness(.25) blur(1.5px)}
+.hcard.hc-ghost .hc-no{color:#7a6488}
+.hcard.hc-ghost{filter:saturate(.6)}
+
+/* the board at the witch's (drawHaunted) */
+.hx-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin:6px 0 16px}
+.hx-bar>div{font:500 .9rem var(--body);color:#c9a6e0}
+.hx-bar>div b{font:900 1.4rem var(--display);color:#ffd29a}
+.hx-bar small{flex-basis:100%;color:var(--muted);font-size:.8rem}
+.hx-buy{background:linear-gradient(180deg,#ff9a3c,#c2410c);border-color:#ff9a3c;color:#1a0b00}
+.hx-board{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:18px 14px}
+.hx-slot{display:grid;gap:6px;align-content:start}
+.hx-left{margin:0;text-align:center;font:600 .72rem var(--mono);letter-spacing:.1em;text-transform:uppercase;color:#ff9a3c}
+.hx-slot.out .hx-left{color:var(--muted)}
+.hx-owners{list-style:none;margin:0;padding:0;display:grid;gap:2px;font-size:.75rem;color:var(--muted);max-height:110px;overflow:auto}
+.hx-owners b{font:600 .7rem var(--mono);color:#c9a6e0;margin-right:4px}
+.hx-owners li.me{color:#ffd29a}
+
+/* the reveal, full screen */
+.hx-reveal{position:fixed;inset:0;z-index:90;display:grid;place-items:center;align-content:center;gap:18px;padding:24px;background:radial-gradient(80% 60% at 50% 40%,#2a0f36,#07030a 75%);opacity:0;transition:opacity .4s}
+.hx-reveal.on{opacity:1}
+.hx-r-fog{position:absolute;left:-30%;right:-30%;bottom:-10%;height:60%;filter:blur(30px);opacity:.9;pointer-events:none;
+  background:radial-gradient(40% 50% at 25% 70%,rgba(170,120,220,.55),transparent 70%),radial-gradient(45% 45% at 70% 80%,rgba(120,220,170,.3),transparent 70%);animation:hcfog 6s ease-in-out infinite alternate}
+.hx-r-bats{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.hx-r-bats i{position:absolute;left:-15%;width:70px;height:30px;background:url(brand/bat.svg) center/contain no-repeat;filter:drop-shadow(0 0 8px rgba(255,140,40,.8));animation:hxfly 2.4s ease-in forwards}
+.hx-r-bats i:nth-child(1){top:20%}.hx-r-bats i:nth-child(2){top:34%;animation-delay:.2s;width:46px}.hx-r-bats i:nth-child(3){top:12%;animation-delay:.45s;width:56px}
+.hx-r-bats i:nth-child(4){top:48%;animation-delay:.3s;width:40px}.hx-r-bats i:nth-child(5){top:62%;animation-delay:.6s;width:60px}.hx-r-bats i:nth-child(6){top:28%;animation-delay:.8s;width:36px}.hx-r-bats i:nth-child(7){top:70%;animation-delay:1s;width:50px}
+@keyframes hxfly{0%{transform:translate(0,0) scaleY(1)}20%{transform:translate(30vw,-4vh) scaleY(.5)}40%{transform:translate(60vw,2vh) scaleY(1)}60%{transform:translate(90vw,-3vh) scaleY(.5)}100%{transform:translate(130vw,-8vh) scaleY(1)}}
+.hx-r-kick{position:relative;margin:0;font:600 .9rem var(--mono);letter-spacing:.3em;text-transform:uppercase;color:#ffb15a;text-align:center;animation:hxflick 1.2s steps(2) 2}
+@keyframes hxflick{50%{opacity:.3}}
+.hx-r-card{position:relative;width:min(300px,68vw);opacity:0;transform:translateY(40px) scale(.85) rotateY(90deg);transition:transform 1s cubic-bezier(.2,.9,.25,1.2),opacity .6s;filter:drop-shadow(0 0 40px rgba(255,120,30,.55))}
+.hx-reveal.show .hx-r-card{opacity:1;transform:none}
+.hx-r-txt{position:relative;display:grid;justify-items:center;gap:6px;text-align:center;opacity:0;transition:opacity .5s .6s}
+.hx-reveal.show .hx-r-txt{opacity:1}
+.hx-r-txt b{font:900 1.5rem var(--display);background:linear-gradient(180deg,#ffe2b0,#ff8a2a);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hx-r-txt span{color:#c9a6e0}
+@media (prefers-reduced-motion:reduce){.hx-r-bats,.hx-r-fog{display:none}.hx-r-card{transition:opacity .3s}}

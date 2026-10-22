@@ -699,6 +699,7 @@ const tearHint = document.createElement("p"); tearHint.className = "tear-hint"; 
 packStage.append(packBtn, tearHint, openBig);
 // the big boosters of the VIP pass: 15 cards, all Rare or better
 const BIG = { g: -1, n: "Édition Deluxe", big: true, el: packBtn };
+const HAUNTED = { g: -1, n: "Pack Hanté", haunted: true };   // Halloween: bought with pumpkins at the witch's (haunted.js)
 const bigBtn = document.createElement("button"); bigBtn.className = "btn big-pack"; bigBtn.id = "openBigPack"; bigBtn.hidden = true;
 bigBtn.onclick = () => bigStage();
 packStage.append(bigBtn);
@@ -809,12 +810,14 @@ const opHint = t => { $o(".op-hint").textContent = t; };
 let opReady = false;
 const packDesign = p => p.big ? "pack-big" : p.g >= 0 ? "pack-" + TYPES[p.g].k : classicName();
 const packLabel = p => p === BIG ? ["Édition Deluxe", "15 cartes · toutes Rare ou mieux"]
+  : p.haunted ? ["Pack Hanté", "100 🎃 · 5 cartes Rare ou mieux · 20 fois plus de chances de trouver une carte Hantée"]
   : p.g >= 0 ? ["Booster " + p.n, (p.pay === "vinyls" ? STORE_VINYLS + " Vinyles" : STORE_PRICE + " Streams") + " · 5 cartes"]
   : ["Booster", "5 cartes · tout Deezer"];
 // can this booster be opened right now? (if not, openPack says why)
 function canOpen(p) {
   if (busy || !Online.active || !window.Studio) return false;
   if (p === BIG) return (S.big || 0) > 0;
+  if (p.haunted) return (typeof W !== "undefined" && W.st?.pumpkins || 0) >= 100;
   if (p.g >= 0) return canPay(p);
   refill();
   return TEST_MODE || (S.stock || 0) > 0;
@@ -840,6 +843,7 @@ function closeOpening() {
   op.hidden = true; document.body.classList.remove("op-on"); removeEventListener("keydown", opKeys, true);
   opPhase("pack"); OP.step = null;
   renderStock(); refreshViews?.();
+  if (!views.witch?.hidden) window.renderWitch?.();
 }
 // a tap on the sachet (no swipe) tears it by itself
 let opDown = null;
@@ -1030,6 +1034,8 @@ async function openPack(p, opts = {}) {
     if (pulls.some(Stage.isHit)) Stage.prepare(pulls);
     for (const pl of pulls) if (Stage.isHit(pl)) Stage.warm(pl);   // the hits' tracks load while the first cards flip
     window.V2?.pulls(pulls);
+    if (pulls.pumpkins) toast(`+${pulls.pumpkins} 🎃 cachées dans ce booster !`);
+    if (pulls.haunted) await window.Haunted?.reveal(pulls.haunted);
     const xp = window.packXp?.(p, god);
     if (xp) { const t = document.createElement("span"); t.className = "op-xp"; t.textContent = `+${xp} XP`; $o(".op-head").appendChild(t); setTimeout(() => t.remove(), 2600); }
     if (god && !reduceMotion()) {                   // the GOD pack keeps its own film, then the booster laid out
