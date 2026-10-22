@@ -109,3 +109,17 @@
 .hxi-one{animation:hxiRise 1.4s cubic-bezier(.2,.9,.3,1.1) .3s both;filter:drop-shadow(0 0 50px rgba(255,140,40,.7))}
 .hxi-one .hxi-c{width:clamp(150px,30vw,230px)}
 @keyframes hxiRise{from{opacity:0;transform:translateY(30%) scale(.8);filter:brightness(0) drop-shadow(0 0 0 transparent)}to{opacity:1;transform:none}}
+
+/* the Pack Hanté at the top of the collection: the sachet in 3D, what it gives */
+.hx-top{display:grid;grid-template-columns:minmax(0,200px) minmax(0,1fr);gap:24px;align-items:center;margin:14px 0 22px;padding:18px;border-radius:18px;
+  background:radial-gradient(60% 80% at 15% 50%,rgba(57,255,136,.14),transparent 70%),rgba(255,255,255,.03);box-shadow:inset 0 0 0 1px rgba(57,255,136,.25)}
+.hx-pack{width:100%;max-width:200px;justify-self:center;filter:drop-shadow(0 0 24px rgba(57,255,136,.45))}
+.hx-pinfo{display:grid;gap:8px;justify-items:start}
+.hx-pinfo p{margin:0;color:#cfe9d8;line-height:1.5}
+.hx-pinfo b{color:#9dffbf}
+.hx-pk{font:900 1.5rem var(--display)!important;background:linear-gradient(180deg,#f4ffe6,#39ff88 60%,#0b7a39);-webkit-background-clip:text;background-clip:text;color:transparent!important}
+.hx-pinfo small{color:var(--muted)}
+.hx-count{margin-top:6px;font:500 .9rem var(--body);color:#c9a6e0}
+.hx-count b{font:900 1.3rem var(--display);color:#ffd29a}
+@media (max-width:640px){.hx-top{grid-template-columns:minmax(0,1fr)}.hx-pack{width:150px;max-width:150px}}
+.hx-pack:not(.gl){background:url(brand/demo/pack-haunted-a.webp) center/cover}
