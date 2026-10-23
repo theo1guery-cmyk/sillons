@@ -67,7 +67,11 @@ const HONOR = new Set([4495513, 230, 525046, 148380152, 198, 8909272, 4429712, 5
 const certOf = (fans, id) => HONOR.has(+id) ? 5 : CERT_MIN.reduce((t, m, i) => fans >= m ? i : t, 0);
 const inCert = (fans, t, id) => certOf(fans, id) === t;
 const isArtist = c => c && c.kind === "artist";
-const rarName = c => isArtist(c) ? CERT[c.tier] : RAR[c.tier];
+const rarName = c => c.ed ? "Édition limitée" : isArtist(c) ? CERT[c.tier] : RAR[c.tier];
+// limited editions (the Collection Hantée, haunted.js): numbered copies of a sound, with their own card. Inside they
+// are Légendaires (price of grading, smallest price on the market); c.ed is the sound, c.eno the N° of the copy.
+const ED_FILTER = -3, ED_COL = "#39ff88";
+const edOf = ed => ed === 1 ? 1 : 10;                        // copies printed: Thriller (sound 1) is a 1/1, the others 10
 const fmtFans = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 0 : 1).replace(".", ",") + " M" : n >= 1e3 ? Math.round(n / 1e3) + " k" : String(n);
 // Deezer rank (0 – 1 000 000) → rarity. 950 000+ is the global-hit club
 // (Billie Jean, Bohemian Rhapsody…): a few thousand tracks out of 100+ million.
@@ -536,6 +540,7 @@ function fitCqw(text, font, spacingEm, widthCqw) {
 }
 function cardEl(c, holo) {
   if (isArtist(c)) return artistCardEl(c, holo);
+  if (c.ed && typeof hauntedCardEl === "function") return hauntedCardEl({ t: c.t, a: c.a, cov: c.cov, no: c.eno || "?", of: edOf(c.ed) });
   const T = c.g == null ? PENDING_TYPE : TYPES[c.g] || TYPES[AUTRE], st = stats(c);
   const el = document.createElement("div");
   el.className = "card" + (holo && c.tier >= MYTH ? " shiny" : "") + (c.g == null ? " pending" : ""); el.dataset.r = c.tier;
@@ -617,7 +622,7 @@ $("#tab-ref").onclick = () => show("ref");
 $("#tab-witch").onclick = () => show("witch");
 
 const owned = () => Object.values(S.c);
-const ck = c => c.id + "#" + c.tier;                     // key of a card: a track in one rarity
+const ck = c => c.id + "#" + c.tier + (c.ed ? "#e" : "");   // key of a card: a track in one rarity (a limited edition apart)
 // every version you own of a track, whatever its rarity (rebuilt at most every 50 ms: collections can be big)
 let TRK = null, TRKsrc = null, TRKat = 0;
 function versionsOf(id) {
@@ -1473,13 +1478,14 @@ function renderBinder() {
   if (all.some(isArtist)) rows.splice(1, 0, { g: -2, n: "Artistes", h: 42 });
   pg.innerHTML = rows.map(t => {
     const list = t.g === -1 ? all : t.g === -2 ? all.filter(isArtist) : all.filter(c => c.g === t.g && !isArtist(c));
-    const leg = list.filter(c => c.tier === LEG).length;
+    const leg = list.filter(c => c.tier === LEG && !c.ed).length;
     return `<button data-g="${t.g}" style="--h:${t.h}" aria-pressed="${F.g === t.g}"><span class="row">${t.n}<small>${fmt(list.length)}</small></span><span class="meter"><s style="width:${all.length ? list.length / all.length * 100 : 0}%"></s></span><small class="legs">${leg} légendaire${leg > 1 ? "s" : ""}</small></button>`;
   }).join("");
   pg.querySelectorAll("button").forEach(b => b.onclick = () => { F.g = +b.dataset.g; renderBinder(); });
 
   const fl = $("#filters");
   fl.innerHTML = [-1, ...RAR.keys()].map(r => `<button class="chip" data-r="${r}" aria-pressed="${F.r === r}">${r < 0 ? "Toutes raretés" : `<i style="background:${RCOL[r]}"></i>${RAR[r]}`}</button>`).join("") +
+    (all.some(c => c.ed) ? `<button class="chip" data-r="${ED_FILTER}" aria-pressed="${F.r === ED_FILTER}"><i style="background:${ED_COL}"></i>Édition limitée</button>` : "") +
     `<label for="fSort">Trier par <select id="fSort"><option value="recent">plus récentes</option><option value="rarity">rareté</option><option value="pw">puissance</option><option value="year">année de sortie</option><option value="dup">doublons</option></select></label>`;
   $("#fSort").value = F.sort;
   fl.querySelectorAll(".chip").forEach(b => b.onclick = () => { F.r = +b.dataset.r; renderBinder(); });
@@ -1488,7 +1494,7 @@ function renderBinder() {
   $("#fSort").onchange = e => { F.sort = e.target.value; renderBinder(); };
 
   const q = F.q.trim().toLowerCase();
-  let list = all.filter(c => (F.g === -1 || (F.g === -2 ? isArtist(c) : c.g === F.g && !isArtist(c))) && (F.r < 0 || c.tier === F.r)
+  let list = all.filter(c => (F.g === -1 || (F.g === -2 ? isArtist(c) : c.g === F.g && !isArtist(c))) && (F.r === -1 || (F.r === ED_FILTER ? !!c.ed : !c.ed && c.tier === F.r))
     && (!q || (c.t + " " + c.a + " " + (c.al || "")).toLowerCase().includes(q))
     && (!F.tag || (Online.tagsOf?.(c) || []).some(t => t.id === F.tag)));
   Online.renderTagBar?.();
@@ -1781,10 +1787,15 @@ function openModal(c, shiny) {
     $("#mLink").href = "https://www.deezer.com/artist/" + c.aid;
   } else {
   $("#mTitle").textContent = c.t; $("#mSub").textContent = c.a + " · " + c.al;
-  $("#mDl").innerHTML = `<dt>Rareté</dt><dd>${RAR[c.tier]}${isShiny ? " · Shiny" : ""}</dd><dt>Classement</dt><dd>${fmt(c.rank)} pts Deezer</dd>
+  const nos = c.ed ? (own.copies?.length ? own.copies.map(cp => cp.no).filter(Boolean).sort((a, b) => a - b) : [c.eno]).map(n => `N° ${String(n).padStart(String(edOf(c.ed)).length, "0")}/${edOf(c.ed)}`).join(" · ") : "";
+  $("#mDl").innerHTML = `<dt>Rareté</dt><dd>${rarName(c)}${c.ed ? " · Collection Hantée" : ""}${isShiny ? " · Shiny" : ""}</dd>${c.ed ? `<dt>Numéro</dt><dd>${nos}</dd>` : ""}<dt>Classement</dt><dd>${fmt(c.rank)} pts Deezer</dd>
     <dt>${T.s}</dt><dd>${st.flow} · ${c.bpm > 0 ? c.bpm + " BPM" : "tempo estimé"}</dd><dt>Endurance</dt><dd>${st.endu} · ${fmtDur(c.d)}</dd>
     <dt>Hype</dt><dd>${st.hype}</dd><dt>Sortie</dt><dd>${c.y || "?"}</dd><dt>Possédées</dt><dd>${own.n}${own.holo && c.tier >= MYTH ? ` (dont ${own.holo} Shiny)` : ""}${own.locked ? ` · ${own.locked} non échangeable${own.locked > 1 ? "s" : ""}` : ""}</dd>${otherLine}`;
   $("#mLink").href = "https://www.deezer.com/track/" + c.id;
+  if (c.ed) {                              // a limited edition: no rank nor stats, its number instead
+    $("#mSub").textContent = c.a + " · Collection Hantée";
+    $("#mDl").innerHTML = `<dt>Rareté</dt><dd>Édition limitée · ${edOf(c.ed)} exemplaire${edOf(c.ed) > 1 ? "s" : ""} au monde</dd><dt>Numéro</dt><dd>${nos}</dd><dt>Possédées</dt><dd>${own.n}</dd>`;
+  }
   }
   Online.modalExtras?.(c);
   audio.pause();
@@ -1847,13 +1858,16 @@ if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) && location.hash === "#
 const GRADE_NAME = { 10: "GEM MT", 9: "MINT", 8: "NM-MT", 7: "NM", 6: "EX-MT", 5: "EX", 4: "VG-EX", 3: "VG", 2: "GOOD", 1: "POOR" };
 function slabEl(c, holo, g) {   // g: { grade, cert, pop } — pop: this copy was the n-th of this card to be graded
   const box = document.createElement("div"); box.className = "slab-box";      // the container its sizes are measured on
-  const el = document.createElement("div"); el.className = "slab" + (g.pop === 1 ? " first" : ""); el.dataset.g = g.grade; box.appendChild(el);
-  if (g.pop === 1) box.classList.add("first");
-  const l1 = isArtist(c) ? "ZIK HUNTER · ARTISTE" : `${c.y ? c.y + " " : ""}ZIK HUNTER`;
-  const l3 = (isArtist(c) ? CERT[c.tier] : `${c.a} · ${RAR[c.tier]}`) + (holo ? " · SHINY" : "");
+  const first = g.pop === 1 && !c.ed;
+  const el = document.createElement("div"); el.className = "slab" + (first ? " first" : ""); el.dataset.g = g.grade; box.appendChild(el);
+  if (first) box.classList.add("first");
+  const l1 = c.ed ? "HALLOWEEN 2026 ZIK HUNTER" : isArtist(c) ? "ZIK HUNTER · ARTISTE" : `${c.y ? c.y + " " : ""}ZIK HUNTER`;
+  const l3 = c.ed ? `${c.a} · COLLECTION HANTÉE` : (isArtist(c) ? CERT[c.tier] : `${c.a} · ${RAR[c.tier]}`) + (holo ? " · SHINY" : "");
+  const l4 = c.ed ? `<b>N° ${String(g.pop).padStart(String(edOf(c.ed)).length, "0")}/${edOf(c.ed)}</b>${edOf(c.ed) === 1 ? " · exemplaire unique" : ""}`   // a limited edition: its N° is its rank
+    : `<b>#${String(g.pop).padStart(3, "0")}</b>${g.pop === 1 ? " · 1re authentifiée" : ""}`;
   el.innerHTML = `<div class="pocket"><div class="lbl">
       <div class="txt"><span class="l1">${esc(l1)}</span><b class="l2">${esc(c.t)}</b><span class="l3">${esc(l3)}</span>
-        <span class="l4"><b>#${String(g.pop).padStart(3, "0")}</b>${g.pop === 1 ? " · 1re authentifiée" : ""}</span></div>
+        <span class="l4">${l4}</span></div>
       <div class="mark"><img src="brand/zikhunter-icon.svg" alt=""></div>
       <div class="gr"><small>${GRADE_NAME[g.grade]}</small><b>${g.grade}</b><span class="bar" aria-hidden="true"></span><span class="cert">${esc(g.cert)}</span></div>
     </div></div>

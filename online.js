@@ -57,7 +57,7 @@ const MESSAGES = {
   event_over: "L'événement est terminé : la magie s'est envolée.",
   haunted_paused: "La Collection Hantée est en maintenance : elle revient très vite.",
   haunted_sold_out: "Tous les exemplaires de cette carte sont déjà sortis.",
-  haunted_price_low: "Prix minimum : 100 Streams.",
+  limited_edition: "Une carte en édition limitée ne se défausse pas.",
   not_enough_pumpkins: "Il te manque des citrouilles 🎃 : fais les quêtes de la nuit.",
   cauldron_five: "Le chaudron prend exactement 5 cartes.",
   cauldron_same: "Les 5 cartes doivent être de la même rareté.",
@@ -143,20 +143,21 @@ function cardFromRow(r, t) {
   return {
     id: r.track_id, t: t.title, a: t.artist, al: t.album, cov: t.cover, d: t.duration, rank: r.rank,
     bpm: t.bpm, y: t.year, x: t.explicit ? 1 : 0, g: t.genre, tier: r.tier,
+    ...(r.edition ? { ed: r.edition, eno: r.edition_no } : {}),     // a limited edition (Collection Hantée): its sound and N°
   };
 }
 // the collection groups copies by track; each copy keeps its own id for trades
-const cardKey = r => (r.kind === "artist" ? "a" + r.artist_id : r.track_id) + "#" + r.tier;   // a track in one rarity
+const cardKey = r => (r.kind === "artist" ? "a" + r.artist_id : r.track_id) + "#" + r.tier + (r.edition ? "#e" : "");   // a track in one rarity (a limited edition apart)
 function addCopy(map, r, t) {
   const k = cardKey(r);
   const c = map[k] || (map[k] = { ...cardFromRow(r, t), n: 0, holo: 0, locked: 0, copies: [], at: Date.parse(r.pulled_at) });
   c.n++; if (r.holo) c.holo++; if (!r.tradeable && !r.collector) c.locked++;
   if (r.collector) c.collector = true;
   c.copies.push({ id: r.id, tier: r.tier, holo: r.holo, tradeable: r.tradeable, collector: !!r.collector,
-    grade: r.grade || null, cert: r.grade_cert || null, pop: r.grade_pop || null });   // a graded copy is sealed in its case
+    grade: r.grade || null, cert: r.grade_cert || null, pop: r.grade_pop || null, no: r.edition_no || null });   // a graded copy is sealed in its case
   return c;
 }
-const CARD_COLS = "id,kind,track_id,artist_id,collector,tier,rank,holo,tradeable,pulled_at,grade,grade_cert,grade_pop,tracks(title,artist,album,cover,duration,bpm,year,explicit,genre),artists(name,picture,fans,nb_album)";
+const CARD_COLS = "id,kind,track_id,artist_id,collector,tier,rank,holo,tradeable,pulled_at,grade,grade_cert,grade_pop,edition,edition_no,tracks(title,artist,album,cover,duration,bpm,year,explicit,genre),artists(name,picture,fans,nb_album)";
 // pages follow the last card seen (pulled_at, id) instead of skipping N rows: each page costs the same, even at the
 // end of a 90 000-card collection, where an offset made the database walk every card before it (and time out when
 // the disk is slow). A failed page is tried again before giving up. since: only cards pulled from that instant.
@@ -193,7 +194,7 @@ async function fetchCards(owner, onlyTradeable) { return rowsToMap(await fetchRo
 // my collection is kept in the browser (IndexedDB): at sign-in only the cards pulled since the last visit come down.
 // profiles.cards_rev moves when a card leaves or changes (trade, sale, discard): then everything is downloaded again,
 // as it is once a week (covers or titles fixed meanwhile).
-const CARDS_CACHE = 1;                           // raise it to drop every browser's copy
+const CARDS_CACHE = 2;                           // 2: the limited editions                           // raise it to drop every browser's copy
 const IDB = {
   db: null,
   open() {
@@ -407,7 +408,15 @@ Object.assign(Online, {
       return { c: cardFromRow(row, meta), holo: r.holo, isNew: r.new, wanted: r.wanted };
     }).sort((a, b) => a.c.tier - b.c.tier || a.c.rank - b.c.rank);
     if (typeof EVENT !== "undefined" && EVENT.on === "halloween") {      // a haunted copy, pumpkins (haunted.js)
-      try { const h = await rpc("haunted_roll", { p_pack: pk.id }); if (h) { pulls.haunted = h.card || null; pulls.pumpkins = h.pumpkins || 0; } } catch (e) {}
+      try {
+        const h = await rpc("haunted_roll", { p_pack: pk.id });
+        if (h) { pulls.haunted = h.card || null; pulls.pumpkins = h.pumpkins || 0; }
+        if (h?.card?.card_id) {                // it is a card of the collection, like the others
+          const k = h.card;
+          addCopy(S.c, { id: k.card_id, kind: "track", track_id: k.track_id, tier: LEG, rank: 950000, holo: false, tradeable: true, pulled_at: new Date().toISOString(), edition: k.slot, edition_no: k.no },
+            { title: k.title, artist: k.artist, album: "", cover: k.cover || "", duration: 0, bpm: 0, year: 0, explicit: false, genre: AUTRE });
+        }
+      } catch (e) {}
     }
     await loadProfile();
     flushPool();
@@ -598,7 +607,7 @@ function renderImport() { $("#importBox").hidden = true; }
 
 /* ---------- trades ---------- */
 const OFFER_SELECT = "id,status,created_at,decided_at,from_user,to_user,from:profiles!offers_from_user_fkey(pseudo),to:profiles!offers_to_user_fkey(pseudo)," +
-  "offer_items(side,card_id,cards(kind,track_id,artist_id,collector,tier,rank,holo,tracks(title,artist,album,cover,duration,bpm,year,explicit,genre),artists(name,picture,fans,nb_album)))";
+  "offer_items(side,card_id,cards(kind,track_id,artist_id,collector,tier,rank,holo,edition,edition_no,tracks(title,artist,album,cover,duration,bpm,year,explicit,genre),artists(name,picture,fans,nb_album)))";
 const ED = { player: null, theirs: null, give: new Map(), take: new Map(), qMine: "", qTheirs: "" };
 let pollTimer = null;
 
@@ -802,7 +811,7 @@ const DISCARD = [1, 1, 1, 10, 50, 100];   // same values as discard_value() on t
 function duplicateCopies() {
   const out = [];
   for (const c of Object.values(S.c)) {
-    if (!c.copies || c.copies.length < 2) continue;
+    if (!c.copies || c.copies.length < 2 || c.ed) continue;           // limited editions are never discarded
     const sorted = [...c.copies].sort((a, b) => (b.collector - a.collector) || (b.holo - a.holo) || (b.tier - a.tier));
     out.push(...sorted.slice(1).filter(cp => !cp.collector));
   }
@@ -835,7 +844,7 @@ function renderDiscard() {
 function modalExtras(c) {
   const btn = $("#mDiscard"), own = S.c[ck(c)];
   const spares = own?.copies?.filter(cp => !cp.collector) || [];
-  btn.hidden = !(Online.active && own?.copies && own.copies.length > 1 && spares.length && (spares.length > 1 || own.copies.length > spares.length));
+  btn.hidden = !(Online.active && !c.ed && own?.copies && own.copies.length > 1 && spares.length && (spares.length > 1 || own.copies.length > spares.length));
   if (btn.hidden) return;
   const spare = [...spares].sort((a, b) => (a.holo - b.holo) || (a.tier - b.tier))[0];
   btn.textContent = `Défausser un doublon (+${DISCARD[spare.tier]} Stream${DISCARD[spare.tier] > 1 ? "s" : ""})`;
@@ -1025,7 +1034,7 @@ async function renderDefis() {
 /* ---------- market: La Bourse aux disques ---------- */
 const MK = { q: "", tier: -1, genre: -1, sort: "recent", page: 0, items: [], more: false, seq: 0, sellTrack: null };
 const LISTING_SELECT = "id,seller,card_id,kind,track_id,artist_id,picture,tier,holo,title,artist,genre,price,created_at,expires_at," +
-  "seller_p:profiles!listings_seller_fkey(pseudo,title,cosmetics),tracks(album,cover,duration,bpm,year,explicit),artists(nb_album),cards(rank,collector,grade,grade_cert,grade_pop)";
+  "seller_p:profiles!listings_seller_fkey(pseudo,title,cosmetics),tracks(album,cover,duration,bpm,year,explicit),artists(nb_album),cards(rank,collector,grade,grade_cert,grade_pop,edition,edition_no)";
 const nowIso = () => new Date().toISOString();
 function listingCard(l) { const c = listingCard0(l); if (l.cards?.grade) c._grade = { grade: l.cards.grade, cert: l.cards.grade_cert, pop: l.cards.grade_pop, holo: l.holo }; return c; }
 function listingCard0(l) {
@@ -1033,7 +1042,7 @@ function listingCard0(l) {
     rank: l.cards?.rank || 0, albums: l.artists?.nb_album || 0, tier: l.tier, g: null };
   const t = l.tracks || {};
   return { id: l.track_id, t: l.title, a: l.artist, al: t.album || "", cov: t.cover || "", d: t.duration || 0, rank: l.cards?.rank || 0,
-    bpm: t.bpm || 0, y: t.year || 0, x: t.explicit ? 1 : 0, g: l.genre, tier: l.tier };
+    bpm: t.bpm || 0, y: t.year || 0, x: t.explicit ? 1 : 0, g: l.genre, tier: l.tier, ...(l.cards?.edition ? { ed: l.cards.edition, eno: l.cards.edition_no } : {}) };
 }
 const streamsTxt = n => `${fmt(n)} Stream${n > 1 ? "s" : ""}`;
 
@@ -1049,7 +1058,8 @@ function renderMarketFilters() {
     $("#mMore").onclick = () => loadMarket(false);
     $("#sellOpen").onclick = () => openSell(null);
   }
-  $("#mFilters").innerHTML = [-1, ...RAR.keys()].map(r => `<button class="chip" data-r="${r}" aria-pressed="${MK.tier === r}">${r < 0 ? "Toutes raretés" : `<i style="background:${RCOL[r]}"></i>${RAR[r]}`}</button>`).join("");
+  $("#mFilters").innerHTML = [-1, ...RAR.keys()].map(r => `<button class="chip" data-r="${r}" aria-pressed="${MK.tier === r}">${r < 0 ? "Toutes raretés" : `<i style="background:${RCOL[r]}"></i>${RAR[r]}`}</button>`).join("")
+    + `<button class="chip" data-r="${ED_FILTER}" aria-pressed="${MK.tier === ED_FILTER}"><i style="background:${ED_COL}"></i>Édition limitée</button>`;
   $("#mFilters").querySelectorAll(".chip").forEach(b => b.onclick = () => { MK.tier = +b.dataset.r; renderMarketFilters(); loadMarket(true); });
 }
 
@@ -1069,7 +1079,8 @@ async function loadMarket(reset) {
   $("#mStatus").textContent = "Chargement des annonces…";
   let q = sb.from("listings").select(LISTING_SELECT, { count: "exact" }).eq("status", "active").gt("expires_at", nowIso());
   if (MK.q) { const s = MK.q.replace(/[%,()*]/g, " ").trim(); if (s) q = q.or(`title.ilike.*${s}*,artist.ilike.*${s}*`); }
-  if (MK.tier >= 0) q = q.eq("tier", MK.tier);
+  if (MK.tier === ED_FILTER) q = q.not("edition", "is", null);
+  else if (MK.tier >= 0) q = q.eq("tier", MK.tier).is("edition", null);
   if (MK.genre >= 0) q = q.eq("genre", MK.genre);
   q = MK.sort === "cheap" ? q.order("price", { ascending: true }) : MK.sort === "dear" ? q.order("price", { ascending: false })
     : MK.sort === "rare" ? q.order("tier", { ascending: false }).order("price", { ascending: true }) : q.order("created_at", { ascending: false });
@@ -1205,8 +1216,8 @@ async function renderSellForm(c, copies) {
     $("#sellCote").innerHTML = st.sales
       ? `<dt>Dernière vente</dt><dd>${streamsTxt(st.last)}</dd><dt>Moyenne</dt><dd>${streamsTxt(st.avg)} (${st.sales} vente${st.sales > 1 ? "s" : ""})</dd>${st.lowest_listing ? `<dt>En vente dès</dt><dd>${streamsTxt(st.lowest_listing)}</dd>` : ""}`
       : `<dt>Cote</dt><dd>Jamais vendue${st.lowest_listing ? ` · en vente dès ${streamsTxt(st.lowest_listing)}` : ""}</dd>`;
-    price.value = st.avg || st.lowest_listing || Math.max(floor, [5, 15, 50, 200, 800, 3000][copy.tier]);
-  } catch (e) { price.value = Math.max(floor, [5, 15, 50, 200, 800, 3000][copy.tier]); }
+    price.value = c.ed ? 20000 : st.avg || st.lowest_listing || Math.max(floor, [5, 15, 50, 200, 800, 3000][copy.tier]);
+  } catch (e) { price.value = c.ed ? 20000 : Math.max(floor, [5, 15, 50, 200, 800, 3000][copy.tier]); }
   showNet(); price.focus();
   $("#sellGo").onclick = async () => {
     const p = Math.floor(+price.value || 0);
