@@ -3,16 +3,18 @@
    No rarity: they all wear the same card, a sleeve in a haunted-manor window. */
 function hauntedCardEl(c) {
   const one = c.of === 1, no = c.no === "?" ? "?" : String(c.no).padStart(String(c.of).length, "0");
-  const el = document.createElement("div"); el.className = "hcard" + (one ? " one" : "");
+  const el = document.createElement("div"); el.className = "hcard" + (one ? " one" : "") + (c.nuit ? " nuit" : "");
+  // c.nuit: the series of the night of 31 October — pumpkin and black, a full moon crossed by bats, the date as a seal
   el.innerHTML = `<div class="hc-glow" aria-hidden="true"></div>
     <div class="hc-paper">
       <img class="hc-art" src="${esc(c.cov)}" alt="Pochette de ${esc(c.t)}" loading="lazy" decoding="async">
-      <div class="hc-tint" aria-hidden="true"></div><div class="hc-char" aria-hidden="true"></div><div class="hc-smoke" aria-hidden="true"><i></i><i></i></div>
-      <div class="hc-head"><span>Collection hantée</span>${one ? `<span class="hc-uniq">Unique</span>` : ""}</div>
+      <div class="hc-tint" aria-hidden="true"></div>${c.nuit ? `<div class="hn-moon" aria-hidden="true"></div><div class="hn-bats" aria-hidden="true"><i></i><i></i><i></i></div>` : ""}<div class="hc-char" aria-hidden="true"></div><div class="hc-smoke" aria-hidden="true"><i></i><i></i></div>
+      <div class="hc-head"><span>${c.nuit ? "Nuit d'Halloween" : "Collection hantée"}</span>${one ? `<span class="hc-uniq">Unique</span>` : ""}</div>
+      ${c.nuit ? `<div class="hn-seal" aria-hidden="true"><b>31</b><small>oct.</small></div>` : ""}
       <div class="hc-foot">
         <div class="hc-a">${esc(c.a)}</div>
         <div class="hc-t${c.t.length > 18 ? " xlong" : c.t.length > 10 ? " long" : ""}">${esc(c.t)}</div>
-        <div class="hc-row"><span>Halloween ${c.year || 2026}</span><b class="hc-no"><small>N°</small>${no}<em>/${c.of}</em></b></div>
+        <div class="hc-row"><span>${c.nuit ? "31 · 10 · 2026" : `Halloween ${c.year || 2026}`}</span><b class="hc-no"><small>N°</small>${no}<em>/${c.of}</em></b></div>
       </div>
     </div>
     <div class="hc-rim" aria-hidden="true"></div>
