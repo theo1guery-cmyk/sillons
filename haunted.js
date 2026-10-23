@@ -194,13 +194,10 @@ async function hauntedIntro() {
 const hxNo = c => String(c.no).padStart(String(c.of).length, "0");
 const hxNight = c => c.series === 2 || c.slot >= NIGHT_FROM;      // a card of the night of the 31
 const hxSeries = c => hxNight(c) ? "Nuit d'Halloween" : "Collection Hantée";
-// the 3D film (haunt3d.js) and the turntable's files: fetched ahead, so the film starts at once
+// the 3D film (haunt3d.js): fetched ahead, so the film starts at once
 function hxFilmLoad() {
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) return null;
-  const m = Math.min(innerWidth, innerHeight) < 600 || /Android|iPhone|iPad/.test(navigator.userAgent);
-  (m ? ["turntable-1k.gltf?v=2", "turntable.bin", "base-1k.jpg?v=2", "mr-1k.jpg?v=2", "normal-1k.jpg?v=2"] : ["turntable.gltf?v=2", "turntable.bin", "base.jpg?v=2", "mr.jpg?v=2", "normal.jpg?v=2"])
-    .forEach(f => fetch("brand/3d/" + f).catch(() => {}));
-  return import("./haunt3d.js?v=24").catch(() => null);
+  return import("./haunt3d.js?v=25").catch(() => null);
 }
 async function hxFilm(film, c) {               // true once the film has played
   const m = film && await Promise.race([film, wait(2500).then(() => null)]);
