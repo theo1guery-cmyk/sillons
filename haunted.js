@@ -197,9 +197,19 @@ const hxSeries = c => hxNight(c) ? "Nuit d'Halloween" : "Collection Hantée";
 // the 3D film (haunt3d.js): fetched ahead, so the film starts at once
 function hxFilmLoad() {
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) return null;
-  return import("./haunt3d.js?v=25").catch(() => null);
+  return import("./haunt3d.js?v=26").catch(() => null);
 }
-async function hxFilm(film, c) {               // true once the film has played
+// the sound waits for the card: started silent inside the touch (phones only allow sound begun by a touch), it is
+// rewound and heard when the fire reveals the card
+function hxMusic(c) {
+  const audio = new Audio(); audio.preload = "auto"; audio.volume = .7; audio.muted = true;
+  let want = false, armed = false, started = false;
+  const arm = () => { if (!armed && audio.src) { armed = true; audio.play().catch(() => {}); } };   // inside the touch: silent
+  const pre = hxPreview(c).then(u => { if (u) { audio.src = u; if (want) start(); } return u; }).catch(() => null);
+  const start = () => { want = true; if (started || !audio.src) return; started = true; audio.currentTime = 0; audio.muted = false; audio.play().catch(() => {}); };
+  return { audio, pre, arm, start, stop: () => { want = false; audio.pause(); } };
+}
+async function hxFilm(film, c, onReveal) {     // true once the film has played; onReveal: when the card shows
   const m = film && await Promise.race([film, wait(2500).then(() => null)]);
   if (!m) return false;
   const host = document.createElement("div"); host.className = "hx3d"; host.setAttribute("aria-hidden", "true");
@@ -207,7 +217,7 @@ async function hxFilm(film, c) {               // true once the film has played
   document.body.appendChild(host); document.body.classList.add("fx-on", "hx3d-on");
   host.querySelector("button").onclick = () => host.remove();
   let shown = false;
-  try { await m.play(host, c); shown = true; } catch (e) { console.warn("Carte hantée 3D :", e); }
+  try { await m.play(host, c, { onReveal }); shown = true; } catch (e) { console.warn("Carte hantée 3D :", e); }
   host.remove(); document.body.classList.remove("fx-on", "hx3d-on");
   return shown;
 }
@@ -224,15 +234,13 @@ Object.assign(Haunted, {
     const film = hxFilmLoad();                   // loads while the back shakes
     $o(".op-sub").textContent = "Carte bonus · " + hxSeries(c);
     opHint("Une présence hante ce booster… touche la carte");
-    const audio = new Audio(); audio.preload = "auto"; audio.volume = .7; OP.hAudio = audio;     // fetched now: played inside the touch
-    const pre = hxPreview(c).then(u => { if (u) audio.src = u; return u; }).catch(() => null);
+    const music = hxMusic(c); OP.hAudio = music.audio;                              // fetched now, heard when the card shows
     OP.step = async () => {
       opHint("");
-      if (audio.src) audio.play().catch(() => {});
-      else pre.then(u => { if (u && OP.hAudio === audio) audio.play().catch(() => {}); });
-      const shown = await hxFilm(film, c);
-      if (shown) el.classList.add("burning", "done");
-      else { el.classList.add("burning"); await wait(1900); el.classList.add("done"); }
+      music.arm();
+      const shown = await hxFilm(film, c, music.start);
+      if (shown) { el.classList.add("burning", "done"); music.start(); }
+      else { el.classList.add("burning"); setTimeout(music.start, 900); await wait(1900); el.classList.add("done"); }
       opHint(`${c.title} · N° ${hxNo(c)}/${c.of}${c.of === 1 ? " · exemplaire unique !" : ""} — touche pour voir tout le booster`);
       OP.step = async () => { OP.hAudio?.pause(); OP.hAudio = null; op.classList.remove("hx-on"); el.classList.add("leave"); setTimeout(() => el.remove(), 380);
         if (OP.demo) { OP.demo = false; OP.haunted = null; OP.step = null; closeOpening(); } else opRecap(); };
@@ -245,10 +253,10 @@ Object.assign(Haunted, {
     slot.onclick = () => hxView({ ...c, mine: !!c.card_id, id: c.card_id });
     if (!OP.hDone) {
       OP.hDone = true;
-      const audio = new Audio(); audio.volume = .7;
-      hxPreview(c).then(u => { if (u) { audio.src = u; audio.play().catch(() => {}); } });
-      if (!await hxFilm(hxFilmLoad(), c)) await Haunted.reveal(c);
-      setTimeout(() => audio.pause(), 6000);
+      const music = hxMusic(c);
+      await music.pre; music.arm();
+      if (await hxFilm(hxFilmLoad(), c, music.start)) { music.start(); setTimeout(() => music.stop(), 8000); }
+      else { music.stop(); await Haunted.reveal(c); }                    // no 3D: the plain reveal brings its own sound
     }
     rc.appendChild(slot);
   },

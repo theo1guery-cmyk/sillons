@@ -20,7 +20,7 @@ const loadImg = (src, cors) => new Promise(r => { const i = new Image(); if (cor
 const canvas2d = (w, h) => { const c = document.createElement("canvas"); c.width = w; c.height = h; return [c, c.getContext("2d")]; };
 const GREEN = "#39ff88";
 
-export async function play(host, card) {
+export async function play(host, card, opts = {}) {   // opts.onReveal: called when the fire uncovers the card
   // a card of the night of 31 October: the ritual, the card and its fire burn pumpkin orange, under a full moon
   const NIGHT = card.series === 2 || card.slot >= 14, ACC = NIGHT ? "#ff8a1f" : GREEN, ACC_HEX = NIGHT ? 0xff8a1f : 0x39ff88;
   const mobile = Math.min(innerWidth, innerHeight) < 600 || /Android|iPhone|iPad/.test(navigator.userAgent);
@@ -237,11 +237,12 @@ export async function play(host, card) {
     });
     draw();
   };
-  let raf = 0, t0 = 0, last = 0, done;
+  let raf = 0, t0 = 0, last = 0, done, revealed = false;
   const finished = new Promise(r => done = r);
   const frame = now => {
     if (!t0) t0 = now;
     const t = !host.isConnected ? T : window.__hxT ?? (now - t0) / 1000;   // host gone: skip to the end (__hxT: a frozen instant, for tests)
+    if (t >= 3.6 && !revealed) { revealed = true; try { opts.onReveal?.(); } catch (e) {} }   // the music comes with the card
     step(t, Math.min(.05, (now - (last || now)) / 1000) || .016); last = now;
     if (t < T) raf = requestAnimationFrame(frameSafe); else done();
   };
