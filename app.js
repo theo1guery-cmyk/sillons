@@ -70,8 +70,9 @@ const isArtist = c => c && c.kind === "artist";
 const rarName = c => c.ed ? "Édition limitée" : isArtist(c) ? CERT[c.tier] : RAR[c.tier];
 // limited editions (the Collection Hantée, haunted.js): numbered copies of a sound, with their own card. Inside they
 // are Légendaires (price of grading, smallest price on the market); c.ed is the sound, c.eno the N° of the copy.
-const ED_FILTER = -3, ED_COL = "#39ff88";
-const edOf = ed => ed === 1 ? 1 : 10;                        // copies printed: Thriller (sound 1) is a 1/1, the others 10
+const ED_FILTER = -3, ED_COL = "#39ff88", NIGHT_COL = "#ff8a1f";
+const NIGHT_FROM = 14;                                       // sounds 14 to 26: the series of the night of 31 October (pumpkin look)
+const edOf = ed => ed === 1 || ed === 14 ? 1 : 10;           // copies printed: Thriller and This Is Halloween are 1/1, the others 10
 const fmtFans = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 0 : 1).replace(".", ",") + " M" : n >= 1e3 ? Math.round(n / 1e3) + " k" : String(n);
 // Deezer rank (0 – 1 000 000) → rarity. 950 000+ is the global-hit club
 // (Billie Jean, Bohemian Rhapsody…): a few thousand tracks out of 100+ million.
@@ -540,7 +541,7 @@ function fitCqw(text, font, spacingEm, widthCqw) {
 }
 function cardEl(c, holo) {
   if (isArtist(c)) return artistCardEl(c, holo);
-  if (c.ed && typeof hauntedCardEl === "function") return hauntedCardEl({ t: c.t, a: c.a, cov: c.cov, no: c.eno || "?", of: edOf(c.ed) });
+  if (c.ed && typeof hauntedCardEl === "function") return hauntedCardEl({ t: c.t, a: c.a, cov: c.cov, no: c.eno || "?", of: edOf(c.ed), nuit: c.ed >= NIGHT_FROM });
   const T = c.g == null ? PENDING_TYPE : TYPES[c.g] || TYPES[AUTRE], st = stats(c);
   const el = document.createElement("div");
   el.className = "card" + (holo && c.tier >= MYTH ? " shiny" : "") + (c.g == null ? " pending" : ""); el.dataset.r = c.tier;
@@ -936,7 +937,7 @@ async function opRecap(from) {
   if (OP.haunted) await window.Haunted.inRecap(OP, rc);       // the haunted copy, last of the booster
   const fresh = pulls.filter(pl => pl.isNew).length, best = pulls.reduce((a, b) => b.c.tier > a.c.tier ? b : a);
   $o(".op-title").textContent = "Booster ouvert";
-  $o(".op-sub").textContent = OP.haunted ? `🦇 Une carte de la Collection Hantée : ${OP.haunted.title} · N° ${String(OP.haunted.no).padStart(String(OP.haunted.of).length, "0")}/${OP.haunted.of} !`
+  $o(".op-sub").textContent = OP.haunted ? `${OP.haunted.series === 2 ? "🌕 Une carte de la Nuit d'Halloween" : "🦇 Une carte de la Collection Hantée"} : ${OP.haunted.title} · N° ${String(OP.haunted.no).padStart(String(OP.haunted.of).length, "0")}/${OP.haunted.of} !`
     : `${fresh} nouvelle${fresh > 1 ? "s" : ""} carte${fresh > 1 ? "s" : ""} · meilleure : ${rarName(best.c)}`;
   opHint("Touche une carte pour la voir en grand");
   $o(".op-again").disabled = !canOpen(OP.p) && !(OP.p.g < 0 && TEST_MODE);
@@ -1788,12 +1789,12 @@ function openModal(c, shiny) {
   } else {
   $("#mTitle").textContent = c.t; $("#mSub").textContent = c.a + " · " + c.al;
   const nos = c.ed ? (own.copies?.length ? own.copies.map(cp => cp.no).filter(Boolean).sort((a, b) => a - b) : [c.eno]).map(n => `N° ${String(n).padStart(String(edOf(c.ed)).length, "0")}/${edOf(c.ed)}`).join(" · ") : "";
-  $("#mDl").innerHTML = `<dt>Rareté</dt><dd>${rarName(c)}${c.ed ? " · Collection Hantée" : ""}${isShiny ? " · Shiny" : ""}</dd>${c.ed ? `<dt>Numéro</dt><dd>${nos}</dd>` : ""}<dt>Classement</dt><dd>${fmt(c.rank)} pts Deezer</dd>
+  $("#mDl").innerHTML = `<dt>Rareté</dt><dd>${rarName(c)}${c.ed ? (c.ed >= NIGHT_FROM ? " · Nuit d'Halloween" : " · Collection Hantée") : ""}${isShiny ? " · Shiny" : ""}</dd>${c.ed ? `<dt>Numéro</dt><dd>${nos}</dd>` : ""}<dt>Classement</dt><dd>${fmt(c.rank)} pts Deezer</dd>
     <dt>${T.s}</dt><dd>${st.flow} · ${c.bpm > 0 ? c.bpm + " BPM" : "tempo estimé"}</dd><dt>Endurance</dt><dd>${st.endu} · ${fmtDur(c.d)}</dd>
     <dt>Hype</dt><dd>${st.hype}</dd><dt>Sortie</dt><dd>${c.y || "?"}</dd><dt>Possédées</dt><dd>${own.n}${own.holo && c.tier >= MYTH ? ` (dont ${own.holo} Shiny)` : ""}${own.locked ? ` · ${own.locked} non échangeable${own.locked > 1 ? "s" : ""}` : ""}</dd>${otherLine}`;
   $("#mLink").href = "https://www.deezer.com/track/" + c.id;
   if (c.ed) {                              // a limited edition: no rank nor stats, its number instead
-    $("#mSub").textContent = c.a + " · Collection Hantée";
+    $("#mSub").textContent = c.a + (c.ed >= NIGHT_FROM ? " · Nuit d'Halloween" : " · Collection Hantée");
     $("#mDl").innerHTML = `<dt>Rareté</dt><dd>Édition limitée · ${edOf(c.ed)} exemplaire${edOf(c.ed) > 1 ? "s" : ""} au monde</dd><dt>Numéro</dt><dd>${nos}</dd><dt>Possédées</dt><dd>${own.n}</dd>`;
   }
   }
@@ -1861,8 +1862,8 @@ function slabEl(c, holo, g) {   // g: { grade, cert, pop } — pop: this copy wa
   const first = g.pop === 1 && !c.ed;
   const el = document.createElement("div"); el.className = "slab" + (first ? " first" : ""); el.dataset.g = g.grade; box.appendChild(el);
   if (first) box.classList.add("first");
-  const l1 = c.ed ? "HALLOWEEN 2026 ZIK HUNTER" : isArtist(c) ? "ZIK HUNTER · ARTISTE" : `${c.y ? c.y + " " : ""}ZIK HUNTER`;
-  const l3 = c.ed ? `${c.a} · COLLECTION HANTÉE` : (isArtist(c) ? CERT[c.tier] : `${c.a} · ${RAR[c.tier]}`) + (holo ? " · SHINY" : "");
+  const l1 = c.ed ? (c.ed >= NIGHT_FROM ? "31 OCTOBRE 2026 ZIK HUNTER" : "HALLOWEEN 2026 ZIK HUNTER") : isArtist(c) ? "ZIK HUNTER · ARTISTE" : `${c.y ? c.y + " " : ""}ZIK HUNTER`;
+  const l3 = c.ed ? `${c.a} · ${c.ed >= NIGHT_FROM ? "NUIT D'HALLOWEEN" : "COLLECTION HANTÉE"}` : (isArtist(c) ? CERT[c.tier] : `${c.a} · ${RAR[c.tier]}`) + (holo ? " · SHINY" : "");
   const l4 = c.ed ? `<b>N° ${String(g.pop).padStart(String(edOf(c.ed)).length, "0")}/${edOf(c.ed)}</b>${edOf(c.ed) === 1 ? " · exemplaire unique" : ""}`   // a limited edition: its N° is its rank
     : `<b>#${String(g.pop).padStart(3, "0")}</b>${g.pop === 1 ? " · 1re authentifiée" : ""}`;
   el.innerHTML = `<div class="pocket"><div class="lbl">

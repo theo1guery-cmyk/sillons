@@ -8,7 +8,7 @@ const G = { shiny: undefined, shown: 48, q: "", busy: false, r: -1, kind: "all",
 const MAX_BATCH = 5;
 const bestGraded = c => (c?.copies || []).filter(cp => cp.grade).sort((a, b) => b.grade - a.grade || a.pop - b.pop)[0] || null;
 const ungraded = c => (c?.copies || []).filter(cp => !cp.grade);
-const rarLabel = c => c.ed ? "Collection Hantée" : isArtist(c) ? CERT[c.tier] : RAR[c.tier];
+const rarLabel = c => c.ed ? (c.ed >= NIGHT_FROM ? "Nuit d'Halloween" : "Collection Hantée") : isArtist(c) ? CERT[c.tier] : RAR[c.tier];
 
 /* ---------- the card sheet: the case instead of the bare card, and the buttons ---------- */
 const baseOpenModal = window.openModal;
@@ -94,8 +94,8 @@ const loadLab = host => labP ??= Promise.all(['900 40px "Unbounded"', '800 40px 
   .then(() => import("./grade3d.js?v=16")).then(m => m.create(host)).then(async x => { await x.warmup(); return lab = x; })
   .catch(e => { console.warn("Labo 3D indisponible", e); labP = null; return null; });
 const labelOf = (c, holo, g) => ({
-  l1: c.ed ? "HALLOWEEN 2026 ZIK HUNTER" : isArtist(c) ? "ZIK HUNTER · ARTISTE" : `${c.y ? c.y + " " : ""}ZIK HUNTER`, l2: c.t.toUpperCase(),
-  l3: (c.ed ? `${c.a} · COLLECTION HANTÉE` : (isArtist(c) ? CERT[c.tier] : `${c.a} · ${RAR[c.tier]}`) + (holo ? " · SHINY" : "")).toUpperCase(),
+  l1: c.ed ? (c.ed >= NIGHT_FROM ? "31 OCTOBRE 2026 ZIK HUNTER" : "HALLOWEEN 2026 ZIK HUNTER") : isArtist(c) ? "ZIK HUNTER · ARTISTE" : `${c.y ? c.y + " " : ""}ZIK HUNTER`, l2: c.t.toUpperCase(),
+  l3: (c.ed ? `${c.a} · ${c.ed >= NIGHT_FROM ? "NUIT D'HALLOWEEN" : "COLLECTION HANTÉE"}` : (isArtist(c) ? CERT[c.tier] : `${c.a} · ${RAR[c.tier]}`) + (holo ? " · SHINY" : "")).toUpperCase(),
   l4: c.ed ? `N° ${String(g.pop).padStart(String(edOf(c.ed)).length, "0")}/${edOf(c.ed)}` : `#${String(g.pop).padStart(3, "0")}${g.pop === 1 ? " · 1RE AUTHENTIFIÉE" : ""}`, first: g.pop === 1 && !c.ed, gname: GRADE_NAME[g.grade], grade: g.grade, cert: g.cert });
 const cssColor = v => v.startsWith("var(") ? getComputedStyle(document.documentElement).getPropertyValue(v.slice(4, -1)).trim() : v;
 
@@ -131,7 +131,7 @@ async function labReveal(scr, L3, c, holo, g) {
   const small = innerWidth <= 600, w = small ? Math.min(innerWidth * .66, 270) : Math.min((innerHeight - 230) * .63, 320);
   const art = isArtist(c) ? (c.cov || "").replace(/\/\d+x\d+-/, "/1000x1000-") : (c.cov || "").replace(/\/\d+x\d+-/, "/1000x1000-");
   const r = await L3.play({ w, cy: small ? .42 : .44,
-    card: { cover: art, title: c.t, artist: isArtist(c) ? "Artiste" : c.a, rarity: rarLabel(c), color: c.ed ? ED_COL : cssColor(isArtist(c) ? CCOL[c.tier] : RCOL[c.tier]), holo },
+    card: { cover: art, title: c.t, artist: isArtist(c) ? "Artiste" : c.a, rarity: rarLabel(c), color: c.ed ? (c.ed >= NIGHT_FROM ? NIGHT_COL : ED_COL) : cssColor(isArtist(c) ? CCOL[c.tier] : RCOL[c.tier]), holo },
     label: labelOf(c, holo, g),
     on: { start: () => scr.classList.add("lit"), check: i => checks.insertAdjacentHTML("beforeend", `<span>${["Bords", "Coins", "Surface", "Centrage"][i]} <b>✓</b></span>`),
           land: () => checks.classList.add("out") } });

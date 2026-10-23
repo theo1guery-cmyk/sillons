@@ -228,3 +228,19 @@ body.hx3d-on > *:not(.hx3d){visibility:hidden}
 .hcard.nuit.one .hc-rim{background:linear-gradient(120deg,#3a1a02,#ffd36b 20%,#ffffff 32%,#ff8a1f 44%,#3a1a02 60%,#ffd36b 80%,#ffffff 90%) 0 0/300% 300%;filter:drop-shadow(0 0 1.8cqw #ffb13a)}
 .hcard.nuit.one .hc-t{background:linear-gradient(180deg,#ffffff,#ffe9a8 40%,#ffb13a 75%,#c2410c);-webkit-background-clip:text;background-clip:text}
 @media (prefers-reduced-motion:reduce){.hn-bats i{animation:none}}
+
+/* the night's series on the board, and the admins' preview of its cards */
+.hn-sec{margin:18px 0;padding:16px;border-radius:18px;background:radial-gradient(60% 90% at 85% 0,rgba(255,138,31,.16),transparent 70%),rgba(255,255,255,.03);box-shadow:inset 0 0 0 1px rgba(255,138,31,.3)}
+.hn-sec h3{margin:0 0 6px}
+.hn-gal{overflow-y:auto;align-content:start;background:radial-gradient(80% 60% at 50% 20%,#2a1208,#07030a 75%)}
+.hn-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:18px;width:min(1100px,100%)}
+.hn-c{all:unset;cursor:pointer;display:grid;gap:6px;justify-items:center}
+.hn-c .cq{width:100%}
+.hn-c small{font:500 .7rem var(--mono);color:#f2c08a;text-align:center}
+.hn-c:focus-visible{outline:2px solid #ff8a1f;outline-offset:4px;border-radius:8px}
+.hn-hint{margin:0;color:#c9a6e0;font-size:.85rem;text-align:center}
+@media (max-width:600px){.hn-grid{grid-template-columns:repeat(2,1fr);gap:12px}}
+.hcard.nuit.hc-ghost .hc-art{filter:grayscale(1) brightness(.18) blur(2px)}
+.hcard.nuit.hc-ghost .hn-moon{opacity:.35}
+.hcard.nuit.hc-ghost .hc-rim{background:#3a2a20;filter:none;animation:none}
+.hcard.nuit.hc-ghost .hc-t{filter:grayscale(.7) brightness(.6)}

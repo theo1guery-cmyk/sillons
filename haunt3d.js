@@ -29,6 +29,8 @@ const canvas2d = (w, h) => { const c = document.createElement("canvas"); c.width
 const GREEN = "#39ff88";
 
 export async function play(host, card) {
+  // a card of the night of 31 October: the card, its beam and its fire burn pumpkin orange (the cracks stay green)
+  const NIGHT = card.series === 2 || card.slot >= 14, ACC = NIGHT ? "#ff8a1f" : GREEN, ACC_HEX = NIGHT ? 0xff8a1f : 0x39ff88;
   const mobile = Math.min(innerWidth, innerHeight) < 600 || /Android|iPhone|iPad/.test(navigator.userAgent);
   const renderer = new THREE.WebGLRenderer({ antialias: !mobile, powerPreference: "high-performance" });
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, mobile ? 1.25 : 1.5));
@@ -248,7 +250,7 @@ export async function play(host, card) {
   /* ---------- a green beam in the haze, for the card ---------- */
   const beamMat = new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
-    uniforms: { color: { value: new THREE.Color(0x39ff88) }, strength: { value: 0 }, height: { value: 1 } },
+    uniforms: { color: { value: new THREE.Color(ACC_HEX) }, strength: { value: 0 }, height: { value: 1 } },
     vertexShader: `uniform float height; varying float vY; varying vec3 vN; varying vec3 vV;
       void main(){ vY = position.y / height + .5; vec4 wp = modelMatrix * vec4(position,1.); vN = normalize(mat3(modelMatrix) * normal); vV = normalize(cameraPosition - wp.xyz); gl_Position = projectionMatrix * viewMatrix * wp; }`,
     fragmentShader: `uniform vec3 color; uniform float strength; varying float vY; varying vec3 vN; varying vec3 vV;
@@ -263,7 +265,7 @@ export async function play(host, card) {
   const DUST = mobile ? 90 : 200, dPos = new Float32Array(DUST * 3), dSeed = new Float32Array(DUST);
   for (let i = 0; i < DUST; i++) { const a = Math.random() * 7, r = Math.sqrt(Math.random()) * .5; dPos.set([Math.cos(a) * r, Math.random() * 3, Math.sin(a) * r], i * 3); dSeed[i] = Math.random() * 100; }
   const dGeo = new THREE.BufferGeometry(); dGeo.setAttribute("position", new THREE.BufferAttribute(dPos, 3));
-  const motes = new THREE.Points(dGeo, new THREE.PointsMaterial({ map: soft, size: .03, color: 0x9dffbf, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }));
+  const motes = new THREE.Points(dGeo, new THREE.PointsMaterial({ map: soft, size: .03, color: NIGHT ? 0xffcf8a : 0x9dffbf, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }));
   scene.add(motes); const dBase = dPos.slice();
 
   /* ---------- the card: its face, the cursed sheet over it (which burns), its back ---------- */
@@ -274,28 +276,35 @@ export async function play(host, card) {
   const [fc, fg] = canvas2d(TW, TH);                        // the face, drawn like the HTML card
   fg.fillStyle = "#050806"; fg.fillRect(0, 0, TW, TH);
   if (cover) { const s = Math.max(TW / cover.width, TH / cover.height); fg.drawImage(cover, (TW - cover.width * s) / 2, (TH - cover.height * s) / 2, cover.width * s, cover.height * s); }
-  let gr = fg.createLinearGradient(0, 0, 0, TH); gr.addColorStop(0, "rgba(10,40,20,.15)"); gr.addColorStop(.55, "rgba(0,30,12,.4)"); gr.addColorStop(.92, "#020503");
+  let gr = fg.createLinearGradient(0, 0, 0, TH); gr.addColorStop(0, NIGHT ? "rgba(40,10,50,.3)" : "rgba(10,40,20,.15)"); gr.addColorStop(.55, NIGHT ? "rgba(60,20,0,.35)" : "rgba(0,30,12,.4)"); gr.addColorStop(.92, NIGHT ? "#070302" : "#020503");
   fg.fillStyle = gr; fg.fillRect(0, 0, TW, TH);
   fg.strokeStyle = "rgba(18,8,2,.9)"; fg.lineWidth = 40; fg.filter = "blur(12px)"; fg.strokeRect(0, 0, TW, TH); fg.filter = "none";
-  fg.textAlign = "center"; fg.fillStyle = "#b8ffcf"; fg.shadowColor = GREEN; fg.shadowBlur = 12;
-  fg.font = `600 17px "DM Mono", monospace`; fg.fillText("C O L L E C T I O N   H A N T É E", TW / 2, 48);
+  if (NIGHT) {                                              // the full moon and the seal of the 31
+    const mg = fg.createRadialGradient(TW * .74, TH * .2, 4, TW * .76, TH * .22, TW * .15); mg.addColorStop(0, "#fff6dc"); mg.addColorStop(.5, "#ffd98a"); mg.addColorStop(1, "rgba(232,138,42,0)");
+    fg.globalCompositeOperation = "screen"; fg.fillStyle = mg; fg.beginPath(); fg.arc(TW * .76, TH * .22, TW * .15, 0, 7); fg.fill(); fg.globalCompositeOperation = "source-over";
+    fg.save(); fg.translate(84, 140); fg.rotate(-.2); const sg = fg.createRadialGradient(-12, -14, 4, 0, 0, 48); sg.addColorStop(0, "#ff9a3a"); sg.addColorStop(.6, "#c2410c"); sg.addColorStop(1, "#6b1d03");
+    fg.fillStyle = sg; fg.beginPath(); fg.arc(0, 0, 46, 0, 7); fg.fill(); fg.textAlign = "center"; fg.fillStyle = "#fff1d6"; fg.font = `900 38px Unbounded, sans-serif`; fg.fillText("31", 0, 10);
+    fg.font = `700 12px "DM Mono", monospace`; fg.fillStyle = "#ffe2b0"; fg.fillText("OCT.", 0, 28); fg.restore();
+  }
+  fg.textAlign = "center"; fg.fillStyle = NIGHT ? "#ffe2b0" : "#b8ffcf"; fg.shadowColor = ACC; fg.shadowBlur = 12;
+  fg.font = `600 17px "DM Mono", monospace`; fg.fillText(NIGHT ? "N U I T   D ' H A L L O W E E N" : "C O L L E C T I O N   H A N T É E", TW / 2, 48);
   fg.textAlign = "left";
-  fg.font = `78px "Mrs Saint Delafield", cursive`; fg.fillStyle = "#c9ffd9"; fg.shadowBlur = 20;
+  fg.font = `78px "Mrs Saint Delafield", cursive`; fg.fillStyle = NIGHT ? "#ffe6c4" : "#c9ffd9"; fg.shadowBlur = 20;
   fg.save(); fg.translate(36, TH - 160); fg.rotate(-.08); fg.fillText(card.artist, 0, 0); fg.restore();
   const title = card.title.toUpperCase(); let fs = 66; fg.font = `900 ${fs}px Unbounded, sans-serif`;
   while (fg.measureText(title).width > TW - 72 && fs > 30) { fs -= 2; fg.font = `900 ${fs}px Unbounded, sans-serif`; }
-  gr = fg.createLinearGradient(0, TH - 130, 0, TH - 70); gr.addColorStop(0, "#f4ffe6"); gr.addColorStop(.5, "#9dffbf"); gr.addColorStop(1, "#1fd16a");
+  gr = fg.createLinearGradient(0, TH - 130, 0, TH - 70); gr.addColorStop(0, NIGHT ? "#fff6e0" : "#f4ffe6"); gr.addColorStop(.5, NIGHT ? "#ffcf8a" : "#9dffbf"); gr.addColorStop(1, NIGHT ? "#ff8a1f" : "#1fd16a");
   fg.fillStyle = gr; fg.shadowBlur = 16; fg.fillText(title, 36, TH - 92);
-  fg.shadowBlur = 0; fg.strokeStyle = "rgba(57,255,136,.45)"; fg.lineWidth = 2; fg.beginPath(); fg.moveTo(36, TH - 72); fg.lineTo(TW - 36, TH - 72); fg.stroke();
-  fg.font = `500 17px "DM Mono", monospace`; fg.fillStyle = "#9fd8b2"; fg.fillText("HALLOWEEN 2026", 36, TH - 40);
+  fg.shadowBlur = 0; fg.strokeStyle = NIGHT ? "rgba(255,140,40,.45)" : "rgba(57,255,136,.45)"; fg.lineWidth = 2; fg.beginPath(); fg.moveTo(36, TH - 72); fg.lineTo(TW - 36, TH - 72); fg.stroke();
+  fg.font = `500 17px "DM Mono", monospace`; fg.fillStyle = NIGHT ? "#f2c08a" : "#9fd8b2"; fg.fillText(NIGHT ? "31 · 10 · 2026" : "HALLOWEEN 2026", 36, TH - 40);
   const no = String(card.no).padStart(String(card.of).length, "0");
-  fg.textAlign = "right"; fg.font = `900 40px Unbounded, sans-serif`; fg.fillStyle = "#eaffd0"; fg.shadowColor = GREEN; fg.shadowBlur = 14;
-  fg.fillText(`${no}`, TW - 74, TH - 34); fg.font = `600 22px Unbounded, sans-serif`; fg.fillStyle = GREEN; fg.fillText(`/${card.of}`, TW - 36, TH - 34);
+  fg.textAlign = "right"; fg.font = `900 40px Unbounded, sans-serif`; fg.fillStyle = NIGHT ? "#fff1d6" : "#eaffd0"; fg.shadowColor = ACC; fg.shadowBlur = 14;
+  fg.fillText(`${no}`, TW - 74, TH - 34); fg.font = `600 22px Unbounded, sans-serif`; fg.fillStyle = ACC; fg.fillText(`/${card.of}`, TW - 36, TH - 34);
   const [bc, bg] = canvas2d(TW, TH);                        // the cursed sheet and the back: charred, a glowing sigil
-  gr = bg.createRadialGradient(TW / 2, TH * .45, 20, TW / 2, TH * .45, TH * .7); gr.addColorStop(0, "#1c4a2c"); gr.addColorStop(.6, "#08140c"); gr.addColorStop(1, "#020403");
+  gr = bg.createRadialGradient(TW / 2, TH * .45, 20, TW / 2, TH * .45, TH * .7); gr.addColorStop(0, NIGHT ? "#4a2a10" : "#1c4a2c"); gr.addColorStop(.6, NIGHT ? "#140a04" : "#08140c"); gr.addColorStop(1, NIGHT ? "#040201" : "#020403");
   bg.fillStyle = gr; bg.fillRect(0, 0, TW, TH);
-  bg.strokeStyle = "rgba(57,255,136,.5)"; bg.lineWidth = 4; bg.setLineDash([10, 12]); bg.beginPath(); bg.arc(TW / 2, TH * .45, 210, 0, 7); bg.stroke(); bg.setLineDash([]);
-  bg.textAlign = "center"; bg.textBaseline = "middle"; bg.font = `900 300px Unbounded, sans-serif`; bg.fillStyle = "rgba(57,255,136,.55)"; bg.shadowColor = GREEN; bg.shadowBlur = 50; bg.fillText("?", TW / 2, TH * .46);
+  bg.strokeStyle = NIGHT ? "rgba(255,138,31,.5)" : "rgba(57,255,136,.5)"; bg.lineWidth = 4; bg.setLineDash([10, 12]); bg.beginPath(); bg.arc(TW / 2, TH * .45, 210, 0, 7); bg.stroke(); bg.setLineDash([]);
+  bg.textAlign = "center"; bg.textBaseline = "middle"; bg.font = `900 300px Unbounded, sans-serif`; bg.fillStyle = NIGHT ? "rgba(255,138,31,.6)" : "rgba(57,255,136,.55)"; bg.shadowColor = ACC; bg.shadowBlur = 50; bg.fillText("?", TW / 2, TH * .46);
   if (logo) { bg.shadowBlur = 0; bg.globalAlpha = .7; bg.drawImage(logo, TW / 2 - 34, TH - 120, 68, 68); bg.globalAlpha = 1; }
   const [nc, ng] = canvas2d(256, 360);                      // the burn's noise: soft blobs
   ng.fillStyle = "#808080"; ng.fillRect(0, 0, 256, 360);
@@ -315,17 +324,17 @@ export async function play(host, card) {
         if (zn < zb) discard;
         float zEdge = smoothstep(zb + .07, zb, zn);`)
       .replace("#include <emissivemap_fragment>", `#include <emissivemap_fragment>
-        totalEmissiveRadiance += vec3(.25, 1., .5) * zEdge * 2.5;`);
+        totalEmissiveRadiance += ${NIGHT ? "vec3(1., .5, .1)" : "vec3(.25, 1., .5)"} * zEdge * 2.5;`);
   };
   const backMat = new THREE.MeshStandardMaterial({ map: texOf(bc), alphaMap: alpha, alphaTest: .5, roughness: .8, emissive: 0xffffff, emissiveMap: texOf(bc), emissiveIntensity: .8 });
   const cardG = new THREE.Group();
   const face = new THREE.Mesh(geo, faceMat), sheet = new THREE.Mesh(geo, sheetMat), back = new THREE.Mesh(geo, backMat);
   sheet.position.z = .004; back.rotation.y = Math.PI; back.position.z = -.002;
   const [rc, rg] = canvas2d(TW, TH); if (rim) { rg.filter = "invert(1) drop-shadow(0 0 6px #fff)"; rg.drawImage(rim, 0, 0, TW, TH); }
-  const rimMesh = new THREE.Mesh(new THREE.PlaneGeometry(CW * 1.02, CH * 1.02), new THREE.MeshBasicMaterial({ color: 0x39ff88, alphaMap: new THREE.CanvasTexture(rc), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+  const rimMesh = new THREE.Mesh(new THREE.PlaneGeometry(CW * 1.02, CH * 1.02), new THREE.MeshBasicMaterial({ color: ACC_HEX, alphaMap: new THREE.CanvasTexture(rc), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
   rimMesh.position.z = .006;
   cardG.add(face, sheet, back, rimMesh); scene.add(cardG); cardG.visible = false;
-  const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: soft, color: 0x39ff88, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
+  const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: soft, color: ACC_HEX, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
   halo.scale.set(3.2, 3.6, 1); scene.add(halo);
 
 
