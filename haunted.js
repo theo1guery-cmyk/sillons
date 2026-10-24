@@ -1,16 +1,21 @@
 "use strict";
 /* Zik Hunter — the "Collection Hantée" (Halloween): 13 sounds, each printed in a few numbered copies only (Thriller 1/1).
    No rarity: they all wear the same card, a sleeve in a haunted-manor window. */
+// the looks proposed for the night's cards (nv): 1 the moon behind the card, 2 an engraved frame, 3 a swarm of bats
+const HN_LOOK = 1;
+const HN_OUT = { 1: `<div class="hn-o hn-bigmoon" aria-hidden="true"></div>`, 2: `<div class="hn-o hn-frame" aria-hidden="true"><i></i><i></i><i></i><i></i></div>`, 3: `<div class="hn-o hn-halo" aria-hidden="true"></div>` };
+const HN_FRONT = { 1: `<div class="hn-o hn-flight" aria-hidden="true"><i></i><i></i><i></i></div>`, 2: `<div class="hn-o hn-crest" aria-hidden="true"><b></b><i></i></div>`, 3: `<div class="hn-o hn-swarm" aria-hidden="true">${"<i></i>".repeat(7)}</div>` };
 function hauntedCardEl(c) {
   const one = c.of === 1, no = c.no === "?" ? "?" : String(c.no).padStart(String(c.of).length, "0");
-  const el = document.createElement("div"); el.className = "hcard" + (one ? " one" : "") + (c.nuit ? " nuit" : "");
-  // c.nuit: the series of the night of 31 October — pumpkin and black, a full moon crossed by bats, the date as a seal
-  el.innerHTML = `<div class="hc-glow" aria-hidden="true"></div>
+  const nv = c.nuit ? c.nv || HN_LOOK : 0;
+  const el = document.createElement("div"); el.className = "hcard" + (one ? " one" : "") + (c.nuit ? " nuit nv" + nv : "");
+  // c.nuit: the series of the night of 31 October — pumpkin and black; the sleeve stays clean, the moon and the bats
+  // live around the card
+  el.innerHTML = `${c.nuit ? HN_OUT[nv] : ""}<div class="hc-glow" aria-hidden="true"></div>
     <div class="hc-paper">
       <img class="hc-art" src="${esc(c.cov)}" alt="Pochette de ${esc(c.t)}" loading="lazy" decoding="async">
-      <div class="hc-tint" aria-hidden="true"></div>${c.nuit ? `<div class="hn-moon" aria-hidden="true"></div><div class="hn-bats" aria-hidden="true"><i></i><i></i><i></i></div>` : ""}<div class="hc-char" aria-hidden="true"></div><div class="hc-smoke" aria-hidden="true"><i></i><i></i></div>
+      <div class="hc-tint" aria-hidden="true"></div><div class="hc-char" aria-hidden="true"></div><div class="hc-smoke" aria-hidden="true"><i></i><i></i></div>
       <div class="hc-head"><span>${c.nuit ? "Nuit d'Halloween" : "Collection hantée"}</span>${one ? `<span class="hc-uniq">Unique</span>` : ""}</div>
-      ${c.nuit ? `<div class="hn-seal" aria-hidden="true"><b>31</b><small>oct.</small></div>` : ""}
       <div class="hc-foot">
         <div class="hc-a">${esc(c.a)}</div>
         <div class="hc-t${c.t.length > 18 ? " xlong" : c.t.length > 10 ? " long" : ""}">${esc(c.t)}</div>
@@ -18,7 +23,7 @@ function hauntedCardEl(c) {
       </div>
     </div>
     <div class="hc-rim" aria-hidden="true"></div>
-    <div class="hc-embers" aria-hidden="true">${"<i></i>".repeat(9)}</div>`;
+    <div class="hc-embers" aria-hidden="true">${"<i></i>".repeat(9)}</div>${c.nuit ? HN_FRONT[nv] : ""}`;
   const w = document.createElement("div"); w.className = "cq"; w.appendChild(el);
   return w;
 }

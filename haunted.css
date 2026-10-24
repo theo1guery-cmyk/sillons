@@ -303,3 +303,33 @@ body.hx3d-on > *:not(.hx3d.ready){visibility:hidden}
 .hxc-bats i:nth-child(4){--x:50vw;--y:5vh;animation-delay:2.75s;width:12vmin}.hxc-bats i:nth-child(5){--x:-20vw;--y:-45vh;animation-delay:3s;width:9vmin}.hxc-bats i:nth-child(6){--x:25vw;--y:-42vh;animation-delay:2.85s;width:10vmin}
 .hxc-bats i:nth-child(7){--x:-70vw;--y:15vh;animation-delay:3.05s;width:8vmin}.hxc-bats i:nth-child(8){--x:70vw;--y:-15vh;animation-delay:2.95s;width:13vmin}
 @keyframes hxcbat{0%{opacity:0;transform:translate(-50%,-50%) scale(.3)}15%{opacity:1}100%{opacity:0;transform:translate(calc(-50% + var(--x)),calc(-50% + var(--y))) scale(1.1)}}
+
+/* the night's cards: the sleeve stays clean; the decor lives around the card (hn-o, outside its edges) */
+.hn-o{position:absolute;pointer-events:none}
+.hcard.nuit .hn-o:first-child{z-index:-1}
+/* 1 · the moon behind the card: a big full moon rises behind its top corner, bats cross above it */
+.hn-bigmoon{right:-22%;top:-16%;width:68%;aspect-ratio:1;border-radius:50%;
+  background:radial-gradient(circle at 40% 38%,#fff6dc,#ffd98a 38%,#ff9a3a 58%,#c2410c 70%,rgba(194,65,12,0) 71%);box-shadow:0 0 10cqw 3cqw rgba(255,130,40,.35)}
+.hn-bigmoon::after{content:"";position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 32% 58%,rgba(160,70,10,.3) 0 7%,transparent 8%),radial-gradient(circle at 60% 30%,rgba(160,70,10,.25) 0 5%,transparent 6%),radial-gradient(circle at 55% 66%,rgba(160,70,10,.22) 0 9%,transparent 10%)}
+.hn-flight{left:0;right:0;top:-14%;height:16%}
+.hn-flight i,.hn-swarm i{position:absolute;aspect-ratio:2.3;background:url(brand/bat.svg) center/contain no-repeat;filter:brightness(0) drop-shadow(0 0 .6cqw rgba(255,140,40,.7));animation:hnflap .5s ease-in-out infinite alternate}
+.hn-flight i:nth-child(1){left:52%;top:30%;width:18%}
+.hn-flight i:nth-child(2){left:76%;top:0;width:12%;animation-delay:-.2s}
+.hn-flight i:nth-child(3){left:30%;top:58%;width:10%;animation-delay:-.35s}
+@keyframes hnflap{to{transform:scaleY(.55) translateY(-6%)}}
+/* 2 · an engraved frame: a double orange line around the torn card, diamonds in the corners, a crescent on top */
+.hn-frame{inset:-5% -6%;border:.5cqw solid rgba(255,138,31,.85);border-radius:2cqw;box-shadow:inset 0 0 0 1.4cqw rgba(10,4,2,.9),inset 0 0 0 1.8cqw rgba(255,190,110,.55),0 0 4cqw rgba(255,120,30,.35);background:linear-gradient(160deg,#1a0a04,#070302)}
+.hn-frame i{position:absolute;width:5cqw;aspect-ratio:1;background:#ff8a1f;transform:rotate(45deg);box-shadow:0 0 2cqw #ff8a1f}
+.hn-frame i:nth-child(1){left:-2.5cqw;top:-2.5cqw}.hn-frame i:nth-child(2){right:-2.5cqw;top:-2.5cqw}.hn-frame i:nth-child(3){left:-2.5cqw;bottom:-2.5cqw}.hn-frame i:nth-child(4){right:-2.5cqw;bottom:-2.5cqw}
+.hn-crest{left:50%;top:-9%;width:18%;aspect-ratio:1;transform:translateX(-50%)}
+.hn-crest b{position:absolute;inset:0;border-radius:50%;box-shadow:inset -3cqw -.5cqw 0 #ffcf8a;filter:drop-shadow(0 0 2cqw #ff8a1f);transform:rotate(-25deg)}
+.hn-crest i{position:absolute;left:50%;bottom:-118%;width:120%;aspect-ratio:2.3;transform:translateX(-50%);background:url(brand/bat.svg) center/contain no-repeat;filter:brightness(0) drop-shadow(0 0 .8cqw #ff8a1f);display:none}
+/* 3 · a swarm of bats: the card in front of a round orange glow (the moon behind), small bats circling around it */
+.hn-halo{left:50%;top:42%;width:150%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(closest-side,#ffe3a8,#ffb65a 30%,#ff8a1f 52%,rgba(194,65,12,.5) 66%,rgba(194,65,12,0) 72%);opacity:.8}
+.hn-swarm{inset:0}
+.hn-swarm i{width:17%}
+.hn-swarm i:nth-child(1){left:-20%;top:6%}.hn-swarm i:nth-child(2){right:-22%;top:16%;width:21%;animation-delay:-.1s}
+.hn-swarm i:nth-child(3){left:-17%;top:50%;width:13%;animation-delay:-.25s}.hn-swarm i:nth-child(4){right:-18%;top:60%;width:14%;animation-delay:-.4s}
+.hn-swarm i:nth-child(5){left:26%;top:-12%;width:15%;animation-delay:-.15s}.hn-swarm i:nth-child(6){right:16%;top:-9%;width:11%;animation-delay:-.3s}
+.hn-swarm i:nth-child(7){left:40%;bottom:-11%;width:14%;animation-delay:-.05s}
+@media (prefers-reduced-motion:reduce){.hn-flight i,.hn-swarm i{animation:none}}
