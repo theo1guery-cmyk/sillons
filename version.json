@@ -1,7 +1,7 @@
 {
-  "id": "2026-10-24.6",
-  "title": "Chaque exemplaire Hanté dans ta collection",
+  "id": "2026-10-24.7",
+  "title": "Les boîtes des éditions limitées sont scellées",
   "notes": [
-    "Si tu as plusieurs exemplaires de la même carte en édition limitée (par exemple deux Zombie), chacun apparaît maintenant dans ta collection avec son propre numéro"
+    "Une carte en édition limitée gradée reste dans sa boîte pour toujours : elle ne peut plus être cassée"
   ]
 }
