@@ -205,7 +205,7 @@ async function renderGrading() {
     if (!b.top?.length) board.innerHTML = `<div class="empty">Personne n'a encore fait grader de carte. Sois le premier : ta carte aura le n° #001.</div>`;
     for (const r of b.top || []) {
       const artist = r.kind === "artist";
-      const c = cardFromRow({ kind: r.kind, track_id: r.track_id, artist_id: r.artist_id, tier: r.tier, rank: r.rank },
+      const c = cardFromRow({ kind: r.kind, track_id: r.track_id, artist_id: r.artist_id, tier: r.tier, rank: r.rank, edition: r.edition, edition_no: r.edition_no },
         artist ? { name: r.artist_name, picture: r.picture, nb_album: r.nb_album } : { title: r.title, artist: r.artist, album: r.album, cover: r.cover, duration: r.duration, bpm: r.bpm, year: r.year, explicit: r.explicit, genre: r.genre });
       board.appendChild(slabCell(c, { grade: r.grade, cert: r.cert, pop: r.pop, holo: r.holo }, `à <b>${esc(r.owner)}</b>`));
     }
