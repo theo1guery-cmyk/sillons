@@ -197,7 +197,7 @@ const hxSeries = c => hxNight(c) ? "Nuit d'Halloween" : "Collection Hantée";
 // the 3D film (haunt3d.js): fetched ahead, so the film starts at once
 function hxFilmLoad() {
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) return null;
-  return import("./haunt3d.js?v=26").catch(() => null);
+  return import("./haunt3d.js?v=27").catch(() => null);
 }
 // the sound waits for the card: started silent inside the touch (phones only allow sound begun by a touch), it is
 // rewound and heard when the fire reveals the card
@@ -212,12 +212,14 @@ function hxMusic(c) {
 async function hxFilm(film, c, onReveal) {     // true once the film has played; onReveal: when the card shows
   const m = film && await Promise.race([film, wait(2500).then(() => null)]);
   if (!m) return false;
+  // the film shows only once ready (its pictures loaded, its first frames drawn): until then the cursed back keeps shaking
   const host = document.createElement("div"); host.className = "hx3d"; host.setAttribute("aria-hidden", "true");
   host.innerHTML = `<button class="hx3d-skip" type="button">Passer</button>`;
-  document.body.appendChild(host); document.body.classList.add("fx-on", "hx3d-on");
+  document.body.appendChild(host);
   host.querySelector("button").onclick = () => host.remove();
+  const onReady = () => { host.classList.add("ready"); document.body.classList.add("fx-on", "hx3d-on"); };
   let shown = false;
-  try { await m.play(host, c, { onReveal }); shown = true; } catch (e) { console.warn("Carte hantée 3D :", e); }
+  try { await m.play(host, c, { onReady, onReveal }); shown = true; } catch (e) { console.warn("Carte hantée 3D :", e); }
   host.remove(); document.body.classList.remove("fx-on", "hx3d-on");
   return shown;
 }

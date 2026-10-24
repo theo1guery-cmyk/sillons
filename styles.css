@@ -1097,3 +1097,6 @@ body.fx-on{overflow:hidden}
   .deal>:nth-child(4):nth-last-child(2){grid-column:2/span 2}
   .slot .tag{margin-top:5px;font-size:.58rem;letter-spacing:.04em}
 }
+
+/* a game, not a page: quick taps (opening boosters fast) never zoom the screen */
+html{touch-action:manipulation;-webkit-text-size-adjust:100%}

@@ -20,15 +20,15 @@ const loadImg = (src, cors) => new Promise(r => { const i = new Image(); if (cor
 const canvas2d = (w, h) => { const c = document.createElement("canvas"); c.width = w; c.height = h; return [c, c.getContext("2d")]; };
 const GREEN = "#39ff88";
 
-export async function play(host, card, opts = {}) {   // opts.onReveal: called when the fire uncovers the card
+export async function play(host, card, opts = {}) {   // opts.onReady: the film is ready to show; opts.onReveal: the fire uncovers the card
   // a card of the night of 31 October: the ritual, the card and its fire burn pumpkin orange, under a full moon
   const NIGHT = card.series === 2 || card.slot >= 14, ACC = NIGHT ? "#ff8a1f" : GREEN, ACC_HEX = NIGHT ? 0xff8a1f : 0x39ff88;
   const mobile = Math.min(innerWidth, innerHeight) < 600 || /Android|iPhone|iPad/.test(navigator.userAgent);
   const renderer = new THREE.WebGLRenderer({ antialias: !mobile, powerPreference: "high-performance" });
-  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, mobile ? 1.25 : 1.5));
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, mobile ? 1 : 1.5));   // phones: one pixel per CSS pixel, for a smooth film
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = mobile ? 1.15 : 1;
+  renderer.toneMappingExposure = mobile ? 1.4 : 1;      // no glow pass on phones: a brighter picture instead
   renderer.setClearColor(NIGHT ? 0x06030a : 0x020604, 1);
   const canvas = renderer.domElement; canvas.className = "hx3d-gl";
   host.prepend(canvas);
@@ -107,12 +107,12 @@ export async function play(host, card, opts = {}) {   // opts.onReveal: called w
   sg.fillStyle = sgr; sg.fillRect(0, 0, 128, 128);
   const soft = texOf(sc);
   const mist = [];
-  for (let k = 0; k < (mobile ? 10 : 22); k++) {
+  for (let k = 0; k < (mobile ? 4 : 22); k++) {          // big see-through sprites cost phones a lot
     const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: soft, color: k % 3 ? (NIGHT ? 0x8a4a2a : 0x2f8a57) : 0x6a4a9a, transparent: true, opacity: .09, depthWrite: false }));
     s.position.set((Math.random() - .5) * 9, .2 + Math.random() * .5, -Math.random() * 5 + 1); s.scale.setScalar(2.5 + Math.random() * 2.5);
     s.userData.v = (Math.random() - .5) * .25; scene.add(s); mist.push(s);
   }
-  const EMB = mobile ? 70 : 160, ePos = new Float32Array(EMB * 3), eSpd = new Float32Array(EMB);
+  const EMB = mobile ? 50 : 160, ePos = new Float32Array(EMB * 3), eSpd = new Float32Array(EMB);
   const resetEmber = (k, y) => { const a = Math.random() * 7, r = Math.random() * 1.3; ePos[k * 3] = Math.cos(a) * r; ePos[k * 3 + 1] = y ?? Math.random() * .3; ePos[k * 3 + 2] = Math.sin(a) * r; eSpd[k] = .4 + Math.random() * .9; };
   for (let k = 0; k < EMB; k++) resetEmber(k, Math.random() * 3);
   const embGeo = new THREE.BufferGeometry(); embGeo.setAttribute("position", new THREE.BufferAttribute(ePos, 3));
@@ -207,6 +207,7 @@ export async function play(host, card, opts = {}) {   // opts.onReveal: called w
     const push = ease.inOut(seg(t, 0, 3)) * .9 + ease.out(seg(t, 4.4, 5.6)) * (portrait() ? 1.6 : 1.3);
     camera.position.set(Math.sin(t * .15) * .6, 1.55 + .15 * Math.sin(t * .4), dist - push);
     camera.lookAt(0, 1.3, 0);
+    moonSpr.position.x = portrait() ? -1.4 : -3.4;                  // on a phone held upright the moon stays in the picture
     const lit = ease.out(seg(t, .1, 1.1));
     circle.material.opacity = lit * (.85 + .15 * Math.sin(t * 6)); circle.rotation.z = t * .25;
     pillar.material.opacity = ease.soft(seg(t, .6, 1.6)) * .16 * (1 - seg(t, 3, 4.4) * .7);
@@ -249,9 +250,9 @@ export async function play(host, card, opts = {}) {   // opts.onReveal: called w
   const frameSafe = now => { try { frame(now); } catch (e) { done(); throw e; } };
   // warm-up, out of sight: every moment drawn once (shaders compiled, textures sent to the GPU) before the clock starts
   canvas.style.visibility = "hidden";
-  try { await renderer.compileAsync(scene, camera); } catch (e) {}
-  for (const w of [.5, 2.9, 3.8, 5]) { step(w, 0); await new Promise(r => requestAnimationFrame(r)); }
-  canvas.style.visibility = "";
+  if (!mobile) try { await renderer.compileAsync(scene, camera); } catch (e) {}   // phones: the frames below compile it, faster
+  for (const w of [.5, 3.8]) { step(w, 0); await new Promise(r => requestAnimationFrame(r)); }
+  canvas.style.visibility = ""; try { opts.onReady?.(); } catch (e) {}
   raf = requestAnimationFrame(frameSafe);
   await finished;
   cancelAnimationFrame(raf); removeEventListener("resize", resize);

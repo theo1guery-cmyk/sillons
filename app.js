@@ -2,6 +2,10 @@
 /* Zik Hunter — every card is a live Deezer track. No server: the Deezer API is
    called straight from the browser through JSONP (it sends no CORS headers). */
 
+// no zoom on phones (Safari ignores user-scalable=no): pinching or tapping fast while opening boosters zoomed the game
+document.addEventListener("gesturestart", e => e.preventDefault());
+document.addEventListener("touchmove", e => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
+
 /* ---------- Deezer ---------- */
 const API = "https://api.deezer.com/";
 let jsonpSeq = 0;
