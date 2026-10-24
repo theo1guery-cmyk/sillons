@@ -96,8 +96,8 @@ async function drawHaunted(box) {
   // the night's series: shown from midnight on the 31 (admins see it before, to check it)
   const nightHtml = !nState || (nState === "soon" && !admin) ? "" : `<section class="hn-sec" aria-labelledby="hnT">
       <h3 id="hnT">🌕 La Nuit d'Halloween${admin ? ` <button class="ps-link wz-replay" id="hnLook">👁 Voir les cartes (admin)</button> <button class="ps-link wz-replay" id="hnDemo">🎬 Tester l'apparition (admin)</button>` : ""}</h3>
-      <p class="sub">${nState === "soon" ? `<b>Aperçu admin :</b> personne d'autre ne voit cette série avant le 31 octobre à minuit. 13 cartes, ${nAll} exemplaires, à trouver dans les boosters du 31 seulement, de minuit à minuit. <b>This Is Halloween n'existe qu'en un seul exemplaire.</b>`
-        : nState === "on" ? `Cette nuit seulement, jusqu'à minuit : 13 cartes en édition limitée se cachent dans les boosters. <b>${nOut} / ${nAll}</b> déjà trouvées. <b>Toutes les citrouilles sont doublées.</b>`
+      <p class="sub">${nState === "soon" ? `<b>Aperçu admin :</b> personne d'autre ne voit cette série avant le 31 octobre à minuit. 13 cartes, ${nAll} exemplaires, à trouver dans les boosters du 31 seulement, de minuit à minuit. <b>${night.filter(e => e.of === 1).length} légendes n'existent qu'en un seul exemplaire.</b>`
+        : nState === "on" ? `Cette nuit seulement, jusqu'à minuit : 13 cartes en édition limitée se cachent dans les boosters, dont ${night.filter(e => e.of === 1).length} en un seul exemplaire. <b>${nOut} / ${nAll}</b> déjà trouvées. <b>Toutes les citrouilles sont doublées.</b>`
         : `La Nuit d'Halloween est finie : <b>${nOut} / ${nAll}</b> cartes ont été trouvées. Les autres ne sortiront jamais.`}</p>
       ${board(night)}</section>`;
   const pk = typeof W !== "undefined" ? W.st?.pumpkins || 0 : 0;

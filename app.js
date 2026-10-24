@@ -76,7 +76,8 @@ const rarName = c => c.ed ? "Édition limitée" : isArtist(c) ? CERT[c.tier] : R
 // are Légendaires (price of grading, smallest price on the market); c.ed is the sound, c.eno the N° of the copy.
 const ED_FILTER = -3, ED_COL = "#39ff88", NIGHT_COL = "#ff8a1f";
 const NIGHT_FROM = 14;                                       // sounds 14 to 26: the series of the night of 31 October (pumpkin look)
-const edOf = ed => ed === 1 || ed === 14 ? 1 : 10;           // copies printed: Thriller and This Is Halloween are 1/1, the others 10
+const ED_UNIQUE = [1, 14, 16, 17, 18, 22];                   // the 1/1: Thriller; for the night, This Is Halloween, Monster Mash, I Put a Spell on You, Halloween (Main Theme), (Don't Fear) The Reaper
+const edOf = ed => ED_UNIQUE.includes(ed) ? 1 : 10;          // copies printed
 const fmtFans = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 0 : 1).replace(".", ",") + " M" : n >= 1e3 ? Math.round(n / 1e3) + " k" : String(n);
 // Deezer rank (0 – 1 000 000) → rarity. 950 000+ is the global-hit club
 // (Billie Jean, Bohemian Rhapsody…): a few thousand tracks out of 100+ million.
