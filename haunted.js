@@ -195,9 +195,44 @@ const hxNo = c => String(c.no).padStart(String(c.of).length, "0");
 const hxNight = c => c.series === 2 || c.slot >= NIGHT_FROM;      // a card of the night of the 31
 const hxSeries = c => hxNight(c) ? "Nuit d'Halloween" : "Collection Hantée";
 // the 3D film (haunt3d.js): fetched ahead, so the film starts at once
+const HX_PHONE = Math.min(innerWidth, innerHeight) < 600 || /Android|iPhone|iPad/.test(navigator.userAgent);
 function hxFilmLoad() {
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) return null;
+  if (HX_PHONE) return Promise.resolve({ play: hxCssFilm });          // phones: the same film without 3D, smooth everywhere
   return import("./haunt3d.js?v=27").catch(() => null);
+}
+/* the graveyard film for phones, in plain HTML and CSS: the graves in the fog under the moon, the ritual circle lights
+   up on the ground and turns, the cursed card rises out of it spinning, bats burst out, fire eats the cursed sheet from
+   the bottom up and the card shows. Same timing as the 3D film (haunt3d.js). */
+function hxCssFilm(host, c, opts = {}) {
+  return new Promise(done => {
+    const night = hxNight(c), runes = "ᚠᚢᚦᚨᚱᚲᚷᚹᚺᚾᛁᛃᛇᛈᛉᛊᛏᛒᛖᛗᛚᛜᛞᛟ";
+    const star = [...Array(6)].map((_, k) => { const a = -Math.PI / 2 + k * 4 * Math.PI / 5; return `${(50 + Math.cos(a) * 43).toFixed(1)},${(50 + Math.sin(a) * 43).toFixed(1)}`; }).join(" ");
+    const sheet = `<div class="hxc-sheet"><i class="hxc-sig"></i><b>?</b></div>`;
+    const el = document.createElement("div"); el.className = "hxc" + (night ? " night" : "");
+    el.innerHTML = `<div class="hxc-sky"></div><div class="hxc-moon"></div>
+      <svg class="hxc-graves" viewBox="0 0 400 120" preserveAspectRatio="xMidYMax slice" aria-hidden="true"><path d="M20 120V70a22 22 0 0 1 44 0v50zM300 120V62a26 26 0 0 1 52 0v58zM110 120V78h8V60h-14v-8h14V40h8v12h14v8h-14v18h8v42zM210 120V84a16 16 0 0 1 32 0v36zM360 120V88h6V74h-10v-6h10V58h6v10h10v6h-10v14h6v32zM0 112h400v8H0z"/></svg>
+      <div class="hxc-fog f1"></div><div class="hxc-fog f2"></div>
+      <div class="hxc-floor"><svg class="hxc-ring" viewBox="0 0 100 100" aria-hidden="true">
+        <circle cx="50" cy="50" r="47" stroke-width="1.2"/><circle cx="50" cy="50" r="43" stroke-width=".5"/><circle cx="50" cy="50" r="30" stroke-width=".8"/><circle cx="50" cy="50" r="27" stroke-width=".4"/>
+        <polyline points="${star}" stroke-width=".7"/>
+        ${[...runes].map((r, k) => `<text x="50" y="13.2" transform="rotate(${k * 15} 50 50)">${r}</text>`).join("")}</svg></div>
+      <div class="hxc-pillar"></div><div class="hxc-embers">${"<i></i>".repeat(14)}</div>
+      <div class="hxc-stage"><div class="hxc-card"><div class="hxc-front"><div class="hxc-face"></div>${sheet}<div class="hxc-burnline"></div></div><div class="hxc-rear">${sheet}</div></div></div>
+      <div class="hxc-bats">${"<i></i>".repeat(8)}</div>`;
+    el.querySelector(".hxc-face").appendChild(hauntedCardEl({ t: c.title, a: c.artist, cov: c.cover || "", no: c.no, of: c.of, nuit: night }));
+    host.appendChild(el);
+    const t0 = performance.now(); let revealed = false, readied = false;
+    const tick = () => {
+      if (!host.isConnected) { if (!revealed) opts.onReveal?.(); return done(); }
+      const t = (performance.now() - t0) / 1000;
+      if (!readied) { readied = true; opts.onReady?.(); el.classList.add("go"); }
+      if (t >= 3.6 && !revealed) { revealed = true; try { opts.onReveal?.(); } catch (e) {} }
+      if (t >= 6.2) return done();
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
 }
 // the sound waits for the card: started silent inside the touch (phones only allow sound begun by a touch), it is
 // rewound and heard when the fire reveals the card
