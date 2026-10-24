@@ -234,14 +234,21 @@ function hxCssFilm(host, c, opts = {}) {
     requestAnimationFrame(tick);
   });
 }
-// the sound waits for the card: started silent inside the touch (phones only allow sound begun by a touch), it is
-// rewound and heard when the fire reveals the card
+// the sound waits for the card. Phones only let a page play sound from a touch, and a muted start does not count: so
+// the touch plays a tenth of a second of silence on the very element that will carry the music, which unlocks it; the
+// extract is put in it and heard when the fire reveals the card
+const HX_SILENCE = (() => {                     // a tiny silent WAV
+  const n = 800, b = new Uint8Array(44 + n).fill(128), v = new DataView(b.buffer), w = (o, t) => [...t].forEach((ch, k) => b[o + k] = ch.charCodeAt(0));
+  w(0, "RIFF"); v.setUint32(4, 36 + n, true); w(8, "WAVEfmt "); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, 8000, true); v.setUint32(28, 8000, true); v.setUint16(32, 1, true); v.setUint16(34, 8, true); w(36, "data"); v.setUint32(40, n, true);
+  return URL.createObjectURL(new Blob([b], { type: "audio/wav" }));
+})();
 function hxMusic(c) {
-  const audio = new Audio(); audio.preload = "auto"; audio.volume = .7; audio.muted = true;
-  let want = false, armed = false, started = false;
-  const arm = () => { if (!armed && audio.src) { armed = true; audio.play().catch(() => {}); } };   // inside the touch: silent
-  const pre = hxPreview(c).then(u => { if (u) { audio.src = u; if (want) start(); } return u; }).catch(() => null);
-  const start = () => { want = true; if (started || !audio.src) return; started = true; audio.currentTime = 0; audio.muted = false; audio.play().catch(() => {}); };
+  const audio = new Audio(); audio.volume = .7;
+  let url = null, want = false, started = false;
+  const start = () => { want = true; if (started || !url) return; started = true; audio.src = url; audio.currentTime = 0; audio.play().catch(() => {}); };
+  const pre = hxPreview(c).then(u => { url = u; if (u && want) start(); return u; }).catch(() => null);
+  const arm = () => { if (started) return; audio.src = HX_SILENCE; audio.play().catch(() => {}); };   // inside the touch
   return { audio, pre, arm, start, stop: () => { want = false; audio.pause(); } };
 }
 async function hxFilm(film, c, onReveal) {     // true once the film has played; onReveal: when the card shows
@@ -291,7 +298,7 @@ Object.assign(Haunted, {
     if (!OP.hDone) {
       OP.hDone = true;
       const music = hxMusic(c);
-      await music.pre; music.arm();
+      music.arm(); await music.pre;
       if (await hxFilm(hxFilmLoad(), c, music.start)) { music.start(); setTimeout(() => music.stop(), 8000); }
       else { music.stop(); await Haunted.reveal(c); }                    // no 3D: the plain reveal brings its own sound
     }
