@@ -333,3 +333,15 @@ body.hx3d-on > *:not(.hx3d.ready){visibility:hidden}
 .hn-swarm i:nth-child(5){left:26%;top:-12%;width:15%;animation-delay:-.15s}.hn-swarm i:nth-child(6){right:16%;top:-9%;width:11%;animation-delay:-.3s}
 .hn-swarm i:nth-child(7){left:40%;bottom:-11%;width:14%;animation-delay:-.05s}
 @media (prefers-reduced-motion:reduce){.hn-flight i,.hn-swarm i{animation:none}}
+/* the night's own outline: not the torn edge of the Collection Hantée, a gothic arch (a tombstone, a chapel window),
+   clean, with a double pumpkin line */
+.hcard.nuit .hc-glow,.hcard.nuit .hc-paper,.hcard.nuit .hc-rim{-webkit-mask:none;mask:none;border-radius:50% 50% 4% 4% / 36% 36% 3% 3%}
+.hcard.nuit .hc-glow{inset:-1%}
+.hcard.nuit .hc-paper::after{display:none}
+.hcard.nuit .hc-char{box-shadow:inset 0 0 5cqw 1.5cqw #0b0602}
+.hcard.nuit .hc-rim{background:none;animation:none;border:1.1cqw solid #ff8a1f;
+  box-shadow:inset 0 0 0 .7cqw #140601,inset 0 0 0 1.1cqw #ffcf8a,0 0 2.4cqw rgba(255,138,31,.75),0 0 6cqw rgba(255,110,20,.3);filter:none}
+.hcard.nuit.one .hc-rim{background:none;filter:none;animation:none;border-color:#ffb13a;box-shadow:inset 0 0 0 .7cqw #140601,inset 0 0 0 1.1cqw #fff1c8,0 0 2.6cqw rgba(255,190,90,.8),0 0 7cqw rgba(255,140,30,.35)}
+.hcard.nuit .hc-head{top:11cqw;flex-direction:column;align-items:center;gap:1.2cqw;letter-spacing:.26em}
+.hcard.nuit.hc-ghost .hc-rim{border-color:#3a2a20;box-shadow:none}
+.hn-frame{border-radius:50% 50% 5% 5% / 34% 34% 3% 3%}
