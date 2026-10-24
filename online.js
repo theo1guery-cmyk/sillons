@@ -147,7 +147,7 @@ function cardFromRow(r, t) {
   };
 }
 // the collection groups copies by track; each copy keeps its own id for trades
-const cardKey = r => (r.kind === "artist" ? "a" + r.artist_id : r.track_id) + "#" + r.tier + (r.edition ? "#e" : "");   // a track in one rarity (a limited edition apart)
+const cardKey = r => (r.kind === "artist" ? "a" + r.artist_id : r.track_id) + "#" + r.tier + (r.edition ? "#e" + r.edition_no : "");   // a track in one rarity; each copy of a limited edition apart (its own N°)
 function addCopy(map, r, t) {
   const k = cardKey(r);
   const c = map[k] || (map[k] = { ...cardFromRow(r, t), n: 0, holo: 0, locked: 0, copies: [], at: Date.parse(r.pulled_at) });

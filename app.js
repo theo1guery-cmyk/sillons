@@ -628,7 +628,7 @@ $("#tab-ref").onclick = () => show("ref");
 $("#tab-witch").onclick = () => show("witch");
 
 const owned = () => Object.values(S.c);
-const ck = c => c.id + "#" + c.tier + (c.ed ? "#e" : "");   // key of a card: a track in one rarity (a limited edition apart)
+const ck = c => c.id + "#" + c.tier + (c.ed ? "#e" + c.eno : "");   // key of a card: a track in one rarity; each copy of a limited edition apart
 // every version you own of a track, whatever its rarity (rebuilt at most every 50 ms: collections can be big)
 let TRK = null, TRKsrc = null, TRKat = 0;
 function versionsOf(id) {
