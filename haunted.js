@@ -1,17 +1,14 @@
 "use strict";
 /* Zik Hunter — the "Collection Hantée" (Halloween): 13 sounds, each printed in a few numbered copies only (Thriller 1/1).
    No rarity: they all wear the same card, a sleeve in a haunted-manor window. */
-// the looks proposed for the night's cards (nv): 1 the moon behind the card, 2 an engraved frame, 3 a swarm of bats
-const HN_LOOK = 1;
-const HN_OUT = { 1: `<div class="hn-o hn-bigmoon" aria-hidden="true"></div>`, 2: `<div class="hn-o hn-frame" aria-hidden="true"><i></i><i></i><i></i><i></i></div>`, 3: `<div class="hn-o hn-halo" aria-hidden="true"></div>` };
-const HN_FRONT = { 1: `<div class="hn-o hn-flight" aria-hidden="true"><i></i><i></i><i></i></div>`, 2: `<div class="hn-o hn-crest" aria-hidden="true"><b></b><i></i></div>`, 3: `<div class="hn-o hn-swarm" aria-hidden="true">${"<i></i>".repeat(7)}</div>` };
+// the night's cards: a full moon rises behind the card, bats cross above it (around the card, never on the sleeve)
+const HN_BACK = `<div class="hn-o hn-bigmoon" aria-hidden="true"></div>`, HN_FRONT = `<div class="hn-o hn-flight" aria-hidden="true"><i></i><i></i><i></i></div>`;
 function hauntedCardEl(c) {
   const one = c.of === 1, no = c.no === "?" ? "?" : String(c.no).padStart(String(c.of).length, "0");
-  const nv = c.nuit ? c.nv || HN_LOOK : 0;
-  const el = document.createElement("div"); el.className = "hcard" + (one ? " one" : "") + (c.nuit ? " nuit nv" + nv : "");
+  const el = document.createElement("div"); el.className = "hcard" + (one ? " one" : "") + (c.nuit ? " nuit" : "");
   // c.nuit: the series of the night of 31 October — pumpkin and black; the sleeve stays clean, the moon and the bats
   // live around the card
-  el.innerHTML = `${c.nuit ? HN_OUT[nv] : ""}<div class="hc-glow" aria-hidden="true"></div>
+  el.innerHTML = `${c.nuit ? HN_BACK : ""}<div class="hc-glow" aria-hidden="true"></div>
     <div class="hc-paper">
       <img class="hc-art" src="${esc(c.cov)}" alt="Pochette de ${esc(c.t)}" loading="lazy" decoding="async">
       <div class="hc-tint" aria-hidden="true"></div><div class="hc-char" aria-hidden="true"></div><div class="hc-smoke" aria-hidden="true"><i></i><i></i></div>
@@ -23,7 +20,7 @@ function hauntedCardEl(c) {
       </div>
     </div>
     <div class="hc-rim" aria-hidden="true"></div>
-    <div class="hc-embers" aria-hidden="true">${"<i></i>".repeat(9)}</div>${c.nuit ? HN_FRONT[nv] : ""}`;
+    <div class="hc-embers" aria-hidden="true">${"<i></i>".repeat(9)}</div>${c.nuit ? HN_FRONT : ""}`;
   const w = document.createElement("div"); w.className = "cq"; w.appendChild(el);
   return w;
 }
@@ -204,7 +201,7 @@ const HX_PHONE = Math.min(innerWidth, innerHeight) < 600 || /Android|iPhone|iPad
 function hxFilmLoad() {
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) return null;
   if (HX_PHONE) return Promise.resolve({ play: hxCssFilm });          // phones: the same film without 3D, smooth everywhere
-  return import("./haunt3d.js?v=27").catch(() => null);
+  return import("./haunt3d.js?v=28").catch(() => null);
 }
 /* the graveyard film for phones, in plain HTML and CSS: the graves in the fog under the moon, the ritual circle lights
    up on the ground and turns, the cursed card rises out of it spinning, bats burst out, fire eats the cursed sheet from

@@ -122,7 +122,9 @@ export async function play(host, card, opts = {}) {   // opts.onReady: the film 
   /* ---------- the card: its face, the cursed sheet over it (which burns), its back ---------- */
   const CW = 1.26, CH = 1.76, TW = 630, TH = 880;
   const [ac, ag] = canvas2d(TW, TH);                        // the torn outline, as an alpha map
-  ag.fillStyle = "#000"; ag.fillRect(0, 0, TW, TH); if (torn) { ag.filter = "invert(1)"; ag.drawImage(torn, 0, 0, TW, TH); ag.filter = "none"; } else { ag.fillStyle = "#fff"; ag.fillRect(0, 0, TW, TH); }
+  // the night's cards: a gothic arch with a clean edge, instead of the torn edge
+  const arch = g => { g.beginPath(); g.moveTo(0, TH - 18); g.lineTo(0, TW / 2); g.arc(TW / 2, TW / 2, TW / 2, Math.PI, 0); g.lineTo(TW, TH - 18); g.quadraticCurveTo(TW, TH, TW - 18, TH); g.lineTo(18, TH); g.quadraticCurveTo(0, TH, 0, TH - 18); g.closePath(); };
+  ag.fillStyle = "#000"; ag.fillRect(0, 0, TW, TH); if (NIGHT) { ag.fillStyle = "#fff"; arch(ag); ag.fill(); } else if (torn) { ag.filter = "invert(1)"; ag.drawImage(torn, 0, 0, TW, TH); ag.filter = "none"; } else { ag.fillStyle = "#fff"; ag.fillRect(0, 0, TW, TH); }
   const alpha = new THREE.CanvasTexture(ac);
   const [fc, fg] = canvas2d(TW, TH);                        // the face, drawn like the HTML card
   fg.fillStyle = "#050806"; fg.fillRect(0, 0, TW, TH);
@@ -130,15 +132,8 @@ export async function play(host, card, opts = {}) {   // opts.onReady: the film 
   let gr = fg.createLinearGradient(0, 0, 0, TH); gr.addColorStop(0, NIGHT ? "rgba(40,10,50,.3)" : "rgba(10,40,20,.15)"); gr.addColorStop(.55, NIGHT ? "rgba(60,20,0,.35)" : "rgba(0,30,12,.4)"); gr.addColorStop(.92, NIGHT ? "#070302" : "#020503");
   fg.fillStyle = gr; fg.fillRect(0, 0, TW, TH);
   fg.strokeStyle = "rgba(18,8,2,.9)"; fg.lineWidth = 40; fg.filter = "blur(12px)"; fg.strokeRect(0, 0, TW, TH); fg.filter = "none";
-  if (NIGHT) {                                              // the full moon and the seal of the 31
-    const mg = fg.createRadialGradient(TW * .74, TH * .2, 4, TW * .76, TH * .22, TW * .15); mg.addColorStop(0, "#fff6dc"); mg.addColorStop(.5, "#ffd98a"); mg.addColorStop(1, "rgba(232,138,42,0)");
-    fg.globalCompositeOperation = "screen"; fg.fillStyle = mg; fg.beginPath(); fg.arc(TW * .76, TH * .22, TW * .15, 0, 7); fg.fill(); fg.globalCompositeOperation = "source-over";
-    fg.save(); fg.translate(84, 140); fg.rotate(-.2); const sg = fg.createRadialGradient(-12, -14, 4, 0, 0, 48); sg.addColorStop(0, "#ff9a3a"); sg.addColorStop(.6, "#c2410c"); sg.addColorStop(1, "#6b1d03");
-    fg.fillStyle = sg; fg.beginPath(); fg.arc(0, 0, 46, 0, 7); fg.fill(); fg.textAlign = "center"; fg.fillStyle = "#fff1d6"; fg.font = `900 38px Unbounded, sans-serif`; fg.fillText("31", 0, 10);
-    fg.font = `700 12px "DM Mono", monospace`; fg.fillStyle = "#ffe2b0"; fg.fillText("OCT.", 0, 28); fg.restore();
-  }
   fg.textAlign = "center"; fg.fillStyle = NIGHT ? "#ffe2b0" : "#b8ffcf"; fg.shadowColor = ACC; fg.shadowBlur = 12;
-  fg.font = `600 17px "DM Mono", monospace`; fg.fillText(NIGHT ? "N U I T   D ' H A L L O W E E N" : "C O L L E C T I O N   H A N T É E", TW / 2, 48);
+  fg.font = `600 17px "DM Mono", monospace`; fg.fillText(NIGHT ? "N U I T   D ' H A L L O W E E N" : "C O L L E C T I O N   H A N T É E", TW / 2, NIGHT ? 96 : 48);
   fg.textAlign = "left";
   fg.font = `78px "Mrs Saint Delafield", cursive`; fg.fillStyle = NIGHT ? "#ffe6c4" : "#c9ffd9"; fg.shadowBlur = 20;
   fg.save(); fg.translate(36, TH - 160); fg.rotate(-.08); fg.fillText(card.artist, 0, 0); fg.restore();
@@ -181,7 +176,9 @@ export async function play(host, card, opts = {}) {   // opts.onReady: the film 
   const cardG = new THREE.Group();
   const face = new THREE.Mesh(geo, faceMat), sheet = new THREE.Mesh(geo, sheetMat), back = new THREE.Mesh(geo, backMat);
   sheet.position.z = .004; back.rotation.y = Math.PI; back.position.z = -.002;
-  const [rc, rg] = canvas2d(TW, TH); if (rim) { rg.filter = "invert(1) drop-shadow(0 0 6px #fff)"; rg.drawImage(rim, 0, 0, TW, TH); }
+  const [rc, rg] = canvas2d(TW, TH);
+  if (NIGHT) { rg.strokeStyle = "#fff"; rg.lineWidth = 14; rg.shadowColor = "#fff"; rg.shadowBlur = 10; arch(rg); rg.stroke(); }   // the double pumpkin line
+  else if (rim) { rg.filter = "invert(1) drop-shadow(0 0 6px #fff)"; rg.drawImage(rim, 0, 0, TW, TH); }
   const rimMesh = new THREE.Mesh(new THREE.PlaneGeometry(CW * 1.02, CH * 1.02), new THREE.MeshBasicMaterial({ color: ACC_HEX, alphaMap: new THREE.CanvasTexture(rc), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
   rimMesh.position.z = .006;
   cardG.add(face, sheet, back, rimMesh); scene.add(cardG);

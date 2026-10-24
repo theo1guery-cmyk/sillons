@@ -201,24 +201,13 @@ body.hx3d-on > *:not(.hx3d.ready){visibility:hidden}
 .hcard.nuit .hc-art{filter:saturate(.7) contrast(1.15) brightness(.85) sepia(.25)}
 .hcard.nuit .hc-tint{background:linear-gradient(180deg,rgba(40,10,50,.35),rgba(60,20,0,.25) 45%,#070302 92%)}
 .hcard.nuit .hc-tint::after{background:radial-gradient(75% 45% at 50% 105%,rgba(255,120,20,.45),transparent 70%)}
-.hn-moon{position:absolute;right:8%;top:13%;width:30%;aspect-ratio:1;border-radius:50%;
   background:radial-gradient(circle at 40% 38%,#fff6dc,#ffd98a 45%,#e88a2a 80%);box-shadow:0 0 5cqw 1.5cqw rgba(255,170,60,.55),0 0 14cqw 4cqw rgba(255,120,30,.25);opacity:.92;mix-blend-mode:screen}
-.hn-moon::after{content:"";position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 30% 60%,rgba(180,90,20,.35) 0 8%,transparent 9%),radial-gradient(circle at 62% 30%,rgba(180,90,20,.3) 0 6%,transparent 7%),radial-gradient(circle at 58% 70%,rgba(180,90,20,.25) 0 10%,transparent 11%)}
-.hn-bats i{position:absolute;width:17%;aspect-ratio:2.3;background:url(brand/bat.svg) center/contain no-repeat;filter:brightness(0);animation:hnbat 7s ease-in-out infinite}
-.hn-bats i:nth-child(1){right:20%;top:19%;animation-delay:-1s}
-.hn-bats i:nth-child(2){right:4%;top:29%;width:11%;animation-delay:-3.5s}
-.hn-bats i:nth-child(3){right:36%;top:11%;width:10%;animation-delay:-5s}
-@keyframes hnbat{50%{transform:translate(-1.5cqw,-1cqw) scaleY(.7)}}
 .hcard.nuit .hc-smoke i{background:radial-gradient(closest-side,rgba(255,170,90,.22),transparent)}
 .hcard.nuit .hc-rim{background:linear-gradient(120deg,#1a0702,#ff8a1f 14%,#fff0c8 20%,#ff8a1f 26%,#1a0702 40%,#5a1d02 55%,#ff8a1f 70%,#fff4d8 76%,#ff8a1f 82%,#1a0702 95%) 0 0/300% 300%;
   filter:drop-shadow(0 0 .8cqw #ff8a1f) drop-shadow(0 0 2cqw rgba(255,120,20,.6))}
 .hcard.nuit .hc-embers i{background:#ffe2b0;box-shadow:0 0 1.6cqw .4cqw #ff7a1a}
 .hcard.nuit .hc-head{color:#ffe2b0;text-shadow:0 0 1.5cqw #ff7a1a,0 .3cqw .6cqw #000}
 .hcard.nuit .hc-uniq{background:#ff8a1f;color:#1a0700}
-.hn-seal{position:absolute;left:6cqw;top:12cqw;width:15cqw;aspect-ratio:1;display:grid;place-content:center;justify-items:center;border-radius:50%;
-  background:radial-gradient(circle at 35% 30%,#ff9a3a,#c2410c 55%,#6b1d03);box-shadow:inset 0 0 0 .6cqw rgba(255,210,150,.35),0 .6cqw 1.6cqw rgba(0,0,0,.7),0 0 3cqw rgba(255,120,30,.45);transform:rotate(-12deg)}
-.hn-seal b{font:900 6.4cqw/1 var(--display);color:#fff1d6;text-shadow:0 .3cqw .4cqw rgba(80,20,0,.8)}
-.hn-seal small{font:700 2.2cqw/1 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:#ffe2b0}
 .hcard.nuit .hc-a{color:#ffe6c4;text-shadow:0 0 2cqw #ff7a1a,0 0 5cqw rgba(255,120,30,.6)}
 .hcard.nuit .hc-t{background:linear-gradient(180deg,#fff6e0 0%,#ffcf8a 40%,#ff8a1f 75%,#b23f05 100%);-webkit-background-clip:text;background-clip:text;filter:drop-shadow(0 0 1.6cqw rgba(255,120,30,.55)) drop-shadow(0 .5cqw .8cqw #000)}
 .hcard.nuit .hc-row{border-top-color:rgba(255,140,40,.45);color:#f2c08a}
@@ -228,7 +217,6 @@ body.hx3d-on > *:not(.hx3d.ready){visibility:hidden}
 .hcard.nuit.one .hc-glow{background:radial-gradient(closest-side,#ffd36b,rgba(255,120,20,.45) 60%,transparent)}
 .hcard.nuit.one .hc-rim{background:linear-gradient(120deg,#3a1a02,#ffd36b 20%,#ffffff 32%,#ff8a1f 44%,#3a1a02 60%,#ffd36b 80%,#ffffff 90%) 0 0/300% 300%;filter:drop-shadow(0 0 1.8cqw #ffb13a)}
 .hcard.nuit.one .hc-t{background:linear-gradient(180deg,#ffffff,#ffe9a8 40%,#ffb13a 75%,#c2410c);-webkit-background-clip:text;background-clip:text}
-@media (prefers-reduced-motion:reduce){.hn-bats i{animation:none}}
 
 /* the night's series on the board, and the admins' preview of its cards */
 .hn-sec{margin:18px 0;padding:16px;border-radius:18px;background:radial-gradient(60% 90% at 85% 0,rgba(255,138,31,.16),transparent 70%),rgba(255,255,255,.03);box-shadow:inset 0 0 0 1px rgba(255,138,31,.3)}
@@ -242,7 +230,6 @@ body.hx3d-on > *:not(.hx3d.ready){visibility:hidden}
 .hn-hint{margin:0;color:#c9a6e0;font-size:.85rem;text-align:center}
 @media (max-width:600px){.hn-grid{grid-template-columns:repeat(2,1fr);gap:12px}}
 .hcard.nuit.hc-ghost .hc-art{filter:grayscale(1) brightness(.18) blur(2px)}
-.hcard.nuit.hc-ghost .hn-moon{opacity:.35}
 .hcard.nuit.hc-ghost .hc-rim{background:#3a2a20;filter:none;animation:none}
 .hcard.nuit.hc-ghost .hc-t{filter:grayscale(.7) brightness(.6)}
 
@@ -312,27 +299,12 @@ body.hx3d-on > *:not(.hx3d.ready){visibility:hidden}
   background:radial-gradient(circle at 40% 38%,#fff6dc,#ffd98a 38%,#ff9a3a 58%,#c2410c 70%,rgba(194,65,12,0) 71%);box-shadow:0 0 10cqw 3cqw rgba(255,130,40,.35)}
 .hn-bigmoon::after{content:"";position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 32% 58%,rgba(160,70,10,.3) 0 7%,transparent 8%),radial-gradient(circle at 60% 30%,rgba(160,70,10,.25) 0 5%,transparent 6%),radial-gradient(circle at 55% 66%,rgba(160,70,10,.22) 0 9%,transparent 10%)}
 .hn-flight{left:0;right:0;top:-14%;height:16%}
-.hn-flight i,.hn-swarm i{position:absolute;aspect-ratio:2.3;background:url(brand/bat.svg) center/contain no-repeat;filter:brightness(0) drop-shadow(0 0 .6cqw rgba(255,140,40,.7));animation:hnflap .5s ease-in-out infinite alternate}
+.hn-flight i{position:absolute;aspect-ratio:2.3;background:url(brand/bat.svg) center/contain no-repeat;filter:brightness(0) drop-shadow(0 0 .6cqw rgba(255,140,40,.7));animation:hnflap .5s ease-in-out infinite alternate}
 .hn-flight i:nth-child(1){left:52%;top:30%;width:18%}
 .hn-flight i:nth-child(2){left:76%;top:0;width:12%;animation-delay:-.2s}
 .hn-flight i:nth-child(3){left:30%;top:58%;width:10%;animation-delay:-.35s}
 @keyframes hnflap{to{transform:scaleY(.55) translateY(-6%)}}
-/* 2 · an engraved frame: a double orange line around the torn card, diamonds in the corners, a crescent on top */
-.hn-frame{inset:-5% -6%;border:.5cqw solid rgba(255,138,31,.85);border-radius:2cqw;box-shadow:inset 0 0 0 1.4cqw rgba(10,4,2,.9),inset 0 0 0 1.8cqw rgba(255,190,110,.55),0 0 4cqw rgba(255,120,30,.35);background:linear-gradient(160deg,#1a0a04,#070302)}
-.hn-frame i{position:absolute;width:5cqw;aspect-ratio:1;background:#ff8a1f;transform:rotate(45deg);box-shadow:0 0 2cqw #ff8a1f}
-.hn-frame i:nth-child(1){left:-2.5cqw;top:-2.5cqw}.hn-frame i:nth-child(2){right:-2.5cqw;top:-2.5cqw}.hn-frame i:nth-child(3){left:-2.5cqw;bottom:-2.5cqw}.hn-frame i:nth-child(4){right:-2.5cqw;bottom:-2.5cqw}
-.hn-crest{left:50%;top:-9%;width:18%;aspect-ratio:1;transform:translateX(-50%)}
-.hn-crest b{position:absolute;inset:0;border-radius:50%;box-shadow:inset -3cqw -.5cqw 0 #ffcf8a;filter:drop-shadow(0 0 2cqw #ff8a1f);transform:rotate(-25deg)}
-.hn-crest i{position:absolute;left:50%;bottom:-118%;width:120%;aspect-ratio:2.3;transform:translateX(-50%);background:url(brand/bat.svg) center/contain no-repeat;filter:brightness(0) drop-shadow(0 0 .8cqw #ff8a1f);display:none}
-/* 3 · a swarm of bats: the card in front of a round orange glow (the moon behind), small bats circling around it */
-.hn-halo{left:50%;top:42%;width:150%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(closest-side,#ffe3a8,#ffb65a 30%,#ff8a1f 52%,rgba(194,65,12,.5) 66%,rgba(194,65,12,0) 72%);opacity:.8}
-.hn-swarm{inset:0}
-.hn-swarm i{width:17%}
-.hn-swarm i:nth-child(1){left:-20%;top:6%}.hn-swarm i:nth-child(2){right:-22%;top:16%;width:21%;animation-delay:-.1s}
-.hn-swarm i:nth-child(3){left:-17%;top:50%;width:13%;animation-delay:-.25s}.hn-swarm i:nth-child(4){right:-18%;top:60%;width:14%;animation-delay:-.4s}
-.hn-swarm i:nth-child(5){left:26%;top:-12%;width:15%;animation-delay:-.15s}.hn-swarm i:nth-child(6){right:16%;top:-9%;width:11%;animation-delay:-.3s}
-.hn-swarm i:nth-child(7){left:40%;bottom:-11%;width:14%;animation-delay:-.05s}
-@media (prefers-reduced-motion:reduce){.hn-flight i,.hn-swarm i{animation:none}}
+@media (prefers-reduced-motion:reduce){.hn-flight i{animation:none}}
 /* the night's own outline: not the torn edge of the Collection Hantée, a gothic arch (a tombstone, a chapel window),
    clean, with a double pumpkin line */
 .hcard.nuit .hc-glow,.hcard.nuit .hc-paper,.hcard.nuit .hc-rim{-webkit-mask:none;mask:none;border-radius:50% 50% 4% 4% / 36% 36% 3% 3%}
@@ -344,4 +316,5 @@ body.hx3d-on > *:not(.hx3d.ready){visibility:hidden}
 .hcard.nuit.one .hc-rim{background:none;filter:none;animation:none;border-color:#ffb13a;box-shadow:inset 0 0 0 .7cqw #140601,inset 0 0 0 1.1cqw #fff1c8,0 0 2.6cqw rgba(255,190,90,.8),0 0 7cqw rgba(255,140,30,.35)}
 .hcard.nuit .hc-head{top:11cqw;flex-direction:column;align-items:center;gap:1.2cqw;letter-spacing:.26em}
 .hcard.nuit.hc-ghost .hc-rim{border-color:#3a2a20;box-shadow:none}
-.hn-frame{border-radius:50% 50% 5% 5% / 34% 34% 3% 3%}
+.hxc.night .hxc-sheet{-webkit-mask:none;mask:none;border-radius:50% 50% 4% 4% / 36% 36% 3% 3%}
+.hxc.night .hxc-moon{display:none}   /* the card brings its own moon */
