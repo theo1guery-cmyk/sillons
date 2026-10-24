@@ -58,6 +58,7 @@ const MESSAGES = {
   haunted_paused: "La Collection Hantée est en maintenance : elle revient très vite.",
   haunted_sold_out: "Tous les exemplaires de cette carte sont déjà sortis.",
   limited_edition: "Une carte en édition limitée ne se défausse pas.",
+  limited_edition_case: "La boîte d'une carte en édition limitée ne se casse pas.",
   not_enough_pumpkins: "Il te manque des citrouilles 🎃 : fais les quêtes de la nuit.",
   cauldron_five: "Le chaudron prend exactement 5 cartes.",
   cauldron_same: "Les 5 cartes doivent être de la même rareté.",

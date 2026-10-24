@@ -31,7 +31,7 @@ function gradeExtras(c) {
   if (best) {                                               // the sheet shows the case of the best graded copy
     const box = $("#mCard"); box.innerHTML = ""; box.onpointermove = box.onpointerleave = null;
     const slab = slabEl(c, !!best.holo && c.tier >= MYTH, best); slab.classList.add("in-modal"); box.appendChild(slab); tiltSlab(slab);
-    crack.hidden = false; crack.textContent = "Casser la boîte";
+    crack.hidden = !!c.ed; crack.textContent = "Casser la boîte";        // a limited edition stays in its case for good
     crack.onclick = () => crackSlab(c, best);
   }
   const free = ungraded(own);
