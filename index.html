@@ -17,7 +17,7 @@
 <link rel="stylesheet" href="admin.css?v=6">
 <link rel="stylesheet" href="pass.css?v=23">
 <link rel="stylesheet" href="grade.css?v=16">
-<link rel="stylesheet" href="event.css?v=4">
+<link rel="stylesheet" href="event.css?v=5">
 <link rel="stylesheet" href="witch.css?v=7">
 <link rel="stylesheet" href="haunted.css?v=12">
 <link rel="stylesheet" href="update.css?v=1">
@@ -50,9 +50,9 @@
     <a class="side-logo" href="#" aria-label="Zik Hunter"><img src="brand/zikhunter-horizontal.svg" alt="Zik Hunter" width="190" height="52"></a>
     <nav class="tabs" role="tablist" aria-label="Menu du jeu">
       <p class="nav-group">Jouer</p>
+        <button role="tab" id="tab-witch" aria-selected="false" hidden><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h16"/><path d="M5 10c0 6 3 9 7 9s7-3 7-9"/><path d="M8 19l-1 2M16 19l1 2"/><circle cx="10" cy="6" r="1.2"/><circle cx="14" cy="4.5" r="1"/><circle cx="12.5" cy="7.5" r=".8"/></svg><span class="lbl">Chaudron</span><span class="ev-dot" aria-hidden="true"></span></button>
         <button role="tab" id="tab-shop" aria-selected="true"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l2 4v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7z"/><path d="M4 7h16"/><circle cx="12" cy="14" r="3.2"/><circle cx="12" cy="14" r=".6" fill="currentColor"/></svg><span class="lbl">Boosters</span></button>
         <button role="tab" id="tab-store" aria-selected="false"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span class="lbl">Boutique</span></button>
-        <button role="tab" id="tab-witch" aria-selected="false" hidden><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h16"/><path d="M5 10c0 6 3 9 7 9s7-3 7-9"/><path d="M8 19l-1 2M16 19l1 2"/><circle cx="10" cy="6" r="1.2"/><circle cx="14" cy="4.5" r="1"/><circle cx="12.5" cy="7.5" r=".8"/></svg><span class="lbl">Chaudron</span></button>
         <button role="tab" id="tab-duels" aria-selected="false" hidden><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20 14 10"/><path d="M14 4h6v6l-6 6-6-6z"/><path d="M4 14l6 6"/><path d="M2 22l3-3"/></svg><span class="lbl">Clashs</span><span class="badge" id="duelsBadge" hidden></span></button>
         <button role="tab" id="tab-pass" aria-selected="false" hidden><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4z"/><path d="m12 8 1.2 2.4 2.6.4-1.9 1.8.5 2.6-2.4-1.3-2.4 1.3.5-2.6-1.9-1.8 2.6-.4z"/></svg><span class="lbl">Pass</span><span class="badge" id="passBadge" hidden></span></button>
       <p class="nav-group">Collection</p>
