@@ -245,3 +245,61 @@ body.hx3d-on > *:not(.hx3d.ready){visibility:hidden}
 .hcard.nuit.hc-ghost .hn-moon{opacity:.35}
 .hcard.nuit.hc-ghost .hc-rim{background:#3a2a20;filter:none;animation:none}
 .hcard.nuit.hc-ghost .hc-t{filter:grayscale(.7) brightness(.6)}
+
+/* the graveyard film on phones (hxCssFilm): plain HTML and CSS, transforms and opacity only (no blur, no WebGL) */
+.hxc{--acc:#39ff88;--acc2:#b8ffcf;--sky1:#0b2416;--sky2:#020604;position:absolute;inset:0;overflow:hidden;perspective:900px}
+.hxc.night{--acc:#ff8a1f;--acc2:#ffe2b0;--sky1:#2a1238;--sky2:#06030a}
+.hxc-sky{position:absolute;inset:0;background:radial-gradient(120% 70% at 50% 100%,var(--sky1),var(--sky2) 70%)}
+.hxc-moon{position:absolute;left:12%;top:7%;width:20vmin;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 42% 40%,#effff4,#a8ffc9 55%,rgba(120,255,170,0) 72%);opacity:.75}
+.hxc.night .hxc-moon{left:auto;right:10%;width:34vmin;background:radial-gradient(circle at 40% 38%,#fff6dc,#ffd98a 40%,#ff9a3a 60%,rgba(255,120,30,0) 72%);opacity:.95;box-shadow:0 0 18vmin 4vmin rgba(255,130,40,.25)}
+.hxc-graves{position:absolute;left:0;right:0;bottom:24%;width:100%;height:22%;fill:#0e2618;opacity:.95}
+.hxc.night .hxc-graves{fill:#24121c}
+.hxc-fog{position:absolute;left:-30%;right:-30%;height:28%;bottom:18%;background:radial-gradient(50% 50% at 50% 50%,color-mix(in srgb,var(--acc) 22%,transparent),transparent 70%);opacity:.55;animation:hxcfog 9s ease-in-out infinite alternate}
+.hxc-fog.f2{bottom:8%;opacity:.4;animation-duration:12s;animation-direction:alternate-reverse}
+@keyframes hxcfog{to{transform:translateX(12%)}}
+.hxc-floor{position:absolute;left:50%;bottom:4%;width:min(118vw,520px);aspect-ratio:1;transform:translateX(-50%) rotateX(74deg);transform-origin:50% 100%}
+.hxc-ring{width:100%;height:100%;fill:none;stroke:var(--acc);opacity:0;filter:drop-shadow(0 0 1.5px var(--acc))}
+.hxc-ring text{fill:var(--acc);stroke:none;font:bold 4.6px serif;text-anchor:middle}
+.hxc.go .hxc-ring{animation:hxcring 1s ease-out .1s forwards,hxcturn 24s linear infinite}
+@keyframes hxcring{to{opacity:1}}
+@keyframes hxcturn{to{transform:rotate(360deg)}}
+.hxc-pillar{position:absolute;left:50%;bottom:12%;width:min(70vw,320px);height:78%;transform:translateX(-50%);background:linear-gradient(0deg,color-mix(in srgb,var(--acc) 55%,transparent),transparent 85%);opacity:0;mix-blend-mode:screen}
+.hxc.go .hxc-pillar{animation:hxcpillar 6.2s linear forwards}
+@keyframes hxcpillar{10%{opacity:0}26%{opacity:.35}50%{opacity:.3}72%{opacity:.12}100%{opacity:.1}}
+.hxc-embers i{position:absolute;bottom:14%;width:5px;height:5px;border-radius:50%;background:var(--acc2);box-shadow:0 0 8px 2px var(--acc);opacity:0}
+.hxc.go .hxc-embers i{animation:hxcember 2.6s ease-out infinite}
+.hxc-embers i:nth-child(odd){animation-duration:3.3s}
+.hxc-embers i:nth-child(1){left:40%;animation-delay:.3s}.hxc-embers i:nth-child(2){left:55%;animation-delay:.9s}.hxc-embers i:nth-child(3){left:47%;animation-delay:1.4s}
+.hxc-embers i:nth-child(4){left:61%;animation-delay:.5s}.hxc-embers i:nth-child(5){left:35%;animation-delay:1.9s}.hxc-embers i:nth-child(6){left:52%;animation-delay:2.3s}
+.hxc-embers i:nth-child(7){left:44%;animation-delay:.1s}.hxc-embers i:nth-child(8){left:66%;animation-delay:1.1s}.hxc-embers i:nth-child(9){left:30%;animation-delay:2.7s}
+.hxc-embers i:nth-child(10){left:58%;animation-delay:3.1s}.hxc-embers i:nth-child(11){left:49%;animation-delay:.7s}.hxc-embers i:nth-child(12){left:38%;animation-delay:1.6s}
+.hxc-embers i:nth-child(13){left:63%;animation-delay:2s}.hxc-embers i:nth-child(14){left:42%;animation-delay:3.4s}
+@keyframes hxcember{0%{opacity:0;transform:translate(0,0)}15%{opacity:1}100%{opacity:0;transform:translate(4vw,-55vh)}}
+/* the card: rises out of the circle spinning three times, slows down facing us, hovers */
+.hxc-stage{position:absolute;left:50%;top:50%;width:min(62vw,300px);aspect-ratio:63/88;transform:translate(-50%,-48%)}
+.hxc-card{position:absolute;inset:0;transform-style:preserve-3d;opacity:0;transform:translateY(60vh) scale(.55) rotateY(0)}
+.hxc.go .hxc-card{animation:hxcrise 2.1s cubic-bezier(.16,.8,.3,1) .7s forwards,hxchover 3s ease-in-out 2.8s infinite alternate}
+@keyframes hxcrise{0%{opacity:0;transform:translateY(60vh) scale(.55) rotateY(0)}12%{opacity:1}100%{opacity:1;transform:translateY(0) scale(1) rotateY(1080deg)}}
+@keyframes hxchover{from{transform:translateY(0) rotateY(1080deg) rotateZ(-.8deg)}to{transform:translateY(-1.5%) rotateY(1080deg) rotateZ(.8deg)}}
+.hxc-front,.hxc-rear{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.hxc-rear{transform:rotateY(180deg)}
+.hxc-face{position:absolute;inset:0;filter:drop-shadow(0 0 16px color-mix(in srgb,var(--acc) 60%,transparent))}
+/* the cursed sheet over the card (and on its back): charred, a glowing « ? » */
+.hxc-sheet{position:absolute;inset:2.5%;display:grid;place-items:center;border-radius:2px;background:radial-gradient(70% 55% at 50% 45%,color-mix(in srgb,var(--acc) 30%,#08140c),#020403 80%);box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--acc) 55%,transparent),0 0 18px color-mix(in srgb,var(--acc) 45%,transparent);
+  -webkit-mask:url(brand/torn.svg) 0 0/100% 100% no-repeat;mask:url(brand/torn.svg) 0 0/100% 100% no-repeat}
+.hxc.night .hxc-sheet{background:radial-gradient(70% 55% at 50% 45%,#4a2a10,#040201 80%)}
+.hxc-sheet b{font:900 min(34vw,160px)/1 var(--display);color:color-mix(in srgb,var(--acc) 70%,transparent);text-shadow:0 0 30px var(--acc)}
+.hxc-sig{position:absolute;width:68%;aspect-ratio:1;border-radius:50%;border:2px dashed color-mix(in srgb,var(--acc) 55%,transparent)}
+.hxc-front .hxc-sheet{clip-path:inset(0 0 0 0)}
+.hxc.go .hxc-front .hxc-sheet{animation:hxcburn 1.3s cubic-bezier(.6,0,.4,1) 3.2s forwards}
+@keyframes hxcburn{to{clip-path:inset(0 0 100% 0)}}
+.hxc-burnline{position:absolute;left:0;right:0;bottom:2%;height:7%;border-radius:50%;background:radial-gradient(50% 50% at 50% 50%,#fff,var(--acc2) 30%,var(--acc) 55%,transparent 75%);opacity:0;mix-blend-mode:screen}
+.hxc.go .hxc-burnline{animation:hxcline 1.3s cubic-bezier(.6,0,.4,1) 3.2s forwards}
+@keyframes hxcline{0%{opacity:1;bottom:0}90%{opacity:1}100%{opacity:0;bottom:94%}}
+/* the bats burst out of the card */
+.hxc-bats i{position:absolute;left:50%;top:45%;width:16vmin;aspect-ratio:2.3;background:url(brand/bat.svg) center/contain no-repeat;filter:brightness(0);opacity:0}
+.hxc.go .hxc-bats i{animation:hxcbat 2.4s ease-out 2.7s forwards}
+.hxc-bats i:nth-child(1){--x:-60vw;--y:-30vh}.hxc-bats i:nth-child(2){--x:55vw;--y:-35vh;animation-delay:2.8s}.hxc-bats i:nth-child(3){--x:-45vw;--y:-5vh;animation-delay:2.9s;width:11vmin}
+.hxc-bats i:nth-child(4){--x:50vw;--y:5vh;animation-delay:2.75s;width:12vmin}.hxc-bats i:nth-child(5){--x:-20vw;--y:-45vh;animation-delay:3s;width:9vmin}.hxc-bats i:nth-child(6){--x:25vw;--y:-42vh;animation-delay:2.85s;width:10vmin}
+.hxc-bats i:nth-child(7){--x:-70vw;--y:15vh;animation-delay:3.05s;width:8vmin}.hxc-bats i:nth-child(8){--x:70vw;--y:-15vh;animation-delay:2.95s;width:13vmin}
+@keyframes hxcbat{0%{opacity:0;transform:translate(-50%,-50%) scale(.3)}15%{opacity:1}100%{opacity:0;transform:translate(calc(-50% + var(--x)),calc(-50% + var(--y))) scale(1.1)}}
