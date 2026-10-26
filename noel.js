@@ -29,9 +29,29 @@ function gcFrost(seed) {
   }
   return `<svg class="gc-ferns" viewBox="0 0 63 88" preserveAspectRatio="none" aria-hidden="true"><path class="f" d="${d.join("")}"/><path class="c" d="${cracks.join("")}"/></svg>`;
 }
+// the outline of the block: broken ice — the edge in facets, with chips out of it and crystals sticking out
+function gcEdge(seed) {
+  const rnd = GC_SEED("edge" + seed), pts = [], W = 63, H = 88, step = 3.2;
+  const side = (x0, y0, x1, y1, nx, ny) => {
+    const len = Math.hypot(x1 - x0, y1 - y0), n = Math.round(len / step);
+    for (let k = 0; k < n; k++) {
+      const t = k / n, j = rnd() < .14 ? -(1.4 + rnd() * 1.8) : rnd() < .12 ? 1.3 + rnd() * 2.2 : (rnd() - .5) * 1.2;   // a chip, a crystal, or just uneven
+      pts.push([x0 + (x1 - x0) * t + nx * j, y0 + (y1 - y0) * t + ny * j]);
+    }
+  };
+  const m = 2.6;
+  side(m, m, W - m, m, 0, -1); side(W - m, m, W - m, H - m, 1, 0); side(W - m, H - m, m, H - m, 0, 1); side(m, H - m, m, m, -1, 0);
+  const poly = pts.map(([x, y]) => `${(x / W * 100).toFixed(2)}% ${(y / H * 100).toFixed(2)}%`).join(",");
+  const path = "M" + pts.map(([x, y]) => `${x.toFixed(2)} ${y.toFixed(2)}`).join("L") + "Z";
+  // facets: a few lines from the edge inwards, as on a cut block
+  const fac = pts.filter((_, i) => i % 5 === 2).map(([x, y]) => { const cx = W / 2, cy = H / 2, f = .12 + rnd() * .1; return `M${x.toFixed(2)} ${y.toFixed(2)}L${(x + (cx - x) * f).toFixed(2)} ${(y + (cy - y) * f).toFixed(2)}`; }).join("");
+  return { poly, path, fac };
+}
 function givreCardEl(c) {
   const one = c.of === 1, no = c.no === "?" ? "?" : String(c.no).padStart(String(c.of).length, "0");
   const el = document.createElement("div"); el.className = "gcard" + (one ? " one" : "");
+  const edge = gcEdge(c.t + c.a);
+  el.style.setProperty("--gc-edge", `polygon(${edge.poly})`);
   el.innerHTML = `<div class="gc-glow" aria-hidden="true"></div>
     <div class="gc-block">
       <div class="gc-paper">
@@ -45,6 +65,7 @@ function givreCardEl(c) {
         </div>
       </div>
     </div>
+    <svg class="gc-rim" viewBox="0 0 63 88" preserveAspectRatio="none" aria-hidden="true"><path class="r" d="${edge.path}"/><path class="r2" d="${edge.path}"/><path class="fa" d="${edge.fac}"/></svg>
     <svg class="gc-snow" viewBox="0 0 100 20" preserveAspectRatio="none" aria-hidden="true">
       <path class="ice" d="M4 9 L7 9 8.2 17 9.4 9 15 9 16 13.5 17 9 26 9 27.6 19 29.2 9 37 9 38 12.5 39 9 47 9 48.5 16 50 9 58 9 59 13 60 9 69 9 70.8 18.5 72.6 9 80 9 81 12 82 9 89 9 90.4 15 91.8 9 96 9Z"/>
       <path class="cap" d="M1 11 C2 5 6 3 11 4 C15 1 22 2 26 4 C31 0 40 1 44 4 C49 1 57 1 61 4 C66 0 75 2 78 4 C83 1 92 2 95 5 C98 6 99.5 8 99 11 C70 9.5 30 9.5 1 11Z"/>
