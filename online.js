@@ -60,6 +60,9 @@ const MESSAGES = {
   limited_edition: "Une carte en édition limitée ne se défausse pas.",
   limited_edition_case: "La boîte d'une carte en édition limitée ne se casse pas.",
   not_enough_pumpkins: "Il te manque des citrouilles 🎃 : fais les quêtes de la nuit.",
+  not_enough_snowflakes: "Il te manque des flocons ❄ : fais les quêtes de l'Atelier.",
+  door_locked: "Patience : cette porte ne s'ouvre pas encore.",
+  bad_day: "Cette porte n'existe pas.",
   cauldron_five: "Le chaudron prend exactement 5 cartes.",
   cauldron_same: "Les 5 cartes doivent être de la même rareté.",
   cauldron_tier: "Seules les Rares, Épiques et Mythiques vont dans le chaudron.",
@@ -377,6 +380,7 @@ Object.assign(Online, {
   message,
   async startPack(p) {
     if (p.haunted) return await rpc("haunted_pack_start");
+    if (p.noel) return await rpc("noel_pack_start");
     const d = await rpc("start_pack", { p_kind: p.big ? "big" : p.g >= 0 ? "genre" : "booster", p_genre: p.g >= 0 ? p.g : null, p_pay: p.pay === "vinyls" ? "vinyls" : "streams" });
     return d;
   },
@@ -413,6 +417,17 @@ Object.assign(Online, {
         const h = await rpc("haunted_roll", { p_pack: pk.id });
         if (h) { pulls.haunted = h.card || null; pulls.pumpkins = h.pumpkins || 0; }
         if (h?.card?.card_id) {                // it is a card of the collection, like the others
+          const k = h.card;
+          addCopy(S.c, { id: k.card_id, kind: "track", track_id: k.track_id, tier: LEG, rank: 950000, holo: false, tradeable: true, pulled_at: new Date().toISOString(), edition: k.slot, edition_no: k.no },
+            { title: k.title, artist: k.artist, album: "", cover: k.cover || "", duration: 0, bpm: 0, year: 0, explicit: false, genre: AUTRE });
+        }
+      } catch (e) {}
+    }
+    if (typeof EVENT !== "undefined" && EVENT.on === "noel") {           // a Carte Givrée, snowflakes (noel.js)
+      try {
+        const h = await rpc("noel_roll", { p_pack: pk.id });
+        if (h) { pulls.haunted = h.card || null; pulls.snowflakes = h.snowflakes || 0; }
+        if (h?.card?.card_id) {
           const k = h.card;
           addCopy(S.c, { id: k.card_id, kind: "track", track_id: k.track_id, tier: LEG, rank: 950000, holo: false, tradeable: true, pulled_at: new Date().toISOString(), edition: k.slot, edition_no: k.no },
             { title: k.title, artist: k.artist, album: "", cover: k.cover || "", duration: 0, bpm: 0, year: 0, explicit: false, genre: AUTRE });

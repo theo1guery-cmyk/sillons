@@ -74,10 +74,13 @@ const isArtist = c => c && c.kind === "artist";
 const rarName = c => c.ed ? "Édition limitée" : isArtist(c) ? CERT[c.tier] : RAR[c.tier];
 // limited editions (the Collection Hantée, haunted.js): numbered copies of a sound, with their own card. Inside they
 // are Légendaires (price of grading, smallest price on the market); c.ed is the sound, c.eno the N° of the copy.
-const ED_FILTER = -3, ED_COL = "#39ff88", NIGHT_COL = "#ff8a1f";
+const ED_FILTER = -3, ED_COL = "#39ff88", NIGHT_COL = "#ff8a1f", GIVRE_COL = "#9fd8ff";
 const NIGHT_FROM = 14;                                       // sounds 14 to 26: the series of the night of 31 October (pumpkin look)
-const ED_UNIQUE = [1, 14, 15, 16, 17, 18];                   // the 1/1: Thriller, and the 5 cards of the night of the 31
-const edOf = ed => ED_UNIQUE.includes(ed) ? 1 : 10;          // copies printed
+const GIVRE_FROM = 30;                                       // sounds 30 to 41: the Cartes Givrées of Christmas (noel.js)
+const ED_UNIQUE = [1, 14, 15, 16, 17, 18, 30];               // the 1/1: Thriller, the 5 cards of the night of the 31, All I Want for Christmas
+const edOf = ed => ED_UNIQUE.includes(ed) ? 1 : ed >= GIVRE_FROM ? 5 : 10;   // copies printed
+const edSeries = ed => ed >= GIVRE_FROM ? "Carte Givrée" : ed >= NIGHT_FROM ? "Nuit d'Halloween" : "Collection Hantée";
+const edLine = ed => ed >= GIVRE_FROM ? "NOËL 2026 ZIK HUNTER" : ed >= NIGHT_FROM ? "31 OCTOBRE 2026 ZIK HUNTER" : "HALLOWEEN 2026 ZIK HUNTER";
 const fmtFans = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 0 : 1).replace(".", ",") + " M" : n >= 1e3 ? Math.round(n / 1e3) + " k" : String(n);
 // Deezer rank (0 – 1 000 000) → rarity. 950 000+ is the global-hit club
 // (Billie Jean, Bohemian Rhapsody…): a few thousand tracks out of 100+ million.
@@ -546,6 +549,7 @@ function fitCqw(text, font, spacingEm, widthCqw) {
 }
 function cardEl(c, holo) {
   if (isArtist(c)) return artistCardEl(c, holo);
+  if (c.ed >= GIVRE_FROM && typeof givreCardEl === "function") return givreCardEl({ t: c.t, a: c.a, cov: c.cov, no: c.eno || "?", of: edOf(c.ed) });
   if (c.ed && typeof hauntedCardEl === "function") return hauntedCardEl({ t: c.t, a: c.a, cov: c.cov, no: c.eno || "?", of: edOf(c.ed), nuit: c.ed >= NIGHT_FROM });
   const T = c.g == null ? PENDING_TYPE : TYPES[c.g] || TYPES[AUTRE], st = stats(c);
   const el = document.createElement("div");
@@ -595,7 +599,7 @@ function backEl(gl = false) {
 }
 
 /* ---------- views ---------- */
-const views = { shop: $("#view-shop"), store: $("#view-store"), binder: $("#view-binder"), catalog: $("#view-catalog"), trades: $("#view-trades"), defis: $("#view-defis"), market: $("#view-market"), albums: $("#view-albums"), duels: $("#view-duels"), admin: $("#view-admin"), pass: $("#view-pass"), grading: $("#view-grading"), ref: $("#view-ref"), witch: $("#view-witch") };
+const views = { shop: $("#view-shop"), store: $("#view-store"), binder: $("#view-binder"), catalog: $("#view-catalog"), trades: $("#view-trades"), defis: $("#view-defis"), market: $("#view-market"), albums: $("#view-albums"), duels: $("#view-duels"), admin: $("#view-admin"), pass: $("#view-pass"), grading: $("#view-grading"), ref: $("#view-ref"), witch: $("#view-witch"), noel: $("#view-noel") };
 function show(v) {
   for (const k in views) { views[k].hidden = k !== v; $("#tab-" + k).setAttribute("aria-selected", k === v); }
   if (!busy) unseatTable();   // leaving the tab puts the booster back
@@ -611,6 +615,7 @@ function show(v) {
   if (v === "pass") Online.renderPass?.();
   if (v === "ref") Online.renderReferral?.();
   if (v === "witch") Online.renderWitch?.();
+  if (v === "noel") window.renderNoel?.();
 }
 $("#tab-shop").onclick = () => show("shop");
 $("#tab-store").onclick = () => show("store");
@@ -626,6 +631,7 @@ $("#tab-admin").onclick = () => show("admin");
 $("#tab-pass").onclick = () => show("pass");
 $("#tab-ref").onclick = () => show("ref");
 $("#tab-witch").onclick = () => show("witch");
+$("#tab-noel").onclick = () => show("noel");
 
 const owned = () => Object.values(S.c);
 const ck = c => c.id + "#" + c.tier + (c.ed ? "#e" + c.eno : "");   // key of a card: a track in one rarity; each copy of a limited edition apart
@@ -711,6 +717,7 @@ packStage.append(packBtn, tearHint, openBig);
 // the big boosters of the VIP pass: 15 cards, all Rare or better
 const BIG = { g: -1, n: "Édition Deluxe", big: true, el: packBtn };
 const HAUNTED = { g: -1, n: "Pack Hanté", haunted: true };   // Halloween: bought with pumpkins at the witch's (haunted.js)
+const NOELPACK = { g: -1, n: "Pack de Noël", noel: true };    // Noël: bought with snowflakes at the Atelier (noel.js)
 const bigBtn = document.createElement("button"); bigBtn.className = "btn big-pack"; bigBtn.id = "openBigPack"; bigBtn.hidden = true;
 bigBtn.onclick = () => bigStage();
 packStage.append(bigBtn);
@@ -819,9 +826,10 @@ const opHost = $o(".op-pack");
 const opPhase = ph => { op.dataset.phase = ph; };
 const opHint = t => { $o(".op-hint").textContent = t; };
 let opReady = false;
-const packDesign = p => p.big ? "pack-big" : p.haunted ? "pack-haunted" : p.g >= 0 ? "pack-" + TYPES[p.g].k : classicName();
+const packDesign = p => p.big ? "pack-big" : p.haunted ? "pack-haunted" : p.noel ? "pack-noel" : p.g >= 0 ? "pack-" + TYPES[p.g].k : classicName();
 const packLabel = p => p === BIG ? ["Édition Deluxe", "15 cartes · toutes Rare ou mieux"]
   : p.haunted ? ["Pack Hanté", "100 🎃 · 5 cartes Rare ou mieux · 20 fois plus de chances de trouver une carte Hantée"]
+  : p.noel ? ["Pack de Noël", "100 ❄ · 5 cartes Rare ou mieux · 20 fois plus de chances de trouver une Carte Givrée"]
   : p.g >= 0 ? ["Booster " + p.n, (p.pay === "vinyls" ? STORE_VINYLS + " Vinyles" : STORE_PRICE + " Streams") + " · 5 cartes"]
   : ["Booster", "5 cartes · tout Deezer"];
 // can this booster be opened right now? (if not, openPack says why)
@@ -830,6 +838,7 @@ function canOpen(p) {
   if (p === BIG) return (S.big || 0) > 0;
   if (p.demo) return true;
   if (p.haunted) return (typeof W !== "undefined" && W.st?.pumpkins || 0) >= 100;
+  if (p.noel) return (typeof NL !== "undefined" && NL.st?.snowflakes || 0) >= 100;
   if (p.g >= 0) return canPay(p);
   refill();
   return TEST_MODE || (S.stock || 0) > 0;
@@ -856,6 +865,7 @@ function closeOpening() {
   opPhase("pack"); OP.step = null;
   renderStock(); refreshViews?.();
   if (!views.witch?.hidden) window.renderWitch?.();
+  if (!views.noel?.hidden) window.renderNoel?.();
 }
 // a tap on the sachet (no swipe) tears it by itself
 let opDown = null;
@@ -942,7 +952,7 @@ async function opRecap(from) {
   if (OP.haunted) await window.Haunted.inRecap(OP, rc);       // the haunted copy, last of the booster
   const fresh = pulls.filter(pl => pl.isNew).length, best = pulls.reduce((a, b) => b.c.tier > a.c.tier ? b : a);
   $o(".op-title").textContent = "Booster ouvert";
-  $o(".op-sub").textContent = OP.haunted ? `${OP.haunted.series === 2 ? "🌕 Une carte de la Nuit d'Halloween" : "🦇 Une carte de la Collection Hantée"} : ${OP.haunted.title} · N° ${String(OP.haunted.no).padStart(String(OP.haunted.of).length, "0")}/${OP.haunted.of} !`
+  $o(".op-sub").textContent = OP.haunted ? `${OP.haunted.series === 3 ? "❄ Une Carte Givrée" : OP.haunted.series === 2 ? "🌕 Une carte de la Nuit d'Halloween" : "🦇 Une carte de la Collection Hantée"} : ${OP.haunted.title} · N° ${String(OP.haunted.no).padStart(String(OP.haunted.of).length, "0")}/${OP.haunted.of} !`
     : `${fresh} nouvelle${fresh > 1 ? "s" : ""} carte${fresh > 1 ? "s" : ""} · meilleure : ${rarName(best.c)}`;
   opHint("Touche une carte pour la voir en grand");
   $o(".op-again").disabled = !canOpen(OP.p) && !(OP.p.g < 0 && TEST_MODE);
@@ -1049,6 +1059,7 @@ async function openPack(p, opts = {}) {
     for (const pl of pulls) if (Stage.isHit(pl)) Stage.warm(pl);   // the hits' tracks load while the first cards flip
     window.V2?.pulls(pulls);
     if (pulls.pumpkins) toast(`+${pulls.pumpkins} 🎃 cachées dans ce booster !`);
+    if (pulls.snowflakes) toast(`+${pulls.snowflakes} ❄ cachés dans ce booster !`);
     const xp = p.demo ? 0 : window.packXp?.(p, god);
     if (xp) { const t = document.createElement("span"); t.className = "op-xp"; t.textContent = `+${xp} XP`; $o(".op-head").appendChild(t); setTimeout(() => t.remove(), 2600); }
     if (god && !reduceMotion()) {                   // the GOD pack keeps its own film, then the booster laid out
@@ -1794,12 +1805,12 @@ function openModal(c, shiny) {
   } else {
   $("#mTitle").textContent = c.t; $("#mSub").textContent = c.a + " · " + c.al;
   const nos = c.ed ? (own.copies?.length ? own.copies.map(cp => cp.no).filter(Boolean).sort((a, b) => a - b) : [c.eno]).map(n => `N° ${String(n).padStart(String(edOf(c.ed)).length, "0")}/${edOf(c.ed)}`).join(" · ") : "";
-  $("#mDl").innerHTML = `<dt>Rareté</dt><dd>${rarName(c)}${c.ed ? (c.ed >= NIGHT_FROM ? " · Nuit d'Halloween" : " · Collection Hantée") : ""}${isShiny ? " · Shiny" : ""}</dd>${c.ed ? `<dt>Numéro</dt><dd>${nos}</dd>` : ""}<dt>Classement</dt><dd>${fmt(c.rank)} pts Deezer</dd>
+  $("#mDl").innerHTML = `<dt>Rareté</dt><dd>${rarName(c)}${c.ed ? " · " + edSeries(c.ed) : ""}${isShiny ? " · Shiny" : ""}</dd>${c.ed ? `<dt>Numéro</dt><dd>${nos}</dd>` : ""}<dt>Classement</dt><dd>${fmt(c.rank)} pts Deezer</dd>
     <dt>${T.s}</dt><dd>${st.flow} · ${c.bpm > 0 ? c.bpm + " BPM" : "tempo estimé"}</dd><dt>Endurance</dt><dd>${st.endu} · ${fmtDur(c.d)}</dd>
     <dt>Hype</dt><dd>${st.hype}</dd><dt>Sortie</dt><dd>${c.y || "?"}</dd><dt>Possédées</dt><dd>${own.n}${own.holo && c.tier >= MYTH ? ` (dont ${own.holo} Shiny)` : ""}${own.locked ? ` · ${own.locked} non échangeable${own.locked > 1 ? "s" : ""}` : ""}</dd>${otherLine}`;
   $("#mLink").href = "https://www.deezer.com/track/" + c.id;
   if (c.ed) {                              // a limited edition: no rank nor stats, its number instead
-    $("#mSub").textContent = c.a + (c.ed >= NIGHT_FROM ? " · Nuit d'Halloween" : " · Collection Hantée");
+    $("#mSub").textContent = c.a + " · " + edSeries(c.ed);
     $("#mDl").innerHTML = `<dt>Rareté</dt><dd>Édition limitée · ${edOf(c.ed)} exemplaire${edOf(c.ed) > 1 ? "s" : ""} au monde</dd><dt>Numéro</dt><dd>${nos}</dd><dt>Possédées</dt><dd>${own.n}</dd>`;
   }
   }
@@ -1867,8 +1878,8 @@ function slabEl(c, holo, g) {   // g: { grade, cert, pop } — pop: this copy wa
   const first = g.pop === 1 && !c.ed;
   const el = document.createElement("div"); el.className = "slab" + (first ? " first" : ""); el.dataset.g = g.grade; box.appendChild(el);
   if (first) box.classList.add("first");
-  const l1 = c.ed ? (c.ed >= NIGHT_FROM ? "31 OCTOBRE 2026 ZIK HUNTER" : "HALLOWEEN 2026 ZIK HUNTER") : isArtist(c) ? "ZIK HUNTER · ARTISTE" : `${c.y ? c.y + " " : ""}ZIK HUNTER`;
-  const l3 = c.ed ? `${c.a} · ${c.ed >= NIGHT_FROM ? "NUIT D'HALLOWEEN" : "COLLECTION HANTÉE"}` : (isArtist(c) ? CERT[c.tier] : `${c.a} · ${RAR[c.tier]}`) + (holo ? " · SHINY" : "");
+  const l1 = c.ed ? edLine(c.ed) : isArtist(c) ? "ZIK HUNTER · ARTISTE" : `${c.y ? c.y + " " : ""}ZIK HUNTER`;
+  const l3 = c.ed ? `${c.a} · ${edSeries(c.ed).toUpperCase()}` : (isArtist(c) ? CERT[c.tier] : `${c.a} · ${RAR[c.tier]}`) + (holo ? " · SHINY" : "");
   const l4 = c.ed ? `<b>N° ${String(g.pop).padStart(String(edOf(c.ed)).length, "0")}/${edOf(c.ed)}</b>${edOf(c.ed) === 1 ? " · exemplaire unique" : ""}`   // a limited edition: its N° is its rank
     : `<b>#${String(g.pop).padStart(3, "0")}</b>${g.pop === 1 ? " · 1re authentifiée" : ""}`;
   el.innerHTML = `<div class="pocket"><div class="lbl">

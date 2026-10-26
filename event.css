@@ -92,3 +92,26 @@ html[data-event="halloween"] #tab-witch .ico{color:#ffb15a;filter:drop-shadow(0 
 @keyframes evDot{70%{box-shadow:0 0 0 9px rgba(255,138,42,0)}100%{box-shadow:0 0 0 0 rgba(255,138,42,0)}}
 @media (max-width:860px){#tab-witch .ev-dot{right:10px;top:7px;margin-top:0}}
 @media (prefers-reduced-motion:reduce){#tab-witch .ev-dot{animation:none}}
+
+/* Noël (event.js): a winter night, snow falling, a snowy hill under the sidebar */
+html[data-event="noel"]{--bg0:#070d1a}
+html[data-event="noel"] body{background:
+  radial-gradient(900px 600px at 85% -8%,rgba(214,40,60,.14),transparent 60%),
+  radial-gradient(1100px 700px at 10% -10%,rgba(60,140,220,.22),transparent 60%),
+  radial-gradient(900px 500px at 50% 115%,rgba(30,90,70,.3),transparent 65%),
+  var(--bg0);background-attachment:fixed}
+html[data-event="noel"] .sidebar{background:linear-gradient(180deg,rgba(9,18,34,.95),rgba(6,12,22,.95))}
+html[data-event="noel"] header.top{background:linear-gradient(180deg,rgba(9,18,34,.9),rgba(7,13,26,.74))}
+.ev-glow-n{position:absolute;inset:0;background:radial-gradient(60% 40% at 50% 0,rgba(170,215,255,.08),transparent 70%)}
+.ev-flakes i{position:absolute;left:var(--x);top:-12px;width:calc(6px * var(--s));height:calc(6px * var(--s));border-radius:50%;background:#fff;opacity:0;
+  box-shadow:0 0 6px rgba(200,230,255,.8);animation:evFlake var(--d) linear var(--w) infinite}
+@keyframes evFlake{0%{opacity:0;transform:translate(0,0)}8%{opacity:.85}90%{opacity:.7}100%{opacity:0;transform:translate(var(--dx),104vh)}}
+.ev-banner.noel{background:linear-gradient(90deg,rgba(214,40,60,.22),rgba(60,140,220,.12));border-color:rgba(255,255,255,.14)}
+.ev-star{animation:evStar 2.4s ease-in-out infinite;transform-origin:40px 90px}
+@keyframes evStar{50%{opacity:.5}}
+html[data-event="noel"] #tab-noel:not([aria-selected="true"]){color:#eaf6ff;background:linear-gradient(90deg,rgba(214,40,60,.22),rgba(60,140,220,.1))}
+html[data-event="noel"] #tab-noel .ico{color:#ff6a7c;filter:drop-shadow(0 0 6px rgba(255,90,110,.8))}
+#tab-noel{position:relative}
+#tab-noel .ev-dot{position:absolute;right:10px;top:50%;width:8px;height:8px;margin-top:-4px;border-radius:50%;background:#ff4d64;box-shadow:0 0 0 0 rgba(255,77,100,.7);animation:evDot 1.8s ease-out infinite}
+@media (max-width:860px){#tab-noel .ev-dot{right:10px;top:7px;margin-top:0}}
+@media (prefers-reduced-motion:reduce){.ev-flakes,#tab-noel .ev-dot{animation:none}.ev-flakes{display:none}}
