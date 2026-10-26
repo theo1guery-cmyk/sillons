@@ -43,10 +43,10 @@
 @media (prefers-reduced-motion:reduce){.gc-glow,.gc-rim::after,.gc-spark i{animation:none}}
 
 /* the Advent calendar: a wooden frame, 24 doors in a jumble, today's glows, the 24th is double */
-.adv{padding:18px;border-radius:22px;background:linear-gradient(160deg,#5a2a16,#3a170b);box-shadow:inset 0 0 0 4px #7a3d1f,inset 0 0 0 7px #2a1006,0 20px 50px rgba(0,0,0,.5)}
+.adv{max-width:640px;margin:0 auto;padding:18px;border-radius:22px;background:linear-gradient(160deg,#5a2a16,#3a170b);box-shadow:inset 0 0 0 4px #7a3d1f,inset 0 0 0 7px #2a1006,0 20px 50px rgba(0,0,0,.5)}
 .adv-top{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:6px;margin:0 4px 14px;color:#ffe9c4}
 .adv-top b{font:900 1.3rem var(--display)}.adv-top small{color:#e8c39a;font-size:.8rem}
-.adv-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.adv-grid{display:grid;grid-template-columns:repeat(5,1fr);grid-auto-flow:dense;gap:10px}
 .adv-d{position:relative;aspect-ratio:1;padding:0;border:0;border-radius:12px;background:#1a0a04;cursor:pointer;perspective:500px}
 .adv-d.big{grid-column:span 2;aspect-ratio:auto}
 .adv-door{position:absolute;inset:0;display:grid;place-items:center;border-radius:inherit;transform-origin:0 50%;transition:transform .8s cubic-bezier(.3,1.2,.4,1);backface-visibility:hidden;
