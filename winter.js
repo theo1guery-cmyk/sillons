@@ -31,14 +31,29 @@ function winterSnowman(box, d) {
   const from = cur ? d.steps[cur - 1] : 0, to = d.steps[cur] || d.steps[d.steps.length - 1];
   const pct = cur >= SNOW_STEPS.length ? 100 : Math.min(100, (d.packs - from) / (to - from) * 100);
   box.innerHTML = `<div class="w-man">
-      <svg class="w-fig" viewBox="0 0 200 260" aria-hidden="true" data-step="${cur}">
-        <ellipse class="w-ground" cx="100" cy="246" rx="92" ry="12"/>
-        <circle class="p base" cx="100" cy="200" r="48"/>
-        <circle class="p body" cx="100" cy="132" r="36"/>
-        <circle class="p head" cx="100" cy="80" r="26"/>
-        <g class="p face"><circle cx="91" cy="74" r="3.4"/><circle cx="109" cy="74" r="3.4"/><path d="M100 82 l20 5 -20 3z" class="carrot"/><circle cx="100" cy="122" r="3"/><circle cx="100" cy="136" r="3"/><circle cx="100" cy="150" r="3"/></g>
-        <g class="p scarf"><path d="M72 100 q28 14 56 0 l0 10 q-28 14 -56 0z"/><path d="M114 104 l8 40 -12 -2z"/></g>
-        <g class="p hat"><rect x="74" y="50" width="52" height="7" rx="2"/><rect x="82" y="16" width="36" height="36" rx="3"/><rect x="82" y="42" width="36" height="6" class="band"/></g>
+      <svg class="w-fig" viewBox="0 0 220 280" aria-hidden="true" data-step="${cur}">
+        <defs>
+          <radialGradient id="wSnowG" cx=".36" cy=".3" r=".8"><stop offset="0" stop-color="#ffffff"/><stop offset=".55" stop-color="#eef7ff"/><stop offset=".85" stop-color="#c3dcf2"/><stop offset="1" stop-color="#9fbedb"/></radialGradient>
+          <radialGradient id="wDrift" cx=".5" cy=".2" r=".7"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#b9d4ec"/></radialGradient>
+          <linearGradient id="wCarrot" x1="0" x2="1"><stop offset="0" stop-color="#ffb04a"/><stop offset="1" stop-color="#e2611c"/></linearGradient>
+          <linearGradient id="wHat" x1="0" x2="1"><stop offset="0" stop-color="#1b1b26"/><stop offset=".35" stop-color="#3a3a4c"/><stop offset=".55" stop-color="#1f1f2b"/><stop offset="1" stop-color="#0d0d14"/></linearGradient>
+          <pattern id="wKnit" width="10" height="10" patternUnits="userSpaceOnUse"><rect width="10" height="10" fill="#d42f45"/><rect width="10" height="4" fill="#f4f1ea"/><path d="M0 7 l2.5 2 l2.5 -2 l2.5 2 l2.5 -2" stroke="#a51f33" stroke-width="1" fill="none"/></pattern>
+        </defs>
+        <ellipse class="w-shadow" cx="110" cy="262" rx="78" ry="9"/>
+        <path class="w-drift" d="M6 266 q30 -22 64 -10 q22 -16 50 -4 q30 -14 58 2 q24 -8 36 12 z"/>
+        <g class="p base"><circle cx="110" cy="214" r="50"/><path class="w-lump" d="M68 236 q16 14 42 14 q26 0 42 -14"/></g>
+        <g class="p arms"><path d="M76 146 l-40 -22 M52 132 l-8 -14 M54 133 l-14 2" /><path d="M144 146 l40 -24 M168 132 l6 -15 M170 131 l13 4"/></g>
+        <g class="p body"><circle cx="110" cy="146" r="38"/><circle class="coal" cx="110" cy="132" r="3.6"/><circle class="coal" cx="110" cy="148" r="3.6"/><circle class="coal" cx="110" cy="164" r="3.6"/></g>
+        <g class="p head"><circle cx="110" cy="90" r="28"/></g>
+        <g class="p face"><circle class="coal" cx="100" cy="84" r="3.4"/><circle class="coal" cx="120" cy="84" r="3.4"/>
+          <circle class="glint" cx="101.2" cy="82.8" r="1"/><circle class="glint" cx="121.2" cy="82.8" r="1"/>
+          <path class="carrot" d="M108 92 q2 -4 6 -3 l26 8 q2 1 0 2 l-28 2 q-4 -2 -4 -9z"/><path class="carrot-l" d="M118 92 l1 5 M126 94 l1 4"/>
+          <g class="coal">${[[98,101],[103,104],[109,105],[115,104],[120,101]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="1.9"/>`).join("")}</g></g>
+        <g class="p scarf"><path d="M80 112 q30 16 60 0 l2 12 q-32 18 -64 0z" fill="url(#wKnit)"/><path d="M126 118 l10 44 l-14 2 l-6 -42z" fill="url(#wKnit)"/>
+          <path class="fringe" d="M122 164 l-1 7 M126 164 l0 7 M130 163 l1 7 M134 162 l2 7"/></g>
+        <g class="p hat"><ellipse cx="110" cy="66" rx="34" ry="7" fill="url(#wHat)"/><path d="M90 66 l3 -44 q17 -6 34 0 l3 44 q-20 5 -40 0z" fill="url(#wHat)"/>
+          <path class="band" d="M91 56 q19 5 38 0 l-.6 -8 q-18.4 5 -36.8 0z"/><path class="holly" d="M122 50 q6 -6 10 0 q-6 4 -10 0z M122 50 q2 -8 8 -9 q-1 7 -8 9z"/><circle class="berry" cx="121" cy="51" r="2.4"/></g>
+        <g class="w-sparks"><path d="M30 60 l2 6 6 2 -6 2 -2 6 -2 -6 -6 -2 6 -2z"/><path d="M190 40 l1.5 4.5 4.5 1.5 -4.5 1.5 -1.5 4.5 -1.5 -4.5 -4.5 -1.5 4.5 -1.5z"/><path d="M186 176 l1.5 4.5 4.5 1.5 -4.5 1.5 -1.5 4.5 -1.5 -4.5 -4.5 -1.5 4.5 -1.5z"/></g>
       </svg>
       <div class="w-info">
         <p class="w-kick">Le bonhomme de neige de tout le monde</p>

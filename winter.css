@@ -23,17 +23,27 @@
 @keyframes wFall{to{transform:translate(6vw,108vh)}}
 @media (prefers-reduced-motion:reduce){.w-snow{display:none}.w-bar{animation:none}}
 /* the snowman of everyone */
-.w-man{display:grid;grid-template-columns:minmax(120px,200px) minmax(0,1fr);gap:22px;align-items:center;margin:20px 0;padding:20px;border-radius:20px;
+.w-man{display:grid;grid-template-columns:minmax(150px,250px) minmax(0,1fr);gap:22px;align-items:center;margin:20px 0;padding:20px;border-radius:20px;
   background:radial-gradient(70% 90% at 15% 20%,rgba(140,210,255,.16),transparent 70%),linear-gradient(160deg,#0d1d3a,#0a1222);box-shadow:inset 0 0 0 1px rgba(190,230,255,.25)}
 .w-fig{width:100%;overflow:visible}
-.w-ground{fill:rgba(220,240,255,.18)}
-.w-fig .p{opacity:.12;transition:opacity .6s}
-.w-fig circle.p{fill:#f4fbff;stroke:#bcd9ef;stroke-width:2}
-.w-fig[data-step="1"] .base,.w-fig[data-step="2"] :is(.base,.body),.w-fig[data-step="3"] :is(.base,.body,.head),
-.w-fig[data-step="4"] :is(.base,.body,.head,.face),.w-fig[data-step="5"] :is(.base,.body,.head,.face,.scarf),.w-fig[data-step="6"] .p{opacity:1}
-.w-fig .face circle{fill:#14202e}.w-fig .carrot{fill:#ff8a2a}
-.w-fig .scarf path{fill:#e0344a}
-.w-fig .hat rect{fill:#14141c}.w-fig .hat .band{fill:#7cc4ff}
+.w-shadow{fill:rgba(0,10,30,.45)}
+.w-drift{fill:url(#wDrift)}
+.w-fig .p{transition:opacity .6s,filter .6s}
+.w-fig :is(.base,.body,.head) circle:first-child{fill:url(#wSnowG);stroke:rgba(255,255,255,.6);stroke-width:1}
+.w-lump{fill:none;stroke:rgba(150,180,210,.5);stroke-width:2;stroke-linecap:round}
+.w-fig .arms path{fill:none;stroke:#5a3a22;stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+.w-fig .coal{fill:#15181f}.w-fig .glint{fill:#fff;opacity:.8}
+.w-fig .carrot{fill:url(#wCarrot)}.w-fig .carrot-l{stroke:#b9480f;stroke-width:1;fill:none}
+.w-fig .fringe{stroke:#d42f45;stroke-width:2.4;stroke-linecap:round}
+.w-fig .band{fill:#7cc4ff}.w-fig .holly{fill:#2f8a4f}.w-fig .berry{fill:#e0344a}
+.w-sparks path{fill:#eaf6ff;opacity:0}
+/* the parts not built yet: a ghost in dashes, the snow to come */
+.w-fig .p{opacity:1}
+.w-fig[data-step="0"] :is(.base,.body,.head,.face,.scarf,.hat,.arms),.w-fig[data-step="1"] :is(.body,.head,.face,.scarf,.hat,.arms),.w-fig[data-step="2"] :is(.head,.face,.scarf,.hat),
+.w-fig[data-step="3"] :is(.face,.scarf,.hat),.w-fig[data-step="4"] :is(.scarf,.hat),.w-fig[data-step="5"] .hat{opacity:.13;filter:grayscale(1) brightness(1.6)}
+.w-fig[data-step="6"] .w-sparks path{opacity:1;animation:wSpark 2.2s ease-in-out infinite}
+.w-fig[data-step="6"] .w-sparks path:nth-child(2){animation-delay:-.7s}.w-fig[data-step="6"] .w-sparks path:nth-child(3){animation-delay:-1.4s}
+@keyframes wSpark{50%{opacity:.2;transform:scale(.6);transform-box:fill-box;transform-origin:center}}
 .w-kick{margin:0;font:600 .72rem var(--mono);letter-spacing:.18em;text-transform:uppercase;color:#9fd2ff}
 .w-info h3{margin:4px 0 10px;font-size:1.2rem}
 .w-meter{height:10px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}
@@ -45,4 +55,4 @@
 .w-gifts li b{font-size:.8rem}.w-gifts li small{color:var(--muted);font-size:.72rem}
 .w-gifts li.done span{background:#7cc4ff;color:#06203a}.w-gifts li.now{box-shadow:inset 0 0 0 1px rgba(140,210,255,.7),0 0 14px rgba(140,210,255,.25)}
 .w-fine{margin:12px 0 0;color:var(--muted);font-size:.75rem}
-@media (max-width:600px){.w-man{grid-template-columns:minmax(0,1fr);justify-items:center}.w-fig{width:150px}}
+@media (max-width:600px){.w-man{grid-template-columns:minmax(0,1fr);justify-items:center}.w-fig{width:190px}}
