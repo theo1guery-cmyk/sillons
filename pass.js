@@ -54,7 +54,7 @@ function passArt(c, big = false, got = "") {
   return `<span class="ps-real${big ? " big" : ""}"${got ? ` data-got="${got}"` : ""} data-kind="${c.kind}" data-tier="${c.tier}" data-shiny="${c.shiny ? 1 : 0}" aria-hidden="true"></span>`;
 }
 function passIcon(r) {
-  if (r.kind === "cosmetic") return `<span class="ps-cos ps-cos-${r.slot}" aria-hidden="true">${r.slot === "name" ? "Aa" : r.slot === "avatar" ? "Z" : ""}</span>`;
+  if (r.kind === "cosmetic") return `<span class="ps-cos ps-cos-${r.slot} cos-${esc(r.item)}" aria-hidden="true">${r.slot === "name" ? "Aa" : r.slot === "avatar" ? "Z" : ""}</span>`;
   if (r.kind === "streams") return `<i class="coin ps-coin" aria-hidden="true"></i>`;
   if (r.kind === "vinyls") return `<i class="vin ps-vin" aria-hidden="true"></i>`;
   if (r.kind === "title") return `<span class="ps-title-ic" aria-hidden="true">🎟️</span>`;
@@ -121,7 +121,12 @@ async function loadPass() {
 const TOUR = ["Paris", "Bruxelles", "Genève", "Lyon", "Marseille", "Montréal", "New York", "Atlanta", "Chicago", "Houston",
   "Miami", "Mexico", "Rio", "Buenos Aires", "Lagos", "Abidjan", "Dakar", "Casablanca", "Madrid", "Lisbonne",
   "Londres", "Berlin", "Amsterdam", "Milan", "Stockholm", "Dubaï", "Mumbai", "Séoul", "Tokyo", "Los Angeles"];
-const city = t => TOUR[t - 1] || "";
+// Season 2, "Tournée d'Hiver": the tour goes north, through snow and ice, to the final show under the northern lights
+const TOUR_WINTER = ["Paris", "Lille", "Bruxelles", "Amsterdam", "Hambourg", "Copenhague", "Oslo", "Bergen", "Stockholm", "Uppsala",
+  "Helsinki", "Tallinn", "Riga", "Varsovie", "Prague", "Vienne", "Zurich", "Chamonix", "Montréal", "Québec",
+  "Ottawa", "Winnipeg", "Calgary", "Anchorage", "Fairbanks", "Nuuk", "Reykjavik", "Tromsø", "Rovaniemi", "Laponie"];
+const wintry = d => /hiver/i.test(d?.name || "");
+const city = t => (wintry(PASS.data) ? TOUR_WINTER : TOUR)[t - 1] || "";
 
 function daysLeft(t) {
   const s = (Date.parse(t) - Date.now()) / 1000;
@@ -160,9 +165,10 @@ async function renderPass() {
   const lockedNow = d.premium ? 0 : prem.filter(r => r.tier <= tier).length;   // Premium rewards already reached, waiting for the pass
   const final = d.rewards[d.rewards.length - 1].premium;
 
+  box.classList.toggle("ps-winter", wintry(d));
   box.innerHTML = `
 
-    <div class="ps-hero${d.premium ? " prem" : ""}">
+    <div class="ps-hero${d.premium ? " prem" : ""}">${wintry(d) ? `<div class="ps-aurora" aria-hidden="true"><i></i><i></i><i></i></div><div class="ps-flakes" aria-hidden="true"></div>` : ""}
       <div class="ps-hero-l">
         <p class="ps-kicker">Pass Tournée${season ? ` · ${esc(season)}` : ""}${d.premium ? ` <span class="ps-tag">VIP</span>` : ""}</p>
         <h2 class="ps-name">${esc(title)}</h2>
@@ -188,6 +194,7 @@ async function renderPass() {
         <span class="ps-barcode" aria-hidden="true"></span>
       </div>
     </div>
+    ${wintry(d) ? `<div id="psSnowman"></div>` : ""}
     ${xpBox(d)}
     ${rarityBox(d)}
     <div class="ps-bar">
@@ -217,6 +224,7 @@ async function renderPass() {
     </div>`;
 
   passTick(true); passLoadExamples();
+  if (wintry(d) && window.Winter) rpc("winter_state").then(w => { const el = $("#psSnowman"); if (w && el) Winter.snowman(el, w); }).catch(() => {});
   renderCosmetics(d);
   box.querySelectorAll(".ps-pk").forEach(pk => skin(pk, classicName, {}));   // the shop's 3D booster
   const buyV = $("#psBuyV");
