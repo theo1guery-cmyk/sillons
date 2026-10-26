@@ -9,9 +9,12 @@
   box-shadow:inset 1.4cqw 1.4cqw 2cqw rgba(255,255,255,.7),inset -1.4cqw -1.4cqw 2cqw rgba(30,80,150,.6)}
 .gc-paper{position:relative;width:100%;height:100%;overflow:hidden;border-radius:1.2cqw;clip-path:polygon(0 1%,3% 0,40% .6%,72% 0,97% .4%,100% 3%,99.4% 40%,100% 78%,99% 98%,96% 100%,60% 99.4%,30% 100%,2% 99.2%,0 96%,.6% 60%);background:#06101e;
   box-shadow:inset .8cqw .8cqw 1.4cqw rgba(0,30,70,.65),inset -.5cqw -.5cqw 1cqw rgba(255,255,255,.35)}
-.gc-art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:saturate(.6) brightness(1.05) contrast(1.02) hue-rotate(-8deg)}
-.gc-cold{position:absolute;inset:0;background:linear-gradient(180deg,rgba(225,242,255,.32),rgba(120,180,240,.22) 40%,rgba(8,24,52,.94) 84%),radial-gradient(60% 40% at 50% 0,rgba(255,255,255,.25),transparent 70%)}
+.gc-art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:saturate(1.05) contrast(1.04)}
+/* the sleeve stays clear: frost only creeps in from the edges, like on a window; night comes up behind the title */
+.gc-cold{position:absolute;inset:0;background:linear-gradient(180deg,transparent 46%,rgba(6,18,42,.55) 62%,rgba(4,12,30,.93) 80%,#030a1a),
+  radial-gradient(130% 95% at 50% 38%,transparent 58%,rgba(215,238,255,.55) 86%,rgba(240,250,255,.85)),linear-gradient(180deg,rgba(190,225,255,.12),transparent 30%)}
 .gc-ferns{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.gc-ferns{opacity:.75}
 .gc-ferns .f{fill:none;stroke:rgba(240,250,255,.75);stroke-width:.32;stroke-linecap:round;filter:drop-shadow(0 0 .25px #fff)}
 .gc-ferns .c{fill:none;stroke:rgba(255,255,255,.55);stroke-width:.22;stroke-linejoin:round}
 .gc-sheen{position:absolute;inset:0;background:linear-gradient(118deg,transparent 22%,rgba(255,255,255,.28) 30%,transparent 38%,transparent 58%,rgba(255,255,255,.14) 63%,transparent 68%);
@@ -39,23 +42,45 @@
 .gc-spark i:nth-child(1){left:6%;top:24%}.gc-spark i:nth-child(2){right:4%;top:36%;animation-delay:-.9s;width:2cqw;height:2cqw}.gc-spark i:nth-child(3){left:3%;top:62%;animation-delay:-1.7s;width:2.2cqw;height:2.2cqw}
 .gc-spark i:nth-child(4){right:10%;top:10%;animation-delay:-.4s}.gc-spark i:nth-child(5){left:40%;top:6%;animation-delay:-2.1s;width:1.8cqw;height:1.8cqw}.gc-spark i:nth-child(6){right:2%;top:70%;animation-delay:-1.2s;width:2cqw;height:2cqw}
 @keyframes gcTw{50%{transform:scale(.3) rotate(45deg);opacity:.3}}
-/* the 1/1: the block tied up like a present, a red ribbon both ways and a gold bow */
-.gcard.one .gc-block{background:linear-gradient(135deg,rgba(255,250,235,.95),rgba(255,235,190,.7) 18%,rgba(150,200,245,.55) 50%,rgba(70,140,210,.6) 82%,rgba(40,95,170,.75))}
-.gcard.one .gc-glow{background:radial-gradient(closest-side,rgba(255,215,120,.85),rgba(214,40,60,.3) 70%,transparent)}
-.gcard.one .gc-t{background:linear-gradient(180deg,#ffffff,#fff3cf 45%,#ffc24a 85%,#c8851a);-webkit-background-clip:text;background-clip:text;-webkit-text-stroke:.25cqw rgba(255,210,120,.55)}
-.gc-ribbon{position:absolute;inset:3% 3% 3%;pointer-events:none}
-.gc-ribbon .v{position:absolute;top:0;height:46%;right:14%;width:6.5%;clip-path:polygon(0 0,100% 0,100% 100%,50% 92%,0 100%);background:linear-gradient(90deg,#8e1026,#e0344a 40%,#ff6a7c 55%,#c41e3a);box-shadow:0 0 1cqw rgba(0,0,0,.35)}
-.gc-ribbon .h{position:absolute;left:0;right:0;top:20%;height:4.6%;background:linear-gradient(180deg,#8e1026,#e0344a 40%,#ff6a7c 55%,#c41e3a);box-shadow:0 0 1cqw rgba(0,0,0,.35)}
-.gc-ribbon b{position:absolute;right:calc(14% - 5.3%);top:calc(20% - 5.6%);width:17%;aspect-ratio:1;border-radius:50%;
-  background:radial-gradient(circle at 35% 30%,#fff6d0,#f2c14e 40%,#b07a12 80%);box-shadow:0 .6cqw 1.4cqw rgba(0,0,0,.45),0 0 2cqw rgba(255,210,100,.7)}
-.gc-ribbon b::before,.gc-ribbon b::after{content:"";position:absolute;top:18%;width:85%;height:60%;border-radius:50% 50% 50% 50% / 60% 60% 40% 40%;background:radial-gradient(circle at 50% 40%,#ff7a8a,#c41e3a 70%);z-index:-1}
-.gc-ribbon b::before{right:72%;transform:rotate(-24deg)}.gc-ribbon b::after{left:72%;transform:rotate(24deg)}
+/* the 1/1: a present — gold ice, a red satin bow on the snow, fairy lights, a turning halo, a gold foil title */
+.gcard.one .gc-block{padding:6.6cqw 5.6cqw 5.6cqw;background:linear-gradient(135deg,#fffaf0,#ffe6a8 16%,#e8b85a 34%,#fff1c8 50%,#c98f2e 68%,#ffe39a 84%,#9a6416);box-shadow:inset 1.4cqw 1.4cqw 2cqw rgba(255,255,255,.75),inset -1.4cqw -1.4cqw 2cqw rgba(110,60,0,.6)}
+.gcard.one .gc-glow{inset:-5%;background:radial-gradient(closest-side,rgba(255,215,120,.9),rgba(255,170,60,.35) 70%,transparent)}
+.gcard.one .gc-t{background:linear-gradient(100deg,#f0b43c 0%,#fff1c0 18%,#ffffff 26%,#ffd36b 38%,#e09a2a 52%,#fff0b8 70%,#ffffff 78%,#ffc24a 100%) 0 0/250% 100%;-webkit-background-clip:text;background-clip:text;
+  -webkit-text-stroke:.2cqw rgba(120,60,0,.35);filter:drop-shadow(0 0 1.8cqw rgba(255,200,90,.55)) drop-shadow(0 .5cqw .6cqw rgba(0,0,0,.9));animation:gcFoil 4.5s ease-in-out infinite}
+.gcard.one .gc-t.xlong{font-size:6.1cqw}.gcard.one .gc-t.long{font-size:7.4cqw}
+@keyframes gcFoil{0%,100%{background-position:0 0}50%{background-position:100% 0}}
+.gcard.one .gc-a{color:#fff6dc;text-shadow:0 0 2cqw #ffb84a}
+.gcard.one .gc-no{color:#ffe39a;text-shadow:0 0 2cqw #ffb84a}.gcard.one .gc-no small,.gcard.one .gc-no em{color:#ffd36b}
+.gcard.one .gc-row{border-top-color:rgba(255,211,107,.55);color:#ffe9b0}
+.gcard.one .gc-uniq{box-shadow:0 0 2cqw rgba(255,200,90,.8)}
+/* a halo behind the present: gold, red and green light turning slowly */
+.gc-halo{position:absolute;left:50%;top:50%;width:190%;aspect-ratio:1;z-index:-1;translate:-50% -50%;pointer-events:none;border-radius:50%;
+  background:radial-gradient(closest-side,rgba(255,226,150,.75),rgba(255,190,80,.28) 38%,transparent 70%),
+    repeating-conic-gradient(from 0deg,rgba(255,220,140,.4) 0 2deg,transparent 3.5deg 9deg,rgba(255,220,140,.18) 10deg 12deg,transparent 13deg 16deg);filter:blur(.6cqw);
+  -webkit-mask:radial-gradient(closest-side,#000 22%,rgba(0,0,0,.45) 50%,transparent 85%);mask:radial-gradient(closest-side,#000 22%,rgba(0,0,0,.45) 50%,transparent 85%);
+  animation:gcHalo 40s linear infinite,gcRays 4s ease-in-out infinite}
+@keyframes gcHalo{to{rotate:360deg}}
+@keyframes gcRays{50%{opacity:.6}}
+.gc-lights{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
+.gc-lights .w{fill:none;stroke:#0e2a1d;stroke-width:.45}
+.gc-lights .h{opacity:.55;filter:blur(1.1px);animation:gcBulb 1.6s ease-in-out calc(var(--k) * -.4s) infinite}
+.gc-lights .b ellipse:first-of-type{animation:gcBulbC 1.6s ease-in-out calc(var(--k) * -.4s) infinite}
+@keyframes gcBulb{50%{opacity:.12}}
+@keyframes gcBulbC{50%{filter:brightness(.55)}}
+.gc-bow{position:absolute;left:-7%;top:-9%;width:40%;overflow:visible;pointer-events:none;filter:drop-shadow(0 1.2cqw 1.2cqw rgba(40,0,10,.55));transform:rotate(-14deg)}
+/* snow falling over the sleeve */
+.gc-fall i{position:absolute;top:-4%;width:1.3cqw;height:1.3cqw;border-radius:50%;background:#fff;opacity:.9;box-shadow:0 0 1cqw rgba(200,235,255,.9);animation:gcFall 6s linear infinite}
+.gc-fall i:nth-child(3n){width:.8cqw;height:.8cqw;animation-duration:8s}.gc-fall i:nth-child(4n){width:2cqw;height:2cqw;filter:blur(.4cqw);animation-duration:4.5s}
+.gc-fall i:nth-child(1){left:8%;animation-delay:-1s}.gc-fall i:nth-child(2){left:20%;animation-delay:-4s}.gc-fall i:nth-child(3){left:31%;animation-delay:-2.5s}.gc-fall i:nth-child(4){left:42%;animation-delay:-5.2s}
+.gc-fall i:nth-child(5){left:55%;animation-delay:-.4s}.gc-fall i:nth-child(6){left:66%;animation-delay:-3.3s}.gc-fall i:nth-child(7){left:77%;animation-delay:-1.8s}.gc-fall i:nth-child(8){left:88%;animation-delay:-4.6s}
+.gc-fall i:nth-child(9){left:14%;animation-delay:-6.4s}.gc-fall i:nth-child(10){left:49%;animation-delay:-7.1s}.gc-fall i:nth-child(11){left:71%;animation-delay:-5.9s}.gc-fall i:nth-child(12){left:93%;animation-delay:-2.2s}
+@keyframes gcFall{to{transform:translate(4cqw,120cqw)}}
 .gc-rim{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
 .gc-rim .r{fill:none;stroke:rgba(235,248,255,.95);stroke-width:.55;stroke-linejoin:miter;filter:drop-shadow(0 0 .8px #bfe6ff)}
 .gc-rim .r2{fill:none;stroke:rgba(110,180,240,.55);stroke-width:1.6;stroke-linejoin:miter;transform:scale(.985);transform-origin:center}
 .gc-rim .fa{fill:none;stroke:rgba(255,255,255,.55);stroke-width:.3}
-.gcard.one .gc-rim .r{stroke:#fff1c8;filter:drop-shadow(0 0 .8px #ffd36b)}.gcard.one .gc-rim .r2{stroke:rgba(214,40,60,.5)}
-@media (prefers-reduced-motion:reduce){.gc-glow,.gc-sheen,.gc-spark i{animation:none}}
+.gcard.one .gc-rim .r{stroke:#fff6dc;stroke-width:.7;filter:drop-shadow(0 0 1.2px #ffd36b)}.gcard.one .gc-rim .r2{stroke:rgba(255,200,90,.65)}.gcard.one .gc-rim .fa{stroke:rgba(255,240,200,.7)}
+@media (prefers-reduced-motion:reduce){.gc-glow,.gc-sheen,.gc-spark i,.gc-halo,.gc-lights *,.gcard.one .gc-t{animation:none}.gc-fall{display:none}}
 
 /* the Advent calendar: a wooden frame, 24 doors in a jumble, today's glows, the 24th is double */
 .adv{max-width:640px;margin:0 auto;padding:18px;border-radius:22px;background:linear-gradient(160deg,#5a2a16,#3a170b);box-shadow:inset 0 0 0 4px #7a3d1f,inset 0 0 0 7px #2a1006,0 20px 50px rgba(0,0,0,.5)}
