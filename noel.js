@@ -74,17 +74,42 @@ function gcSnow(seed, top) {
       <linearGradient id="gcI${seed.length}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4fbff" stop-opacity=".95"/><stop offset="1" stop-color="#9fd2ff" stop-opacity=".35"/></linearGradient></defs>
     <path class="ice" d="${ice}" fill="url(#gcI${seed.length})"/><path class="cap" d="${d}" fill="url(#gcS${seed.length})"/><path class="hi" d="${hi}"/><g class="glit">${dots}</g></svg>`;
 }
+// a string of fairy lights under the snow (the 1/1): a dark wire swinging between the points of the top edge, a bulb
+// at each dip, red, gold, green and blue, twinkling one after the other
+function gcLights(top) {
+  const pts = top.filter((_, i) => i % 2 === 1).map(([x, y]) => [x, y + 2.3]);
+  let wire = `M${pts[0][0].toFixed(2)} ${pts[0][1].toFixed(2)}`;
+  for (let i = 1; i < pts.length; i++) { const [x0, y0] = pts[i - 1], [x1, y1] = pts[i]; wire += `Q${((x0 + x1) / 2).toFixed(2)} ${(Math.max(y0, y1) + 1.6).toFixed(2)} ${x1.toFixed(2)} ${y1.toFixed(2)}`; }
+  const cols = ["#ff3b4f", "#ffd36b", "#3ddc84", "#59b8ff"];
+  const bulbs = pts.slice(1, -1).map(([x, y], i) => { const c = cols[i % 4];
+    return `<g class="b" style="--c:${c};--k:${i}"><circle class="h" cx="${x.toFixed(2)}" cy="${(y + 1).toFixed(2)}" r="2.2" fill="${c}"/><rect x="${(x - .45).toFixed(2)}" y="${(y - .1).toFixed(2)}" width=".9" height=".7" rx=".15" fill="#1c3a2a"/>
+      <ellipse cx="${x.toFixed(2)}" cy="${(y + 1.15).toFixed(2)}" rx=".62" ry=".85" fill="${c}"/><ellipse cx="${(x - .2).toFixed(2)}" cy="${(y + .85).toFixed(2)}" rx=".18" ry=".28" fill="#fff" opacity=".8"/></g>`; }).join("");
+  return `<svg class="gc-lights" viewBox="0 0 63 88" preserveAspectRatio="none" aria-hidden="true"><path class="w" d="${wire}"/>${bulbs}</svg>`;
+}
+// the bow of the 1/1: red satin, two loops and two tails cut in a V, a gold edge, sitting on the snow of the top corner
+const GC_BOW = `<svg class="gc-bow" viewBox="0 0 120 120" aria-hidden="true"><defs>
+  <linearGradient id="gcRb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff8796"/><stop offset=".35" stop-color="#e3243c"/><stop offset=".75" stop-color="#a50f26"/><stop offset="1" stop-color="#5e0614"/></linearGradient>
+  <linearGradient id="gcRt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c81a32"/><stop offset=".5" stop-color="#e83149"/><stop offset="1" stop-color="#7a0a1c"/></linearGradient>
+  <radialGradient id="gcRk" cx=".4" cy=".35" r=".7"><stop offset="0" stop-color="#ff9aa6"/><stop offset=".5" stop-color="#e3243c"/><stop offset="1" stop-color="#6e0818"/></radialGradient></defs>
+  <path d="M55 52C50 72 42 92 26 116L38 109L43 120C58 98 64 76 64 54Z" fill="url(#gcRt)" stroke="#ffd36b" stroke-width="1.2"/>
+  <path d="M65 52C72 70 82 88 100 108L88 104L85 116C70 96 60 76 57 54Z" fill="url(#gcRt)" stroke="#ffd36b" stroke-width="1.2"/>
+  <path d="M60 44C46 20 18 6 8 22C0 36 16 56 58 52Z" fill="url(#gcRb)" stroke="#ffd36b" stroke-width="1.2"/>
+  <path d="M60 44C74 20 102 6 112 22C120 36 104 56 62 52Z" fill="url(#gcRb)" stroke="#ffd36b" stroke-width="1.2"/>
+  <path d="M54 46C42 32 26 24 18 30C26 30 40 38 52 50Z" fill="#5e0614" opacity=".55"/><path d="M66 46C78 32 94 24 102 30C94 30 80 38 68 50Z" fill="#5e0614" opacity=".55"/>
+  <path d="M14 24C20 16 34 18 46 28" stroke="#fff" stroke-width="2" fill="none" opacity=".45" stroke-linecap="round"/><path d="M106 24C100 16 86 18 74 28" stroke="#fff" stroke-width="2" fill="none" opacity=".35" stroke-linecap="round"/>
+  <rect x="50" y="38" width="20" height="18" rx="7" fill="url(#gcRk)" stroke="#ffd36b" stroke-width="1.2"/><path d="M55 42Q60 40 65 42" stroke="#fff" stroke-width="1.4" fill="none" opacity=".6" stroke-linecap="round"/></svg>`;
 function givreCardEl(c) {
   const one = c.of === 1, no = c.no === "?" ? "?" : String(c.no).padStart(String(c.of).length, "0");
   const el = document.createElement("div"); el.className = "gcard" + (one ? " one" : "");
   const edge = gcEdge(c.t + c.a);
   el.style.setProperty("--gc-edge", `polygon(${edge.poly})`);
-  el.innerHTML = `<div class="gc-glow" aria-hidden="true"></div>
+  el.innerHTML = `${one ? `<div class="gc-halo" aria-hidden="true"></div>` : ""}<div class="gc-glow" aria-hidden="true"></div>
     <div class="gc-block">
       <div class="gc-paper">
         <img class="gc-art" src="${esc(c.cov)}" alt="Pochette de ${esc(c.t)}" loading="lazy" decoding="async">
         <div class="gc-cold" aria-hidden="true"></div>${gcFrost(c.t + c.a)}<div class="gc-sheen" aria-hidden="true"></div>
-        <div class="gc-head"><span class="gc-flake" aria-hidden="true">❄</span><span>Édition givrée</span>${one ? `<span class="gc-uniq">Unique</span>` : ""}</div>
+        <div class="gc-fall" aria-hidden="true">${"<i></i>".repeat(12)}</div>
+        <div class="gc-head"><span class="gc-flake" aria-hidden="true">❄</span><span>Édition givrée</span>${one ? `<span class="gc-uniq">1 sur 1</span>` : ""}</div>
         <div class="gc-foot">
           <div class="gc-a">${esc(c.a)}</div>
           <div class="gc-t${c.t.length > 18 ? " xlong" : c.t.length > 10 ? " long" : ""}">${esc(c.t)}</div>
@@ -93,8 +118,7 @@ function givreCardEl(c) {
       </div>
     </div>
     <svg class="gc-rim" viewBox="0 0 63 88" preserveAspectRatio="none" aria-hidden="true"><path class="r" d="${edge.path}"/><path class="r2" d="${edge.path}"/><path class="fa" d="${edge.fac}"/></svg>
-    ${gcSnow(c.t + c.a, edge.top)}
-    ${one ? `<div class="gc-ribbon" aria-hidden="true"><i class="v"></i><i class="h"></i><b></b></div>` : ""}
+    ${one ? gcLights(edge.top) : ""}${gcSnow(c.t + c.a, edge.top)}${one ? GC_BOW : ""}
     <div class="gc-spark" aria-hidden="true">${"<i></i>".repeat(6)}</div>`;
   const w = document.createElement("div"); w.className = "cq"; w.appendChild(el);
   return w;
