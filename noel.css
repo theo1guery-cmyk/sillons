@@ -1,0 +1,68 @@
+/* Noël (noel.js): the Cartes Givrées and the Advent calendar */
+.gcard{position:relative;width:100%;aspect-ratio:63/88;isolation:isolate}
+.gc-glow{position:absolute;inset:-3%;border-radius:6cqw;background:radial-gradient(closest-side,rgba(170,225,255,.85),rgba(120,190,255,.25) 70%,transparent);filter:blur(3cqw);opacity:.7;animation:gcPulse 3.6s ease-in-out infinite}
+@keyframes gcPulse{50%{opacity:.4}}
+.gc-paper{position:absolute;inset:2%;overflow:hidden;border-radius:4.5cqw;background:#06101e}
+.gc-art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:saturate(.7) contrast(1.05) brightness(1.02)}
+.gc-tint{position:absolute;inset:0;background:linear-gradient(180deg,rgba(210,236,255,.12),rgba(30,70,130,.18) 45%,rgba(4,12,28,.92) 86%);mix-blend-mode:normal}
+/* the frost: white crystals creeping in from the edges, thicker in the corners */
+.gc-frost{position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(40% 26% at 0 0,rgba(240,250,255,.85),transparent 70%),radial-gradient(36% 24% at 100% 0,rgba(240,250,255,.75),transparent 70%),
+    radial-gradient(34% 20% at 0 100%,rgba(240,250,255,.5),transparent 70%),radial-gradient(34% 20% at 100% 100%,rgba(240,250,255,.5),transparent 70%),
+    repeating-conic-gradient(from 10deg at 12% 8%,rgba(255,255,255,.18) 0 2deg,transparent 2deg 11deg),
+    repeating-conic-gradient(from 40deg at 90% 10%,rgba(255,255,255,.14) 0 2deg,transparent 2deg 13deg);
+  -webkit-mask:radial-gradient(85% 75% at 50% 50%,transparent 55%,#000 100%);mask:radial-gradient(85% 75% at 50% 50%,transparent 55%,#000 100%)}
+.gc-rim{position:absolute;inset:2%;border-radius:4.5cqw;pointer-events:none;
+  box-shadow:inset 0 0 0 1cqw rgba(225,245,255,.9),inset 0 0 0 1.6cqw rgba(120,190,255,.55),inset 0 0 4cqw rgba(200,235,255,.6),0 0 3cqw rgba(140,210,255,.55)}
+.gc-rim::after{content:"";position:absolute;inset:0;border-radius:inherit;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.7) 46%,transparent 54%) 0 0/250% 100%;
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;padding:1.2cqw;animation:gcGlint 4.5s ease-in-out infinite}
+@keyframes gcGlint{0%,40%{background-position:120% 0}100%{background-position:-120% 0}}
+.gc-icicles{position:absolute;left:3%;right:3%;top:1.4%;width:94%;height:7%;fill:#eaf7ff;filter:drop-shadow(0 .6cqw .8cqw rgba(60,130,200,.45))}
+.gc-head{position:absolute;left:0;right:0;top:9cqw;display:flex;justify-content:center;gap:2cqw;font:600 2.7cqw var(--mono);letter-spacing:.32em;text-transform:uppercase;color:#f2fbff;text-shadow:0 0 1.4cqw #7cc4ff,0 .3cqw .6cqw #000}
+.gc-uniq{padding:0 1.6cqw;border-radius:99px;background:linear-gradient(180deg,#ffe28a,#d99a1e);color:#3a1600;letter-spacing:.2em;text-shadow:none}
+.gc-foot{position:absolute;left:6cqw;right:6cqw;bottom:6cqw}
+.gc-a{font:13cqw/1 "Mrs Saint Delafield",cursive;color:#f2fbff;margin:0 0 -2.5cqw -1cqw;transform:rotate(-5deg);transform-origin:left bottom;white-space:nowrap;text-shadow:0 0 2cqw #7cc4ff}
+.gc-t{font:900 10cqw/1 var(--display);padding-top:.6cqw;text-transform:uppercase;letter-spacing:-.02em;color:transparent;
+  background:linear-gradient(180deg,#ffffff 0%,#dff3ff 45%,#8fcaff 80%,#4f8fd0 100%);-webkit-background-clip:text;background-clip:text;
+  filter:drop-shadow(0 0 1.6cqw rgba(140,210,255,.55)) drop-shadow(0 .5cqw .8cqw #000);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-wrap:balance}
+.gc-t.long{font-size:8cqw}.gc-t.xlong{font-size:6.6cqw}
+.gc-row{display:flex;justify-content:space-between;align-items:end;margin-top:2.6cqw;padding-top:2cqw;border-top:.3cqw solid rgba(190,230,255,.45);font:500 2.7cqw var(--mono);letter-spacing:.16em;text-transform:uppercase;color:#bfe3ff}
+.gc-no{font:900 6.4cqw/1 var(--display);color:#fff;letter-spacing:0;text-shadow:0 0 1.6cqw #7cc4ff}
+.gc-no small{font:600 2.6cqw var(--mono);margin-right:.8cqw;color:#9fd8ff}.gc-no em{font-style:normal;font-size:3.6cqw;color:#9fd8ff}
+.gc-spark i{position:absolute;width:3cqw;height:3cqw;background:#fff;clip-path:polygon(50% 0,58% 42%,100% 50%,58% 58%,50% 100%,42% 58%,0 50%,42% 42%);filter:drop-shadow(0 0 1cqw #bfe6ff);animation:gcTw 2.6s ease-in-out infinite}
+.gc-spark i:nth-child(1){left:10%;top:22%}.gc-spark i:nth-child(2){right:8%;top:30%;animation-delay:-.9s;width:2cqw;height:2cqw}.gc-spark i:nth-child(3){left:16%;top:54%;animation-delay:-1.7s;width:2.2cqw;height:2.2cqw}
+.gc-spark i:nth-child(4){right:14%;top:12%;animation-delay:-.4s}.gc-spark i:nth-child(5){left:46%;top:16%;animation-delay:-2.1s;width:1.8cqw;height:1.8cqw}.gc-spark i:nth-child(6){right:24%;top:50%;animation-delay:-1.2s;width:2cqw;height:2cqw}
+@keyframes gcTw{50%{transform:scale(.3) rotate(45deg);opacity:.3}}
+/* the 1/1: a red ribbon across the corner, a gold bow */
+.gcard.one .gc-rim{box-shadow:inset 0 0 0 1cqw #ffe9a8,inset 0 0 0 1.6cqw rgba(214,40,60,.75),inset 0 0 4cqw rgba(255,220,150,.5),0 0 3.5cqw rgba(255,200,90,.6)}
+.gcard.one .gc-glow{background:radial-gradient(closest-side,rgba(255,215,120,.9),rgba(214,40,60,.35) 70%,transparent)}
+.gcard.one .gc-t{background:linear-gradient(180deg,#ffffff,#fff0c4 40%,#ffc24a 80%,#c8851a);-webkit-background-clip:text;background-clip:text}
+.gc-ribbon{position:absolute;right:2%;top:2%;width:34%;aspect-ratio:1;overflow:hidden;border-top-right-radius:4.5cqw;pointer-events:none}
+.gc-ribbon i{position:absolute;left:-25%;top:30%;width:150%;height:16%;background:linear-gradient(180deg,#ff5a6e,#c41e3a 60%,#8e1026);transform:rotate(45deg);box-shadow:0 .5cqw 1cqw rgba(0,0,0,.4)}
+.gc-ribbon b{position:absolute;right:16%;top:16%;width:30%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3c4,#e8b23a 55%,#9a6a10);box-shadow:0 0 2cqw rgba(255,210,100,.8)}
+@media (prefers-reduced-motion:reduce){.gc-glow,.gc-rim::after,.gc-spark i{animation:none}}
+
+/* the Advent calendar: a wooden frame, 24 doors in a jumble, today's glows, the 24th is double */
+.adv{padding:18px;border-radius:22px;background:linear-gradient(160deg,#5a2a16,#3a170b);box-shadow:inset 0 0 0 4px #7a3d1f,inset 0 0 0 7px #2a1006,0 20px 50px rgba(0,0,0,.5)}
+.adv-top{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:6px;margin:0 4px 14px;color:#ffe9c4}
+.adv-top b{font:900 1.3rem var(--display)}.adv-top small{color:#e8c39a;font-size:.8rem}
+.adv-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.adv-d{position:relative;aspect-ratio:1;padding:0;border:0;border-radius:12px;background:#1a0a04;cursor:pointer;perspective:500px}
+.adv-d.big{grid-column:span 2;aspect-ratio:auto}
+.adv-door{position:absolute;inset:0;display:grid;place-items:center;border-radius:inherit;transform-origin:0 50%;transition:transform .8s cubic-bezier(.3,1.2,.4,1);backface-visibility:hidden;
+  background:radial-gradient(70% 60% at 30% 25%,rgba(255,255,255,.18),transparent 60%),linear-gradient(160deg,#c43a3a,#8e1f24);box-shadow:inset 0 0 0 2px rgba(255,220,180,.35),0 3px 0 #3a0c0c}
+.adv-d:nth-child(3n) .adv-door{background:radial-gradient(70% 60% at 30% 25%,rgba(255,255,255,.18),transparent 60%),linear-gradient(160deg,#2f7a4a,#1c4f2f)}
+.adv-d:nth-child(4n) .adv-door{background:radial-gradient(70% 60% at 30% 25%,rgba(255,255,255,.2),transparent 60%),linear-gradient(160deg,#e8e2d4,#b9ae98)}
+.adv-d:nth-child(4n) .adv-door b{color:#8e1f24}
+.adv-door b{font:900 clamp(1.1rem,3vw,1.8rem) var(--display);color:#fff4dc;text-shadow:0 2px 0 rgba(0,0,0,.35)}
+.adv-door i{position:absolute;right:10px;bottom:6px;font-style:normal;font-size:1.3rem}
+.adv-in{position:absolute;inset:0;display:grid;place-items:center;padding:6px;border-radius:inherit;text-align:center;
+  background:radial-gradient(circle,rgba(255,220,140,.25),transparent 70%),#1a0a04;color:#ffe9c4;font-size:.7rem;line-height:1.2}
+.adv-in em{font-style:normal;font-weight:600}
+.adv-d.open .adv-door{transform:rotateY(-105deg)}
+.adv-d.today .adv-door{box-shadow:inset 0 0 0 2px #ffd36b,0 0 0 3px rgba(255,211,107,.5),0 0 22px rgba(255,200,90,.7);animation:advGlow 1.8s ease-in-out infinite}
+@keyframes advGlow{50%{box-shadow:inset 0 0 0 2px #ffd36b,0 0 0 3px rgba(255,211,107,.2),0 0 10px rgba(255,200,90,.3)}}
+.adv-d.late .adv-door::after{content:"à rattraper";position:absolute;left:50%;bottom:6px;transform:translateX(-50%);padding:1px 6px;border-radius:99px;background:rgba(0,0,0,.45);color:#ffe9c4;font:600 .55rem var(--mono);white-space:nowrap}
+.adv-d.soon{cursor:default}.adv-d.soon .adv-door{filter:saturate(.55) brightness(.7)}
+@media (max-width:600px){.adv-grid{gap:6px}.adv{padding:12px}.adv-in{font-size:.6rem}}
+@media (prefers-reduced-motion:reduce){.adv-d.today .adv-door{animation:none}.adv-door{transition:none}}
