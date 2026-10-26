@@ -1,46 +1,54 @@
 /* Noël (noel.js): the Cartes Givrées and the Advent calendar */
+/* a Carte Givrée: a block of ice — a thick bevelled pane (light from the top left), the sleeve seen through cold
+   blue, frost ferns from the corners, cracks, a sheen; snow lying on the top edge, icicles under it */
 .gcard{position:relative;width:100%;aspect-ratio:63/88;isolation:isolate}
-.gc-glow{position:absolute;inset:-3%;border-radius:6cqw;background:radial-gradient(closest-side,rgba(170,225,255,.85),rgba(120,190,255,.25) 70%,transparent);filter:blur(3cqw);opacity:.7;animation:gcPulse 3.6s ease-in-out infinite}
-@keyframes gcPulse{50%{opacity:.4}}
-.gc-paper{position:absolute;inset:2%;overflow:hidden;border-radius:4.5cqw;background:#06101e}
-.gc-art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:saturate(.7) contrast(1.05) brightness(1.02)}
-.gc-tint{position:absolute;inset:0;background:linear-gradient(180deg,rgba(210,236,255,.12),rgba(30,70,130,.18) 45%,rgba(4,12,28,.92) 86%);mix-blend-mode:normal}
-/* the frost: white crystals creeping in from the edges, thicker in the corners */
-.gc-frost{position:absolute;inset:0;pointer-events:none;
-  background:radial-gradient(40% 26% at 0 0,rgba(240,250,255,.85),transparent 70%),radial-gradient(36% 24% at 100% 0,rgba(240,250,255,.75),transparent 70%),
-    radial-gradient(34% 20% at 0 100%,rgba(240,250,255,.5),transparent 70%),radial-gradient(34% 20% at 100% 100%,rgba(240,250,255,.5),transparent 70%),
-    repeating-conic-gradient(from 10deg at 12% 8%,rgba(255,255,255,.18) 0 2deg,transparent 2deg 11deg),
-    repeating-conic-gradient(from 40deg at 90% 10%,rgba(255,255,255,.14) 0 2deg,transparent 2deg 13deg);
-  -webkit-mask:radial-gradient(85% 75% at 50% 50%,transparent 55%,#000 100%);mask:radial-gradient(85% 75% at 50% 50%,transparent 55%,#000 100%)}
-.gc-rim{position:absolute;inset:2%;border-radius:4.5cqw;pointer-events:none;
-  box-shadow:inset 0 0 0 1cqw rgba(225,245,255,.9),inset 0 0 0 1.6cqw rgba(120,190,255,.55),inset 0 0 4cqw rgba(200,235,255,.6),0 0 3cqw rgba(140,210,255,.55)}
-.gc-rim::after{content:"";position:absolute;inset:0;border-radius:inherit;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.7) 46%,transparent 54%) 0 0/250% 100%;
-  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;padding:1.2cqw;animation:gcGlint 4.5s ease-in-out infinite}
-@keyframes gcGlint{0%,40%{background-position:120% 0}100%{background-position:-120% 0}}
-.gc-icicles{position:absolute;left:3%;right:3%;top:1.4%;width:94%;height:7%;fill:#eaf7ff;filter:drop-shadow(0 .6cqw .8cqw rgba(60,130,200,.45))}
-.gc-head{position:absolute;left:0;right:0;top:9cqw;display:flex;justify-content:center;gap:2cqw;font:600 2.7cqw var(--mono);letter-spacing:.32em;text-transform:uppercase;color:#f2fbff;text-shadow:0 0 1.4cqw #7cc4ff,0 .3cqw .6cqw #000}
+.gc-glow{position:absolute;inset:-2%;border-radius:7cqw;background:radial-gradient(closest-side,rgba(170,225,255,.8),rgba(120,190,255,.2) 70%,transparent);filter:blur(3cqw);opacity:.6;animation:gcPulse 3.6s ease-in-out infinite}
+@keyframes gcPulse{50%{opacity:.35}}
+.gc-block{position:absolute;inset:3% 2% 2%;border-radius:5cqw;padding:2.6cqw;
+  background:linear-gradient(135deg,rgba(255,255,255,.95),rgba(205,236,255,.75) 18%,rgba(130,195,245,.55) 50%,rgba(70,140,210,.6) 82%,rgba(40,95,170,.75));
+  box-shadow:inset .6cqw .6cqw 0 rgba(255,255,255,.95),inset -.6cqw -.6cqw 0 rgba(30,80,150,.6),0 1.4cqw 3cqw rgba(0,20,60,.55),0 0 0 .3cqw rgba(220,245,255,.6)}
+.gc-paper{position:relative;width:100%;height:100%;overflow:hidden;border-radius:3cqw;background:#06101e;
+  box-shadow:inset .8cqw .8cqw 1.4cqw rgba(0,30,70,.65),inset -.5cqw -.5cqw 1cqw rgba(255,255,255,.35)}
+.gc-art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:saturate(.6) brightness(1.05) contrast(1.02) hue-rotate(-8deg)}
+.gc-cold{position:absolute;inset:0;background:linear-gradient(180deg,rgba(225,242,255,.32),rgba(120,180,240,.22) 40%,rgba(8,24,52,.94) 84%),radial-gradient(60% 40% at 50% 0,rgba(255,255,255,.25),transparent 70%)}
+.gc-ferns{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.gc-ferns .f{fill:none;stroke:rgba(240,250,255,.75);stroke-width:.32;stroke-linecap:round;filter:drop-shadow(0 0 .25px #fff)}
+.gc-ferns .c{fill:none;stroke:rgba(255,255,255,.55);stroke-width:.22;stroke-linejoin:round}
+.gc-sheen{position:absolute;inset:0;background:linear-gradient(118deg,transparent 22%,rgba(255,255,255,.28) 30%,transparent 38%,transparent 58%,rgba(255,255,255,.14) 63%,transparent 68%);
+  background-size:220% 100%;animation:gcSheen 6s ease-in-out infinite}
+@keyframes gcSheen{0%,30%{background-position:110% 0}100%{background-position:-110% 0}}
+.gc-snow{position:absolute;left:-1%;top:-1.5%;width:102%;height:9.5%;overflow:visible;filter:drop-shadow(0 .7cqw .8cqw rgba(20,60,120,.45))}
+.gc-snow .cap{fill:#ffffff}
+.gc-snow .ice{fill:rgba(225,245,255,.92)}
+.gc-head{position:absolute;left:0;right:0;top:8cqw;display:flex;justify-content:center;align-items:center;gap:1.6cqw;font:600 2.5cqw var(--mono);letter-spacing:.3em;text-transform:uppercase;color:#f2fbff;text-shadow:0 0 1.4cqw #4f9be0,0 .3cqw .6cqw rgba(0,0,0,.6)}
+.gc-flake{font-size:3.4cqw;letter-spacing:0;color:#fff}
 .gc-uniq{padding:0 1.6cqw;border-radius:99px;background:linear-gradient(180deg,#ffe28a,#d99a1e);color:#3a1600;letter-spacing:.2em;text-shadow:none}
-.gc-foot{position:absolute;left:6cqw;right:6cqw;bottom:6cqw}
-.gc-a{font:13cqw/1 "Mrs Saint Delafield",cursive;color:#f2fbff;margin:0 0 -2.5cqw -1cqw;transform:rotate(-5deg);transform-origin:left bottom;white-space:nowrap;text-shadow:0 0 2cqw #7cc4ff}
+.gc-foot{position:absolute;left:5cqw;right:5cqw;bottom:5cqw}
+.gc-a{font:12.5cqw/1 "Mrs Saint Delafield",cursive;color:#f2fbff;margin:0 0 -2.5cqw -1cqw;transform:rotate(-5deg);transform-origin:left bottom;white-space:nowrap;text-shadow:0 0 2cqw #7cc4ff}
+/* the title, carved in the ice: white with a blue inner edge */
 .gc-t{font:900 10cqw/1 var(--display);padding-top:.6cqw;text-transform:uppercase;letter-spacing:-.02em;color:transparent;
-  background:linear-gradient(180deg,#ffffff 0%,#dff3ff 45%,#8fcaff 80%,#4f8fd0 100%);-webkit-background-clip:text;background-clip:text;
-  filter:drop-shadow(0 0 1.6cqw rgba(140,210,255,.55)) drop-shadow(0 .5cqw .8cqw #000);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-wrap:balance}
+  background:linear-gradient(180deg,#ffffff 0%,#ffffff 40%,#cfeaff 62%,#7fbef5 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-stroke:.25cqw rgba(160,215,255,.6);
+  filter:drop-shadow(0 0 1.4cqw rgba(140,210,255,.6)) drop-shadow(0 .5cqw .6cqw rgba(0,10,30,.9));display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-wrap:balance}
 .gc-t.long{font-size:8cqw}.gc-t.xlong{font-size:6.6cqw}
-.gc-row{display:flex;justify-content:space-between;align-items:end;margin-top:2.6cqw;padding-top:2cqw;border-top:.3cqw solid rgba(190,230,255,.45);font:500 2.7cqw var(--mono);letter-spacing:.16em;text-transform:uppercase;color:#bfe3ff}
-.gc-no{font:900 6.4cqw/1 var(--display);color:#fff;letter-spacing:0;text-shadow:0 0 1.6cqw #7cc4ff}
+.gc-row{display:flex;justify-content:space-between;align-items:end;margin-top:2.4cqw;padding-top:1.8cqw;border-top:.3cqw solid rgba(190,230,255,.45);font:500 2.6cqw var(--mono);letter-spacing:.16em;text-transform:uppercase;color:#cfe9ff}
+.gc-no{font:900 6.2cqw/1 var(--display);color:#fff;letter-spacing:0;text-shadow:0 0 1.6cqw #7cc4ff}
 .gc-no small{font:600 2.6cqw var(--mono);margin-right:.8cqw;color:#9fd8ff}.gc-no em{font-style:normal;font-size:3.6cqw;color:#9fd8ff}
 .gc-spark i{position:absolute;width:3cqw;height:3cqw;background:#fff;clip-path:polygon(50% 0,58% 42%,100% 50%,58% 58%,50% 100%,42% 58%,0 50%,42% 42%);filter:drop-shadow(0 0 1cqw #bfe6ff);animation:gcTw 2.6s ease-in-out infinite}
-.gc-spark i:nth-child(1){left:10%;top:22%}.gc-spark i:nth-child(2){right:8%;top:30%;animation-delay:-.9s;width:2cqw;height:2cqw}.gc-spark i:nth-child(3){left:16%;top:54%;animation-delay:-1.7s;width:2.2cqw;height:2.2cqw}
-.gc-spark i:nth-child(4){right:14%;top:12%;animation-delay:-.4s}.gc-spark i:nth-child(5){left:46%;top:16%;animation-delay:-2.1s;width:1.8cqw;height:1.8cqw}.gc-spark i:nth-child(6){right:24%;top:50%;animation-delay:-1.2s;width:2cqw;height:2cqw}
+.gc-spark i:nth-child(1){left:6%;top:24%}.gc-spark i:nth-child(2){right:4%;top:36%;animation-delay:-.9s;width:2cqw;height:2cqw}.gc-spark i:nth-child(3){left:3%;top:62%;animation-delay:-1.7s;width:2.2cqw;height:2.2cqw}
+.gc-spark i:nth-child(4){right:10%;top:10%;animation-delay:-.4s}.gc-spark i:nth-child(5){left:40%;top:6%;animation-delay:-2.1s;width:1.8cqw;height:1.8cqw}.gc-spark i:nth-child(6){right:2%;top:70%;animation-delay:-1.2s;width:2cqw;height:2cqw}
 @keyframes gcTw{50%{transform:scale(.3) rotate(45deg);opacity:.3}}
-/* the 1/1: a red ribbon across the corner, a gold bow */
-.gcard.one .gc-rim{box-shadow:inset 0 0 0 1cqw #ffe9a8,inset 0 0 0 1.6cqw rgba(214,40,60,.75),inset 0 0 4cqw rgba(255,220,150,.5),0 0 3.5cqw rgba(255,200,90,.6)}
-.gcard.one .gc-glow{background:radial-gradient(closest-side,rgba(255,215,120,.9),rgba(214,40,60,.35) 70%,transparent)}
-.gcard.one .gc-t{background:linear-gradient(180deg,#ffffff,#fff0c4 40%,#ffc24a 80%,#c8851a);-webkit-background-clip:text;background-clip:text}
-.gc-ribbon{position:absolute;right:2%;top:2%;width:34%;aspect-ratio:1;overflow:hidden;border-top-right-radius:4.5cqw;pointer-events:none}
-.gc-ribbon i{position:absolute;left:-25%;top:30%;width:150%;height:16%;background:linear-gradient(180deg,#ff5a6e,#c41e3a 60%,#8e1026);transform:rotate(45deg);box-shadow:0 .5cqw 1cqw rgba(0,0,0,.4)}
-.gc-ribbon b{position:absolute;right:16%;top:16%;width:30%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3c4,#e8b23a 55%,#9a6a10);box-shadow:0 0 2cqw rgba(255,210,100,.8)}
-@media (prefers-reduced-motion:reduce){.gc-glow,.gc-rim::after,.gc-spark i{animation:none}}
+/* the 1/1: the block tied up like a present, a red ribbon both ways and a gold bow */
+.gcard.one .gc-block{background:linear-gradient(135deg,rgba(255,250,235,.95),rgba(255,235,190,.7) 18%,rgba(150,200,245,.55) 50%,rgba(70,140,210,.6) 82%,rgba(40,95,170,.75))}
+.gcard.one .gc-glow{background:radial-gradient(closest-side,rgba(255,215,120,.85),rgba(214,40,60,.3) 70%,transparent)}
+.gcard.one .gc-t{background:linear-gradient(180deg,#ffffff,#fff3cf 45%,#ffc24a 85%,#c8851a);-webkit-background-clip:text;background-clip:text;-webkit-text-stroke:.25cqw rgba(255,210,120,.55)}
+.gc-ribbon{position:absolute;inset:3% 2% 2%;pointer-events:none}
+.gc-ribbon .v{position:absolute;top:0;height:46%;right:14%;width:6.5%;clip-path:polygon(0 0,100% 0,100% 100%,50% 92%,0 100%);background:linear-gradient(90deg,#8e1026,#e0344a 40%,#ff6a7c 55%,#c41e3a);box-shadow:0 0 1cqw rgba(0,0,0,.35)}
+.gc-ribbon .h{position:absolute;left:0;right:0;top:20%;height:4.6%;background:linear-gradient(180deg,#8e1026,#e0344a 40%,#ff6a7c 55%,#c41e3a);box-shadow:0 0 1cqw rgba(0,0,0,.35)}
+.gc-ribbon b{position:absolute;right:calc(14% - 5.3%);top:calc(20% - 5.6%);width:17%;aspect-ratio:1;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#fff6d0,#f2c14e 40%,#b07a12 80%);box-shadow:0 .6cqw 1.4cqw rgba(0,0,0,.45),0 0 2cqw rgba(255,210,100,.7)}
+.gc-ribbon b::before,.gc-ribbon b::after{content:"";position:absolute;top:18%;width:85%;height:60%;border-radius:50% 50% 50% 50% / 60% 60% 40% 40%;background:radial-gradient(circle at 50% 40%,#ff7a8a,#c41e3a 70%);z-index:-1}
+.gc-ribbon b::before{right:72%;transform:rotate(-24deg)}.gc-ribbon b::after{left:72%;transform:rotate(24deg)}
+@media (prefers-reduced-motion:reduce){.gc-glow,.gc-sheen,.gc-spark i{animation:none}}
 
 /* the Advent calendar: a wooden frame, 24 doors in a jumble, today's glows, the 24th is double */
 .adv{max-width:640px;margin:0 auto;padding:18px;border-radius:22px;background:linear-gradient(160deg,#5a2a16,#3a170b);box-shadow:inset 0 0 0 4px #7a3d1f,inset 0 0 0 7px #2a1006,0 20px 50px rgba(0,0,0,.5)}
