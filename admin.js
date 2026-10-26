@@ -127,7 +127,7 @@ function buildAdmin() {
         <p class="adm-small" id="admSwPay">…</p>
         <div class="adm-row"><button class="btn" id="admSwPayBtn">…</button></div>
         <form class="adm-row" id="admEv"><label>Événement <select id="admEvSel" aria-label="Événement du site">
-            <option value="">Aucun</option><option value="halloween">🎃 Halloween</option></select></label><button class="btn">Appliquer</button></form>
+            <option value="">Aucun</option><option value="halloween">🎃 Halloween</option><option value="noel">🎄 Noël</option></select></label><button class="btn">Appliquer</button></form>
         <div class="adm-row"><button class="btn" id="admHxSim" type="button">🦇 Simuler un Pack Hanté (rien n'est enregistré)</button></div>
         <p class="adm-small" id="admXpState">…</p>
         <form class="adm-row" id="admXp"><label>XP du pass <select id="admXpMult" aria-label="Multiplicateur d'XP">

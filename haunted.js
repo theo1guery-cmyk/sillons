@@ -194,8 +194,9 @@ async function hauntedIntro() {
 
 /* inside the booster: after the last card, a cursed back shakes in the fog; a touch and it burns away into the card */
 const hxNo = c => String(c.no).padStart(String(c.of).length, "0");
-const hxNight = c => c.series === 2 || c.slot >= NIGHT_FROM;      // a card of the night of the 31
-const hxSeries = c => hxNight(c) ? "Nuit d'Halloween" : "Collection Hantée";
+const hxGivre = c => c.series === 3 || c.slot >= GIVRE_FROM;        // a Carte Givrée (noel.js)
+const hxNight = c => !hxGivre(c) && (c.series === 2 || c.slot >= NIGHT_FROM);      // a card of the night of the 31
+const hxSeries = c => hxGivre(c) ? "Carte Givrée" : hxNight(c) ? "Nuit d'Halloween" : "Collection Hantée";
 // the 3D film (haunt3d.js): fetched ahead, so the film starts at once
 const HX_PHONE = Math.min(innerWidth, innerHeight) < 600 || /Android|iPhone|iPad/.test(navigator.userAgent);
 function hxFilmLoad() {
@@ -269,6 +270,7 @@ async function hxFilm(film, c, onReveal) {     // true once the film has played;
 }
 Object.assign(Haunted, {
   inPack(OP) {
+    if (hxGivre(OP.haunted) && window.Noel?.inPack) return Noel.inPack(OP);
     OP.hDone = true;
     const box = $o(".op-cards"), c = OP.haunted;
     box.querySelectorAll(".solo-card").forEach(x => x.remove());
@@ -294,6 +296,7 @@ Object.assign(Haunted, {
   },
   // the layout of the whole booster: the haunted copy at the end (its film plays even when "Tout révéler" skipped it)
   async inRecap(OP, rc) {
+    if (hxGivre(OP.haunted) && window.Noel?.inRecap) return Noel.inRecap(OP, rc);
     const c = OP.haunted, slot = document.createElement("div"); slot.className = "slot hx-rslot";
     slot.appendChild(hauntedCardEl({ t: c.title, a: c.artist, cov: c.cover, no: c.no, of: c.of, nuit: hxNight(c) }));
     slot.onclick = () => hxView({ ...c, mine: !!c.card_id, id: c.card_id });
@@ -345,6 +348,7 @@ const hxCard = (e, cp) => ({ track_id: e.track_id, title: e.title, artist: e.art
   id: cp.id, mine: cp.mine, pseudo: cp.pseudo, grade: cp.grade, cert: cp.cert, sale: cp.sale });
 const hxAsCard = c => ({ id: c.track_id, t: c.title, a: c.artist, al: "", cov: c.cover || "", tier: LEG, rank: 950000, g: AUTRE, ed: c.slot, eno: c.no });
 const hxCardOrSlab = c => c.grade ? slabEl(hxAsCard(c), false, { grade: c.grade, cert: c.cert, pop: c.no })
+  : hxGivre(c) ? givreCardEl({ t: c.title, a: c.artist, cov: c.cover || "", no: c.no, of: c.of })
   : hauntedCardEl({ t: c.title, a: c.artist, cov: c.cover || "", no: c.no, of: c.of, nuit: hxNight(c) });
 const hxMine = c => Object.values(S.c).find(x => x.ed === c.slot && x.copies?.some(cp => cp.id === c.id));
 function hxRefresh() {
@@ -353,7 +357,7 @@ function hxRefresh() {
 }
 function hxView(c) {
   return new Promise(done => {
-    const el = document.createElement("div"); el.className = "hx-reveal hx-view"; el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true");
+    const el = document.createElement("div"); el.className = "hx-reveal hx-view" + (hxGivre(c) ? " gv" : ""); el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true");
     el.setAttribute("aria-label", `${c.title}, ${hxSeries(c)}`);
     el.innerHTML = `<div class="hx-r-fog"></div><p class="hx-r-kick">${hxSeries(c)}</p><div class="hx-r-card"></div>
       <div class="hx-r-txt"><b>${esc(c.title)}</b><span>${esc(c.artist)} · N° ${hxNo(c)}/${c.of}${c.of === 1 ? " · exemplaire unique" : ""}${c.mine ? "" : c.pseudo ? ` · à ${esc(c.pseudo)}` : ""}</span>

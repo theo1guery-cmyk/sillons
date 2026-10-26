@@ -13,6 +13,8 @@ function eventApply(e) {
   document.querySelectorAll("#evLayer,.ev-side,.ev-banner").forEach(x => x.remove()); clearInterval(EVENT.timer);
   if (e) document.documentElement.dataset.event = e; else delete document.documentElement.dataset.event;
   if (e === "halloween") halloween();
+  if (e === "noel") noel();
+  if (e !== "noel") window.winterStorm?.(null);
 }
 const BAT = `<svg viewBox="0 0 64 34" aria-hidden="true"><path d="M32 13c-1.6-2.6-3.4-3.6-5-3.4.9 1.2 1 2.6.4 3.8C24 10 19.5 8.4 14 9.3c2.7 1.3 4.4 3.3 4.6 5.6-3.8-1.7-8.7-1.8-13.6.3 3.9.8 6.6 2.9 7.6 5.8 4-2.3 9-2.6 13-.7 1.3.7 2.9 2.2 4.4 4.2 1.5-2 3.1-3.5 4.4-4.2 4-1.9 9-1.6 13 .7 1-2.9 3.7-5 7.6-5.8-4.9-2.1-9.8-2-13.6-.3.2-2.3 1.9-4.3 4.6-5.6-5.5-.9-10 .7-13.4 4.1-.6-1.2-.5-2.6.4-3.8-1.6-.2-3.4.8-5 3.4z"/></svg>`;
 const PUMPKIN = (x, y, k) => `<g class="ev-pk" transform="translate(${x} ${y}) scale(${k})">
@@ -69,6 +71,28 @@ function halloween() {
     }
   };
   setTimeout(flock, 2500); EVENT.timer = setInterval(flock, 16000);
+}
+/* Noël: snow falls softly on the site, the sidebar gets a banner and a snowy hill with
+   fir trees. Every minute: is a snow storm blowing? (its banner comes from winter.js) */
+const FIR = (x, h) => `<g transform="translate(${x} ${160 - h})"><path d="M0 0L${h * .32} ${h * .42}H${h * .16}L${h * .4} ${h * .72}H${h * .2}L${h * .46} ${h}H-${h * .46}L-${h * .2} ${h * .72}H-${h * .4}L-${h * .16} ${h * .42}H-${h * .32}Z" fill="#0c2a22"/>
+  <path d="M0 0L${h * .32} ${h * .42}H${h * .16}L0 ${h * .3}L-${h * .16} ${h * .42}H-${h * .32}Z" fill="#eef7ff" opacity=".85"/></g>`;
+const HILL = `<svg viewBox="0 0 236 160" preserveAspectRatio="xMidYMax meet">
+  ${FIR(40, 70)}${FIR(70, 46)}${FIR(190, 58)}${FIR(214, 38)}
+  <path d="M0 160V132Q60 112 120 128T236 122V160Z" fill="#e9f4ff"/><path d="M0 160V142Q70 128 140 140T236 136V160Z" fill="#c9def2"/>
+  <g class="ev-star"><path d="M40 84l2 5 5 .5-4 3.4 1.3 5.1L40 95l-4.3 3 1.3-5.1-4-3.4 5-.5z" fill="#ffd36b"/></g>
+</svg>`;
+function noel() {
+  const L = document.createElement("div"); L.id = "evLayer"; L.className = "ev-layer ev-noel"; L.setAttribute("aria-hidden", "true");
+  const flakes = Array.from({ length: 34 }, () => `<i style="--x:${(Math.random() * 100).toFixed(1)}%;--d:${(10 + Math.random() * 12).toFixed(1)}s;--w:${(-Math.random() * 22).toFixed(1)}s;--s:${(.4 + Math.random() * .9).toFixed(2)};--dx:${(Math.random() * 80 - 40).toFixed(0)}px"></i>`).join("");
+  L.innerHTML = `<div class="ev-glow-n"></div><div class="ev-flakes">${flakes}</div>`;
+  document.body.appendChild(L);
+  const side = document.querySelector(".sidebar");
+  if (side) {
+    side.querySelector(".side-logo")?.insertAdjacentHTML("afterend", `<div class="ev-banner noel"><span aria-hidden="true">🎄</span><div><b>Noël sur Zik Hunter</b><small>Jusqu'au 25 décembre</small></div></div>`);
+    side.insertAdjacentHTML("beforeend", `<div class="ev-side" aria-hidden="true">${HILL}</div>`);
+  }
+  const storm = async () => { if (document.hidden) return; try { window.winterStorm?.(await rpc("noel_storm")); } catch (e) {} };
+  storm(); EVENT.timer = setInterval(storm, 60000);
 }
 eventCheck(); setInterval(eventCheck, 120000);
 Object.assign(Online, { eventApply });
