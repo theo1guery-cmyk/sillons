@@ -40,12 +40,39 @@ function gcEdge(seed) {
     }
   };
   const m = 2.6;
-  side(m, m, W - m, m, 0, -1); side(W - m, m, W - m, H - m, 1, 0); side(W - m, H - m, m, H - m, 0, 1); side(m, H - m, m, m, -1, 0);
+  side(m, m, W - m, m, 0, -1); const top = pts.slice(); side(W - m, m, W - m, H - m, 1, 0); side(W - m, H - m, m, H - m, 0, 1); side(m, H - m, m, m, -1, 0);
   const poly = pts.map(([x, y]) => `${(x / W * 100).toFixed(2)}% ${(y / H * 100).toFixed(2)}%`).join(",");
   const path = "M" + pts.map(([x, y]) => `${x.toFixed(2)} ${y.toFixed(2)}`).join("L") + "Z";
   // facets: a few lines from the edge inwards, as on a cut block
   const fac = pts.filter((_, i) => i % 5 === 2).map(([x, y]) => { const cx = W / 2, cy = H / 2, f = .12 + rnd() * .1; return `M${x.toFixed(2)} ${y.toFixed(2)}L${(x + (cx - x) * f).toFixed(2)} ${(y + (cy - y) * f).toFixed(2)}`; }).join("");
-  return { poly, path, fac };
+  return { poly, path, fac, top };
+}
+// snow lying on the top edge: it follows the broken ice, thick in the middle and thin at the ends, its top soft and
+// lumpy, a little overhang that droops at both ends, shaded blue underneath; icicles under it, of uneven lengths
+function gcSnow(seed, top) {
+  const rnd = GC_SEED("snow" + seed), W = 63, n = top.length;
+  const lump = Array.from({ length: n }, () => rnd());
+  const up = top.map(([x, y], i) => {
+    const t = i / (n - 1), th = 3.3 * Math.pow(Math.sin(Math.PI * Math.min(1, Math.max(0, (t - .02) / .96))), .55) + (lump[i] - .5) * .9 + .5;
+    return [x, y - Math.max(.4, th)];
+  });
+  const L = [top[0][0] - 1.4, top[0][1] + 1.6], R = [top[n - 1][0] + 1.6, top[n - 1][1] + 1.4];   // the overhang droops at the ends
+  let d = `M${L[0].toFixed(2)} ${L[1].toFixed(2)}Q${(L[0] - .4).toFixed(2)} ${(up[0][1] + .6).toFixed(2)} ${up[0][0].toFixed(2)} ${up[0][1].toFixed(2)}`;
+  for (let i = 1; i < n; i++) { const [x0, y0] = up[i - 1], [x1, y1] = up[i]; d += `Q${x0.toFixed(2)} ${(y0 - .5).toFixed(2)} ${((x0 + x1) / 2).toFixed(2)} ${((y0 + y1) / 2 - .25).toFixed(2)}`; if (i === n - 1) d += `T${x1.toFixed(2)} ${y1.toFixed(2)}`; }
+  d += `Q${(R[0] + .5).toFixed(2)} ${(up[n - 1][1] + .5).toFixed(2)} ${R[0].toFixed(2)} ${R[1].toFixed(2)}`;
+  for (let i = n - 1; i >= 0; i--) { const [x, y] = top[i]; d += `L${x.toFixed(2)} ${(y + .5 + (i % 2) * .35).toFixed(2)}`; }   // the underside, a little ragged
+  d += "Z";
+  const hi = "M" + up.slice(2, n - 2).map(([x, y]) => `${x.toFixed(2)} ${(y + .55).toFixed(2)}`).join("L");   // the light on the top of the snow
+  let ice = "";
+  for (let k = 0; k < 9; k++) {
+    const i = 1 + (rnd() * (n - 2) | 0), [x, y] = top[i], w = .7 + rnd() * 1.1, h = rnd() < .35 ? 4 + rnd() * 5 : 1.5 + rnd() * 2.5;
+    ice += `M${(x - w).toFixed(2)} ${(y + .3).toFixed(2)}Q${(x - w * .3).toFixed(2)} ${(y + h * .55).toFixed(2)} ${x.toFixed(2)} ${(y + h).toFixed(2)}Q${(x + w * .3).toFixed(2)} ${(y + h * .55).toFixed(2)} ${(x + w).toFixed(2)} ${(y + .3).toFixed(2)}Z`;
+  }
+  const dots = Array.from({ length: 10 }, () => { const i = 2 + (rnd() * (n - 4) | 0), [x, y] = up[i]; return `<circle cx="${(x + (rnd() - .5) * 2).toFixed(2)}" cy="${(y + .8 + rnd() * 1.4).toFixed(2)}" r="${(.12 + rnd() * .16).toFixed(2)}"/>`; }).join("");
+  return `<svg class="gc-snow" viewBox="0 0 63 88" preserveAspectRatio="none" aria-hidden="true">
+    <defs><linearGradient id="gcS${seed.length}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".55" stop-color="#f2f9ff"/><stop offset="1" stop-color="#bcd8f0"/></linearGradient>
+      <linearGradient id="gcI${seed.length}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4fbff" stop-opacity=".95"/><stop offset="1" stop-color="#9fd2ff" stop-opacity=".35"/></linearGradient></defs>
+    <path class="ice" d="${ice}" fill="url(#gcI${seed.length})"/><path class="cap" d="${d}" fill="url(#gcS${seed.length})"/><path class="hi" d="${hi}"/><g class="glit">${dots}</g></svg>`;
 }
 function givreCardEl(c) {
   const one = c.of === 1, no = c.no === "?" ? "?" : String(c.no).padStart(String(c.of).length, "0");
@@ -66,10 +93,7 @@ function givreCardEl(c) {
       </div>
     </div>
     <svg class="gc-rim" viewBox="0 0 63 88" preserveAspectRatio="none" aria-hidden="true"><path class="r" d="${edge.path}"/><path class="r2" d="${edge.path}"/><path class="fa" d="${edge.fac}"/></svg>
-    <svg class="gc-snow" viewBox="0 0 100 20" preserveAspectRatio="none" aria-hidden="true">
-      <path class="ice" d="M4 9 L7 9 8.2 17 9.4 9 15 9 16 13.5 17 9 26 9 27.6 19 29.2 9 37 9 38 12.5 39 9 47 9 48.5 16 50 9 58 9 59 13 60 9 69 9 70.8 18.5 72.6 9 80 9 81 12 82 9 89 9 90.4 15 91.8 9 96 9Z"/>
-      <path class="cap" d="M1 11 C2 5 6 3 11 4 C15 1 22 2 26 4 C31 0 40 1 44 4 C49 1 57 1 61 4 C66 0 75 2 78 4 C83 1 92 2 95 5 C98 6 99.5 8 99 11 C70 9.5 30 9.5 1 11Z"/>
-    </svg>
+    ${gcSnow(c.t + c.a, edge.top)}
     ${one ? `<div class="gc-ribbon" aria-hidden="true"><i class="v"></i><i class="h"></i><b></b></div>` : ""}
     <div class="gc-spark" aria-hidden="true">${"<i></i>".repeat(6)}</div>`;
   const w = document.createElement("div"); w.className = "cq"; w.appendChild(el);
