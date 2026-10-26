@@ -733,7 +733,7 @@ const classicName = () => worn("pack") || "pack-wall";
 let tornCut = null;                       // the shape of the last tear, so the pack in the opening is torn the same way
 skin(packBtn, classicName, { sway: true });
 document.documentElement.dataset.back = "plain";
-const studioScript = document.createElement("script"); studioScript.type = "module"; studioScript.src = "studio.js?v=20"; document.head.appendChild(studioScript);
+const studioScript = document.createElement("script"); studioScript.type = "module"; studioScript.src = "studio.js?v=21"; document.head.appendChild(studioScript);
 function renderStock() {
   bigBtn.hidden = !S.big;                // the big boosters won with the VIP pass
   bigBtn.innerHTML = `<b>Ouvrir une Édition Deluxe</b><small>15 cartes, toutes Rare ou mieux · ${S.big || 0} à ouvrir</small>`;

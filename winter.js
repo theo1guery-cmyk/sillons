@@ -64,4 +64,12 @@ function winterSnowman(box, d) {
         <p class="w-fine">Chaque booster ouvert par n'importe quel joueur ajoute de la neige. À chaque étape, tous les joueurs qui ont ouvert au moins un booster pendant la saison reçoivent le cadeau.</p>
       </div></div>`;
 }
-window.Winter = { storm: winterStorm, snowman: winterSnowman, STEPS: SNOW_STEPS };
+/* the presents of the steps finished, taken once a session (and when the pass page opens): told with a toast */
+async function winterClaim() {
+  let got = [];
+  try { got = await rpc("winter_claim") || []; } catch (e) { return; }
+  if (!got.length) return;
+  toast(`⛄ Le bonhomme de neige avance ! Cadeau${got.length > 1 ? "x" : ""} reçu${got.length > 1 ? "s" : ""} : ${got.map(k => SNOW_STEPS[k - 1].gift).join(", ")}.`);
+  try { await loadProfile(); renderCounters?.(); } catch (e) {}
+}
+window.Winter = { storm: winterStorm, snowman: winterSnowman, claim: winterClaim, STEPS: SNOW_STEPS };

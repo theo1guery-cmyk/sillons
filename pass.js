@@ -114,6 +114,7 @@ async function loadPass() {
   const ms = (vip ? 3 : 10) * 60 * 1000;
   if (REFILL_MS !== ms) { REFILL_MS = ms; if (typeof renderStock === "function") renderStock(); }
   passBadge(); renderVinylShop(); if (!SHOP.loaded) { SHOP.loaded = true; loadShop(); }
+  if (wintry(d) && !PASS.winterClaimed && window.Winter) { PASS.winterClaimed = true; Winter.claim(); }   // the snowman's presents, once a session
   return PASS.data;
 }
 
@@ -224,7 +225,7 @@ async function renderPass() {
     </div>`;
 
   passTick(true); passLoadExamples();
-  if (wintry(d) && window.Winter) rpc("winter_state").then(w => { const el = $("#psSnowman"); if (w && el) Winter.snowman(el, w); }).catch(() => {});
+  if (wintry(d) && window.Winter) Winter.claim().then(() => rpc("winter_state")).then(w => { const el = $("#psSnowman"); if (w && el) Winter.snowman(el, w); }).catch(() => {});
   renderCosmetics(d);
   box.querySelectorAll(".ps-pk").forEach(pk => skin(pk, classicName, {}));   // the shop's 3D booster
   const buyV = $("#psBuyV");
@@ -300,12 +301,16 @@ function packXp(p, god) {
   return got;
 }
 
+// every item a season gave (the same as cosmetic_items on the server): item, slot, name
+const COS_ITEMS = [["avatar-tour", "avatar", "Médaillon Tournée"], ["pack-tour", "pack", "Sachet Tournée"], ["back-tour", "back", "Dos de carte Tournée"], ["name-gold", "name", "Pseudo gravé à l'or"],
+  ["avatar-givre", "avatar", "Médaillon Givré"], ["pack-winter", "pack", "Sachet Blizzard"], ["back-winter", "back", "Dos de carte Aurore"], ["name-ice", "name", "Pseudo de glace"]];
 // "Tes objets de saison": the items received, worn or not
 async function renderCosmetics(d) {
   document.getElementById("psCos")?.remove();
   let owned = [];
   try { const { data } = await sb.from("player_cosmetics").select("item"); owned = (data || []).map(r => r.item); } catch (e) {}
   const all = d.rewards.map(r => r.premium).filter(r => r.kind === "cosmetic");
+  for (const [item, slot, name] of COS_ITEMS) if (owned.includes(item) && !all.some(r => r.item === item)) all.push({ kind: "cosmetic", item, slot, name });   // the items of past seasons stay
   if (!all.length) return;
   const worn = me.cosmetics || {};
   const box = document.createElement("section"); box.className = "ps-cos-box"; box.id = "psCos";
