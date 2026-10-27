@@ -44,3 +44,15 @@ begin
 end $$;
 revoke execute on function public.my_wrapped() from public, anon;
 grant execute on function public.my_wrapped() to authenticated;
+
+-- the news on the Discord
+do $$ begin
+  perform public.discord_post(jsonb_build_object('username', 'Zik Hunter',
+    'content', E'🎉 **Grosse mise à jour : Zik Hunter devient social !**\n\n'
+      || E'👥 **Joueurs et amis** : un nouvel onglet pour ajouter tes amis, voir qui est en ligne et fouiller leur collection en entier.\n'
+      || E'🏆 **Ton profil public** : ton score de collection, ton rang parmi tous les joueurs et une vitrine de 6 cartes choisies par toi.\n'
+      || E'⚡ **Le score de collection** : chaque carte compte selon sa rareté, les Shiny et les cartes notées 10 valent double, les éditions limitées valent de l''or.\n'
+      || E'🎁 **Ton Wrapped 2026** arrive le 1er décembre : revis ton année et partage-la.\n\n'
+      || E'🔥 **Et du lourd arrive** : classements, ligues classées de Bronze à Légende, défis de la semaine, tournois… et un tout nouveau mode de jeu où ta collection va enfin se battre. Prépare tes cartes !'));
+exception when others then null;
+end $$;
