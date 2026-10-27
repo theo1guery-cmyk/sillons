@@ -86,7 +86,7 @@ function drawProfile() {
       <div class="pf-id">${socAvatar(p, true)}<div><h2>${socName(p)}</h2>${p.title ? `<p class="pf-title">${esc(p.title)}</p>` : ""}
         <p class="pf-meta">${socSeen(p)}<span>Joueur depuis ${since}</span><span>${p.friends} ami${p.friends > 1 ? "s" : ""}</span></p></div></div>
       <div class="pf-score"><small>Score de collection</small><b>${fmt(s.score)}</b><span>${p.rank <= 3 ? ["🥇", "🥈", "🥉"][p.rank - 1] + " " : ""}${p.rank}<sup>${p.rank === 1 ? "er" : "e"}</sup> sur ${fmt(p.players)} joueurs</span></div>
-      <div class="pf-acts">${action}${mine && typeof wrOpen === "function" && wrOpen() ? `<button class="btn primary" id="pfWrapped">🎁 Mon Wrapped 2026</button>` : ""}${mine ? "" : `<button class="btn" id="pfTrade">Proposer un échange</button><button class="btn" id="pfDuel">⚔️ Lancer un clash</button>`}</div>
+      <div class="pf-acts">${action}${mine && typeof wrOpen === "function" && wrOpen() ? `<button class="btn primary" id="pfWrapped">🎁 Mon Wrapped 2026</button>` : ""}${mine ? "" : `<button class="btn" id="pfTrade">Proposer un échange</button><button class="btn" id="pfDuel">⚔️ Lancer un clash</button>`}${p.friend === "friends" && window.battleWith ? `<button class="btn" id="pfBattle">🃏 Bataille amicale</button>${p.online ? `<button class="btn primary" id="pfLive">⚡ Bataille en direct</button>` : ""}` : ""}</div>
     </section>
     <div class="pf-tiles">${tile(fmt(s.distinct), "cartes différentes")}${tile(fmt(tiers[5]), "Légendaires", "r5")}${tile(fmt(tiers[4]), "Mythiques", "r4")}
       ${tile(fmt(s.shiny), "Shiny")}${tile(s.best_grade ? s.best_grade + "/10" : "—", "meilleure note")}${tile(fmt(s.limited), "éditions limitées", "ed")}
@@ -110,6 +110,8 @@ function drawProfile() {
   const rm = $("#pfRemove"); if (rm) rm.onclick = async () => { if (!confirm(`Retirer ${p.pseudo} de tes amis ?`)) return; try { await rpc("friend_remove", { p_user: p.id }); openProfile(p.id); } catch (e) { toast(message(e)); } };
   const tr = $("#pfTrade"); if (tr) tr.onclick = () => { show("trades"); openEditor({ id: p.id, pseudo: p.pseudo, title: p.title, cosmetics: p.cosmetics }); };
   const du = $("#pfDuel"); if (du) du.onclick = () => { show("duels"); setTimeout(() => { $("#duelChallenge")?.onclick?.(); CH.player = { id: p.id, pseudo: p.pseudo, title: p.title }; CH.theirs = null; drawChallengeSetup(); }, 300); };
+  const pb = $("#pfBattle"); if (pb) pb.onclick = () => window.battleWith(p.id, p.pseudo, false);
+  const pl = $("#pfLive"); if (pl) pl.onclick = () => window.battleWith(p.id, p.pseudo, true);
   const wr = $("#pfWrapped"); if (wr) wr.onclick = () => wrappedOpen();
   const op = $("#pfOpen"); if (op) op.onclick = () => socCollection();
   const ed = $("#pfEdit"); if (ed) ed.onclick = () => socPick();
