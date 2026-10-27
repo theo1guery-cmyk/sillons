@@ -45,7 +45,7 @@ function newsShow(force) {
 }
 // once the game is open (signed in, nothing else on screen)
 const newsTimer = setInterval(() => {
-  if (typeof me === "undefined" || !me || !Online.active || document.body.classList.contains("fx-on") || document.body.classList.contains("landing-on")
+  if (typeof me === "undefined" || !me || !Online.active || typeof SOC === "undefined" || !SOC.ready || document.body.classList.contains("fx-on") || document.body.classList.contains("landing-on")
       || document.querySelector(".op:not([hidden]), #updCard, .wr")) return;
   clearInterval(newsTimer); setTimeout(newsShow, 1500);
 }, 2500);

@@ -12,8 +12,8 @@ const socCard = j => { const r = { ...j }, c = cardFromRow(r, (j.kind === "artis
   return j.grade ? slabEl(c, j.holo, { grade: j.grade, cert: j.grade_cert, pop: j.grade_pop }) : cardEl(c, j.holo); };
 
 function playersTab() {
-  const t = $("#tab-players"); if (!t) return; t.hidden = !Online.active;
-  if (Online.active && me && !SOC.badged) { SOC.badged = true; rpc("my_friends").then(d => updatePlayersBadge(d.incoming.length)).catch(() => { SOC.badged = false; }); }
+  const t = $("#tab-players"); if (!t) return; t.hidden = !Online.active || !SOC.ready;   // shown once the server knows friends
+  if (Online.active && me && !SOC.badged) { SOC.badged = true; rpc("my_friends").then(d => { SOC.ready = true; updatePlayersBadge(d.incoming.length); playersTab(); }).catch(() => { setTimeout(() => { SOC.badged = false; }, 60000); }); }
 }
 setInterval(playersTab, 3000);
 
