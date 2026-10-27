@@ -1,0 +1,56 @@
+/* Zik Hunter — players (social.js): friends, the search, a public profile, a friend's collection */
+.soc .soc-me{display:flex;align-items:center;gap:14px;margin:6px 0 16px;padding:14px 16px;border-radius:16px;background:linear-gradient(120deg,rgba(231,177,74,.14),rgba(255,255,255,.03));box-shadow:inset 0 0 0 1px rgba(231,177,74,.25)}
+.soc .soc-me>div{flex:1;min-width:0}.soc-k{margin:0;font:500 .68rem var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.soc .soc-me b{font:900 1.2rem var(--display)}
+.soc .avatar,.pf-hero .avatar{width:38px;height:38px;flex:none;border-radius:50%;display:grid;place-items:center;background:var(--gold-grad);color:#1c1305;font-family:var(--display);font-weight:900;font-size:1rem;box-shadow:0 0 0 2px rgba(0,0,0,.4),0 0 14px rgba(231,177,74,.3)}
+.soc .avatar.big,.pf-hero .avatar.big{width:58px;height:58px;font-size:1.5rem}
+.soc-find{margin:0 0 8px}
+.soc h3{display:flex;align-items:center;gap:8px;margin:22px 0 8px}
+.soc-n{padding:1px 8px;border-radius:99px;background:rgba(255,255,255,.08);font:600 .75rem var(--mono);color:var(--muted)}
+.soc-list{display:grid;gap:6px}
+.soc-row{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:14px;background:rgba(255,255,255,.035);box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);cursor:pointer;transition:background .15s}
+.soc-row:hover{background:rgba(255,255,255,.07)}
+.soc-who{flex:1;min-width:0;display:grid;gap:1px}.soc-who b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.soc-who small{color:var(--muted);font-size:.75rem}
+.soc-on,.soc-off{font:500 .7rem var(--mono);color:var(--muted)}
+.soc-on{color:#57e389}.soc-on::before{content:"";display:inline-block;width:7px;height:7px;margin-right:5px;border-radius:50%;background:#57e389;box-shadow:0 0 8px #57e389}
+.soc-score{display:grid;justify-items:end;line-height:1.1}.soc-score b{font:900 1rem var(--display);color:var(--brass,#e7b14a)}.soc-score small{font:500 .62rem var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+.soc-acts{display:flex;gap:6px}.soc-acts .btn{padding:6px 12px;font-size:.8rem}.soc-acts em{font-style:normal;font-size:.78rem;color:var(--muted)}
+/* the profile */
+.pf-back{margin:0 0 10px}
+.pf-hero{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px 20px;align-items:center;padding:20px;border-radius:20px;
+  background:radial-gradient(90% 140% at 100% 0,rgba(231,177,74,.18),transparent 60%),linear-gradient(160deg,rgba(255,255,255,.06),rgba(255,255,255,.02));box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.pf-id{display:flex;align-items:center;gap:16px;min-width:0}.pf-id h2{margin:0;font-size:clamp(1.4rem,4vw,2rem);overflow:hidden;text-overflow:ellipsis}
+.pf-title{margin:2px 0 0;color:var(--brass,#e7b14a);font-weight:600;font-size:.85rem}
+.pf-meta{display:flex;flex-wrap:wrap;gap:4px 12px;margin:6px 0 0;font-size:.78rem;color:var(--muted)}
+.pf-score{display:grid;justify-items:end;text-align:right}
+.pf-score small{font:500 .66rem var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.pf-score b{font:900 clamp(1.8rem,5vw,2.6rem)/1 var(--display);background:var(--gold-grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.pf-score span{font-size:.85rem;font-weight:600}
+.pf-acts{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px}
+.pf-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin:14px 0}
+.pf-tile{display:grid;gap:2px;padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.035);box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+.pf-tile b{font:900 1.35rem/1 var(--display)}.pf-tile small{font-size:.72rem;color:var(--muted)}
+.pf-tile.r5 b{color:var(--r5)}.pf-tile.r4 b{color:var(--r4)}.pf-tile.ed b{color:#9fd8ff}
+.pf-bar{display:flex;height:10px;border-radius:99px;overflow:hidden;gap:2px;background:rgba(255,255,255,.05)}
+.pf-legend{display:flex;flex-wrap:wrap;gap:4px 14px;margin:8px 0 0;font-size:.75rem;color:var(--muted)}
+.pf-legend i{display:inline-block;width:8px;height:8px;margin-right:5px;border-radius:2px}.pf-legend b{color:var(--text,#fff)}
+.pf-show h3,.pf-coll h3{margin:26px 0 8px;display:flex;align-items:center;gap:10px}
+.pf-cards{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px}
+.pf-card{min-width:0}
+.pf-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:12px}
+.pf-gc{position:relative;min-width:0;padding:0;border:0;background:none;color:inherit}
+.pf-gc.pick{cursor:pointer;border-radius:8px;transition:transform .15s}.pf-gc.pick:hover{transform:translateY(-3px)}
+.pf-gc.pick.on{outline:3px solid var(--brass,#e7b14a);outline-offset:3px}
+.pf-gc.pick.on::after{content:attr(data-k);position:absolute;top:-10px;left:-10px;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--gold-grad);color:#1c1305;font:900 .8rem var(--display);box-shadow:0 2px 8px rgba(0,0,0,.5)}
+.pf-n{position:absolute;right:4px;bottom:4px;padding:1px 6px;border-radius:99px;background:rgba(0,0,0,.7);font:600 .7rem var(--mono)}
+.pf-filt{display:grid;gap:8px;margin:0 0 8px}.pf-filt input{max-width:320px;padding:9px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);color:inherit;font:inherit}
+.pf-chips{display:flex;flex-wrap:wrap;gap:6px}
+.pf-chips button{padding:5px 12px;border-radius:99px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:inherit;font-size:.8rem;cursor:pointer}
+.pf-chips button[aria-pressed="true"]{background:var(--c,#fff);border-color:transparent;color:#0b0b10;font-weight:700}
+.pf-chips button[data-t="-1"][aria-pressed="true"]{background:#fff}
+.pf-count{margin:6px 0 10px;font-size:.8rem;color:var(--muted)}
+.pf-more{display:block;margin:16px auto 0}
+.pf-picker{margin:16px 0 0;padding:16px;border-radius:16px;background:rgba(231,177,74,.07);box-shadow:inset 0 0 0 1px rgba(231,177,74,.25)}
+.pf-picker p{margin:0 0 10px}.pf-pacts{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}
+@media (max-width:760px){.pf-hero{grid-template-columns:minmax(0,1fr)}.pf-score{justify-items:start;text-align:left}.pf-cards{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .pf-grid{grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}.soc-row{padding:9px 10px;gap:9px}.soc-acts .btn{padding:5px 9px}}
