@@ -170,3 +170,17 @@ revoke execute on function public.leaderboard(text, boolean) from public, anon;
 grant execute on function public.leaderboard(text, boolean) to authenticated;
 
 select public.challenge_pick(public.week_start(public.game_day()));
+
+-- the news on the Discord
+do $$ begin
+  perform public.discord_post(jsonb_build_object('username', 'Zik Hunter',
+    'content', E'⚔️ **Le compétitif est là : que la bataille commence !**\n\n'
+      || E'🃏 **La Bataille de cartes** : ton deck de 5 cartes contre celui d''un joueur de ton niveau. Une stat tirée au sort à chaque manche (Tempo, Endurance, Hype, Puissance), joue la bonne carte au bon moment. 3 manches et c''est gagné !\n'
+      || E'🛡️ **Les ligues** : gagne des trophées et monte de Bronze à Argent, Or, Platine, Diamant… jusqu''à **Légende**. Un cadeau à chaque fin de saison selon ta ligue.\n'
+      || E'👥 **Défie tes amis** : en amical contre leur deck, ou **en direct** s''ils sont en ligne.\n'
+      || E'📊 **Six classements** : collection, trophées, Légendaires, clash, défi, tournoi.\n'
+      || E'🎯 **Le défi de la semaine** : « ' || (select label from public.weekly_challenges where week = public.week_start(public.game_day())) || E' ». Top 10 récompensé lundi, une Légendaire pour le premier !\n'
+      || E'🏟️ **Le tournoi du week-end** : samedi et dimanche, chaque bataille compte.\n\n'
+      || E'Compose ton deck dans l''onglet **Bataille** et montre qui est le meilleur chasseur. 🔥'));
+exception when others then null;
+end $$;
