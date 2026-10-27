@@ -1594,7 +1594,6 @@ async function checkNotifications() {
     else if (x.type === "referral") { toast("🤝 " + x.title); rpc("notification_seen", { p_id: x.id }).catch(() => {}); }
     else if (x.type === "admin_warning" || x.type === "admin_message") Online.showNotice?.(x);
     else if (x.type === "friend_request") { toast(`🤝 ${x.title} veut devenir ton ami : réponds dans l'onglet Joueurs.`); rpc("notification_seen", { p_id: x.id }).catch(() => {}); }
-    else if (x.type === "podium" || x.type === "league_end") { toast("🏆 " + x.title); rpc("notification_seen", { p_id: x.id }).catch(() => {}); }
     else if (x.type === "friend_accepted") { toast(`🤝 ${x.title} a accepté ta demande d'ami !`); rpc("notification_seen", { p_id: x.id }).catch(() => {}); }
   }
   if ((data || []).some(x => x.type.startsWith("friend"))) rpc("my_friends").then(d => Online.updatePlayersBadge?.(d.incoming.length)).catch(() => {});
