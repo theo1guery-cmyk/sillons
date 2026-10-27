@@ -91,3 +91,28 @@
 .bt-oc{display:flex;gap:6px;margin-top:6px}.bt-oc>div{width:clamp(48px,11vw,72px)}.bt-oc .cq{width:100%}
 .bt-acts{display:flex;gap:10px;margin-top:8px}
 @media (prefers-reduced-motion:reduce){.bt-fight,.bt-card,.bt-side,.bt-vsx,.bt-stat{animation:none}}
+/* with a friend: the list, the invitation, the wait, the clock of a live round */
+.bt-go .btn:not(.bt-fight){padding:9px 16px}
+.bt-fbox{margin:12px 0;padding:14px 16px;border-radius:16px;background:rgba(255,255,255,.035);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.bt-fr-h{margin:0 0 10px;font-size:.85rem;color:#cfc9da}
+.bt-fr{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.bt-fr li{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:12px;background:rgba(255,255,255,.035)}
+.bt-fr .avatar{width:34px;height:34px;flex:none;border-radius:50%;display:grid;place-items:center;background:var(--gold-grad);color:#1c1305;font:900 .9rem var(--display)}
+.bt-fr .soc-who{flex:1;min-width:0;display:grid}.bt-fr .soc-acts{display:flex;gap:6px}.bt-fr .btn{padding:6px 12px;font-size:.8rem}
+.bt-fr .soc-on{font:500 .7rem var(--mono);color:#57e389}.bt-fr .soc-off{font:500 .7rem var(--mono);color:var(--muted)}
+.bt-inv{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));z-index:98;display:flex;align-items:center;gap:12px;width:min(520px,calc(100% - 24px));padding:14px 16px;border-radius:18px;
+  translate:-50% 30px;opacity:0;transition:translate .4s cubic-bezier(.2,.9,.2,1),opacity .3s;background:linear-gradient(120deg,#2a1446,#3a1d5c);box-shadow:0 0 0 1px rgba(231,177,74,.5),0 20px 60px rgba(0,0,0,.6)}
+.bt-inv.on{translate:-50% 0;opacity:1}
+.bt-inv-i{font-size:1.8rem;animation:btPulse 1s ease-in-out infinite}.bt-inv>div:nth-child(2){flex:1;display:grid}.bt-inv small{color:#cfc9da}
+.bt-inv-a{display:flex;gap:6px}.bt-inv-a .btn{padding:8px 12px;font-size:.85rem}
+@media (max-width:520px){.bt-inv{flex-wrap:wrap}.bt-inv-a{width:100%}.bt-inv-a .btn{flex:1}}
+.bt-wait{margin:auto;display:grid;justify-items:center;gap:10px;padding:24px;text-align:center}
+.bt-wait h2{margin:0;font:900 2rem var(--display)}.bt-wait p{margin:0;color:#d8d0e6;max-width:36ch}.bt-wait small{font:700 1.2rem var(--mono);color:#e7b14a}
+.bt-spin{width:70px;height:70px;border-radius:50%;border:4px solid rgba(255,255,255,.12);border-top-color:#e7b14a;animation:wrSpin 1s linear infinite}
+.bt-tag{margin-left:6px;padding:1px 8px;border-radius:99px;background:rgba(231,177,74,.18);color:#ffd88a;font:600 .62rem var(--mono);font-style:normal;letter-spacing:.1em;text-transform:uppercase}
+.bt-mode{position:absolute;top:calc(20px + env(safe-area-inset-top));left:0;right:0;margin:0;text-align:center;font:600 .78rem var(--mono);letter-spacing:.24em;text-transform:uppercase;color:#e7b14a}
+.bt-timer{display:grid;justify-items:center;gap:3px;width:min(260px,70vw)}
+.bt-timer i{display:block;width:100%;height:6px;border-radius:99px;background:rgba(255,255,255,.1);overflow:hidden}.bt-timer s{display:block;height:100%;background:linear-gradient(90deg,#57e389,#e7b14a);transition:width .25s linear}
+.bt-timer i.low s{background:#ff6b7a}.bt-timer small{font:700 .8rem var(--mono);color:#cfc9da}
+.bt-hold{margin:0;padding:10px 18px;border-radius:99px;background:rgba(255,255,255,.06);color:#e6dcf5;font-weight:600;animation:btPulse 1.4s ease-in-out infinite}
+.bt-friendly{margin:0;padding:8px 16px;border-radius:99px;background:rgba(255,255,255,.07);color:#e6dcf5}
