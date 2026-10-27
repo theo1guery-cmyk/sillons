@@ -599,7 +599,7 @@ function backEl(gl = false) {
 }
 
 /* ---------- views ---------- */
-const views = { shop: $("#view-shop"), store: $("#view-store"), binder: $("#view-binder"), catalog: $("#view-catalog"), trades: $("#view-trades"), defis: $("#view-defis"), market: $("#view-market"), albums: $("#view-albums"), duels: $("#view-duels"), admin: $("#view-admin"), pass: $("#view-pass"), grading: $("#view-grading"), ref: $("#view-ref"), witch: $("#view-witch"), noel: $("#view-noel"), players: $("#view-players"), battle: $("#view-battle") };
+const views = { shop: $("#view-shop"), store: $("#view-store"), binder: $("#view-binder"), catalog: $("#view-catalog"), trades: $("#view-trades"), defis: $("#view-defis"), market: $("#view-market"), albums: $("#view-albums"), duels: $("#view-duels"), admin: $("#view-admin"), pass: $("#view-pass"), grading: $("#view-grading"), ref: $("#view-ref"), witch: $("#view-witch"), noel: $("#view-noel"), players: $("#view-players"), battle: $("#view-battle"), ranks: $("#view-ranks") };
 function show(v) {
   for (const k in views) { views[k].hidden = k !== v; $("#tab-" + k).setAttribute("aria-selected", k === v); }
   if (!busy) unseatTable();   // leaving the tab puts the booster back
@@ -618,6 +618,7 @@ function show(v) {
   if (v === "noel") window.renderNoel?.();
   if (v === "players") Online.renderPlayers?.();
   if (v === "battle") Online.renderBattle?.();
+  if (v === "ranks") Online.renderRanks?.();
 }
 $("#tab-shop").onclick = () => show("shop");
 $("#tab-store").onclick = () => show("store");
@@ -635,6 +636,7 @@ $("#tab-ref").onclick = () => show("ref");
 $("#tab-witch").onclick = () => show("witch");
 $("#tab-noel").onclick = () => show("noel");
 $("#tab-battle").onclick = () => show("battle");
+$("#tab-ranks").onclick = () => show("ranks");
 $("#tab-players").onclick = () => { if (typeof SOC !== "undefined") { SOC.view = "list"; SOC.prof = null; } show("players"); };
 
 const owned = () => Object.values(S.c);

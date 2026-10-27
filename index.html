@@ -28,6 +28,7 @@
 <link rel="stylesheet" href="wrapped.css?v=1">
 <link rel="stylesheet" href="news.css?v=1">
 <link rel="stylesheet" href="battle.css?v=1">
+<link rel="stylesheet" href="ranks.css?v=1">
 <link rel="stylesheet" href="reset.css?v=1">
 </head>
 <body class="booting">
@@ -61,6 +62,7 @@
         <button role="tab" id="tab-shop" aria-selected="true"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l2 4v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7z"/><path d="M4 7h16"/><circle cx="12" cy="14" r="3.2"/><circle cx="12" cy="14" r=".6" fill="currentColor"/></svg><span class="lbl">Boosters</span></button>
         <button role="tab" id="tab-store" aria-selected="false"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span class="lbl">Boutique</span></button>
         <button role="tab" id="tab-battle" aria-selected="false" hidden><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="8" height="12" rx="1.5" transform="rotate(-12 7 12)"/><rect x="13" y="6" width="8" height="12" rx="1.5" transform="rotate(12 17 12)"/><path d="M12 3v3M10.5 4.5h3"/></svg><span class="lbl">Bataille</span></button>
+        <button role="tab" id="tab-ranks" aria-selected="false" hidden><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16"/><rect x="5" y="11" width="4" height="9" rx="1"/><rect x="10" y="6" width="4" height="14" rx="1"/><rect x="15" y="14" width="4" height="6" rx="1"/></svg><span class="lbl">Classements</span></button>
         <button role="tab" id="tab-duels" aria-selected="false" hidden><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20 14 10"/><path d="M14 4h6v6l-6 6-6-6z"/><path d="M4 14l6 6"/><path d="M2 22l3-3"/></svg><span class="lbl">Clashs</span><span class="badge" id="duelsBadge" hidden></span></button>
         <button role="tab" id="tab-pass" aria-selected="false" hidden><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4z"/><path d="m12 8 1.2 2.4 2.6.4-1.9 1.8.5 2.6-2.4-1.3-2.4 1.3.5-2.6-1.9-1.8 2.6-.4z"/></svg><span class="lbl">Pass</span><span class="badge" id="passBadge" hidden></span></button>
       <p class="nav-group">Collection</p>
@@ -239,6 +241,7 @@
   <section id="view-noel" class="nl" hidden></section>
   <section id="view-players" class="soc" hidden></section>
   <section id="view-battle" class="bt" hidden></section>
+  <section id="view-ranks" class="rk" hidden></section>
   <section id="view-ref" hidden>
     <h2>Parrainage</h2>
     <p class="sub">Invite tes amis avec ton lien : ils démarrent avec des cadeaux, et toi tu gagnes des récompenses à chaque ami qui joue vraiment, jusqu'au Pass VIP.</p>
@@ -336,6 +339,7 @@
 <script src="wrapped.js?v=2"></script>
 <script src="news.js?v=4"></script>
 <script src="battle.js?v=1"></script>
+<script src="ranks.js?v=1"></script>
 <script src="reset.js?v=2"></script>
 <script src="update.js?v=1"></script>
 <script src="pass.js?v=37"></script>
