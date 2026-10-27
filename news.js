@@ -2,7 +2,7 @@
 /* Zik Hunter — the big announcement of a release, shown once to each player after it (a full screen of what is new,
    and what comes next). The content is here; NEWS.KEY changes with each big release. */
 const NEWS = {
-  KEY: "zh-news-2026-11-social",
+  KEY: "zh-news-2026-11-social-2",
   kick: "Grosse mise à jour · Novembre 2026",
   title: "Zik Hunter devient social",
   sub: "Tes amis, ton profil, ton rang parmi tous les chasseurs. Et ce n'est que le début.",
