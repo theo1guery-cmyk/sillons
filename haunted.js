@@ -72,10 +72,12 @@ const Haunted = {
 };
 window.Haunted = Haunted;
 
+// the witch's board shows Halloween's two series only: the Cartes Givrées (series 3) belong to the Atelier (noel.js)
+const hxOnly = d => d && { ...d, editions: (d.editions || []).filter(e => (e.series || 1) <= 2) };
 /* the board at the witch's: the 13 sounds, the copies still to come, who holds which number; and the Pack Hanté */
 async function drawHaunted(box) {
   const gone = () => { box.remove(); if (W.sub === "hx") { W.sub = "quests"; wzSub(); } };
-  let d; try { d = await rpc("haunted_collection"); HXM.d = d; HXM.at = Date.now(); } catch (e) { gone(); return; }
+  let d; try { d = await rpc("haunted_collection"); HXM.d = d; HXM.at = Date.now(); d = hxOnly(d); } catch (e) { gone(); return; }
   if (!d?.editions?.length) { gone(); return; }
   if (d.paused) {
     box.innerHTML = `<h3 id="hxT">Collection Hantée${typeof ADM !== "undefined" && ADM.admin ? ` <button class="ps-link wz-replay" id="hxDemo">🎬 Tester l'apparition (admin)</button>` : ""}</h3><p class="sub">🛠️ La Collection Hantée est en maintenance le temps d'embellir ses cartes. Elle revient très vite, et les cartes déjà trouvées restent à leurs propriétaires.</p>`;
@@ -162,7 +164,7 @@ function hauntedIntroMaybe() {
 setInterval(hauntedIntroMaybe, 4500);
 async function hauntedIntro() {
   HXI.shown = true;
-  let d = null; try { d = await rpc("haunted_collection"); } catch (e) {}
+  let d = null; try { d = hxOnly(await rpc("haunted_collection")); } catch (e) {}
   if (!d?.editions?.length || d.paused) { HXI.shown = false; return; }
   try { localStorage.setItem(HXI.KEY, "1"); } catch (e) {}
   const ed = s => d.editions.find(e => e.slot === s) || d.editions[0];
@@ -330,7 +332,7 @@ const HX_DEMO = { g: -1, n: "Pack Hanté", haunted: true, demo: true };
 Haunted.simulate = () => { if (typeof busy !== "undefined" && busy) return; startOpening(HX_DEMO); };
 Haunted.demoPulls = async () => {
   let d = null; try { d = await rpc("haunted_collection"); } catch (e) {}
-  const eds = (d?.editions || []).filter(e => e.cover);
+  const eds = (hxOnly(d)?.editions || []).filter(e => e.cover);
   const mine = Object.values(S.c).filter(c => !isArtist(c) && c.tier >= 2 && c.tier <= 3);   // Rare and Épique: no hit film before the haunted one
   const pick = [...(mine.length >= 5 ? mine : Object.values(S.c))].sort(() => Math.random() - .5).slice(0, 5);
   const pulls = pick.map(c => ({ c, holo: false, isNew: false })).sort((a, b) => a.c.tier - b.c.tier);
