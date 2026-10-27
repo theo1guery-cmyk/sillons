@@ -130,7 +130,7 @@ async function wrShare(lines, kind) {
 function wrappedBanner() {
   const shop = $("#view-shop"); if (!shop || !me || !Online.active || !wrOpen()) { $("#wrBanner")?.remove(); return; }
   if (!$("#wrBanner")) {
-    shop.insertAdjacentHTML("afterbegin", `<button class="wr-banner" id="wrBanner"><span class="wr-bd" aria-hidden="true"></span><span><b>Ton Wrapped 2026 est prêt</b><small>Ton année sur Zik Hunter en quelques écrans</small></span><em>Voir ▶</em></button>`);
+    shop.insertAdjacentHTML("afterbegin", `<button class="wr-banner" id="wrBanner"><span class="wr-bd" aria-hidden="true"></span><span><b>Ton Wrapped 2026 est prêt</b><small>${Date.now() < WR.OPEN ? "Aperçu admin : les joueurs le verront le 1er décembre" : "Ton année sur Zik Hunter en quelques écrans"}</small></span><em>Voir ▶</em></button>`);
     $("#wrBanner").onclick = () => wrappedOpen();
   }
   let seen = true; try { seen = !!localStorage.getItem(WR.KEY); } catch (e) {}
