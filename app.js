@@ -599,7 +599,7 @@ function backEl(gl = false) {
 }
 
 /* ---------- views ---------- */
-const views = { shop: $("#view-shop"), store: $("#view-store"), binder: $("#view-binder"), catalog: $("#view-catalog"), trades: $("#view-trades"), defis: $("#view-defis"), market: $("#view-market"), albums: $("#view-albums"), duels: $("#view-duels"), admin: $("#view-admin"), pass: $("#view-pass"), grading: $("#view-grading"), ref: $("#view-ref"), witch: $("#view-witch"), noel: $("#view-noel") };
+const views = { shop: $("#view-shop"), store: $("#view-store"), binder: $("#view-binder"), catalog: $("#view-catalog"), trades: $("#view-trades"), defis: $("#view-defis"), market: $("#view-market"), albums: $("#view-albums"), duels: $("#view-duels"), admin: $("#view-admin"), pass: $("#view-pass"), grading: $("#view-grading"), ref: $("#view-ref"), witch: $("#view-witch"), noel: $("#view-noel"), players: $("#view-players") };
 function show(v) {
   for (const k in views) { views[k].hidden = k !== v; $("#tab-" + k).setAttribute("aria-selected", k === v); }
   if (!busy) unseatTable();   // leaving the tab puts the booster back
@@ -616,6 +616,7 @@ function show(v) {
   if (v === "ref") Online.renderReferral?.();
   if (v === "witch") Online.renderWitch?.();
   if (v === "noel") window.renderNoel?.();
+  if (v === "players") Online.renderPlayers?.();
 }
 $("#tab-shop").onclick = () => show("shop");
 $("#tab-store").onclick = () => show("store");
@@ -632,6 +633,7 @@ $("#tab-pass").onclick = () => show("pass");
 $("#tab-ref").onclick = () => show("ref");
 $("#tab-witch").onclick = () => show("witch");
 $("#tab-noel").onclick = () => show("noel");
+$("#tab-players").onclick = () => { if (typeof SOC !== "undefined") { SOC.view = "list"; SOC.prof = null; } show("players"); };
 
 const owned = () => Object.values(S.c);
 const ck = c => c.id + "#" + c.tier + (c.ed ? "#e" + c.eno : "");   // key of a card: a track in one rarity; each copy of a limited edition apart
