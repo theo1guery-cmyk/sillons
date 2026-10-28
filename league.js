@@ -4,11 +4,12 @@
 const LG_INFO = {
   Bronze: { prize: "500 Streams", ico: "🥉", line: "Le début de l'aventure : chaque victoire te rapproche de l'Argent." },
   Argent: { prize: "3 boosters", ico: "🥈", line: "Tu as fait tes preuves. Les vrais combats commencent." },
-  Or: { prize: "1 Grand booster", ico: "🥇", line: "Le cœur de la compétition. Au-dessus de 900 🏆, la fin de saison te fera redescendre à mi-chemin." },
+  Or: { prize: "1 Grand booster", ico: "🥇", line: "Le cœur de la compétition. À partir d'ici, chaque défaite fait plus mal." },
   Platine: { prize: "1 carte Mythique", ico: "💠", line: "Les decks deviennent sérieux. Chaque manche compte." },
-  Diamant: { prize: "1 carte Légendaire", ico: "💎", line: "L'élite. Seuls les meilleurs decks tiennent ici." },
-  "Légende": { prize: "1 Légendaire Shiny + le titre « Légende »", ico: "👑", line: "Le sommet. Ton nom brille en haut du classement." },
+  Diamant: { prize: "1 carte Légendaire", ico: "💎", line: "L'élite. Les victoires rapportent peu, les défaites coûtent cher." },
+  "Légende": { prize: "1 Légendaire Shiny + le titre « Légende »", ico: "👑", line: "Le sommet, et il faut le tenir : une défaite coûte presque 3 victoires." },
 };
+const LG_STAKE = { Bronze: [36, 10, 5, 12], Argent: [30, 16, 8, 10], Or: [27, 20, 10, 9], Platine: [24, 25, 13, 8], Diamant: [20, 30, 15, 7], "Légende": [15, 40, 20, 5] };
 const lgOf = n => LEAGUES.slice().reverse().find(l => n >= l[1]) || LEAGUES[0];
 const lgKey = () => "zh-league-" + (me?.id || "");
 // the league I was in the last time I looked (to tell me if it changed while I was away: a defense lost or won)
@@ -36,14 +37,15 @@ async function renderLeagues(box) {
       return `<li class="${mine ? "me" : above ? "up" : "done"}" style="--lc:${l[2]}">
         <div class="lg-e">${btEmblem(l[0], 54)}</div>
         <div class="lg-t"><b>${l[0]}</b><small>${i ? `à partir de ${fmt(l[1])} 🏆` : "dès le premier combat"}</small><p>${LG_INFO[l[0]].line}</p></div>
-        <div class="lg-p"><small>Fin de saison</small><b>${LG_INFO[l[0]].ico} ${LG_INFO[l[0]].prize}</b></div>
+        <div class="lg-p"><small>Fin de saison</small><b>${LG_INFO[l[0]].ico} ${LG_INFO[l[0]].prize}</b>
+          <span class="lg-stake" title="À niveau égal : victoire / défaite"><em class="w">+${LG_STAKE[l[0]][0]}</em><em class="l">−${LG_STAKE[l[0]][1]}</em></span></div>
         ${mine ? `<span class="lg-here">Tu es ici</span>` : ""}</li>`; }).join("")}</ol>
     <section class="lg-rules"><h3>Comment ça marche</h3><ul>
-      <li><b>Une victoire</b> en Bataille classée rapporte environ <b>+30 🏆</b>, plus si l'adversaire est mieux classé que toi (jusqu'à +45).</li>
-      <li><b>Une défaite</b> coûte environ <b>−20 🏆</b>, moins si l'adversaire était plus fort.</li>
-      <li><b>Ton deck défend</b> quand on t'attaque : tu gagnes ou perds quelques trophées même sans jouer. Soigne-le !</li>
+      <li><b>Plus tu montes, plus c'est dur.</b> À niveau égal, une victoire rapporte <b>+36 🏆 en Bronze</b> mais seulement <b>+15 en Légende</b>, et une défaite coûte <b>−10 en Bronze</b> mais <b>−40 en Légende</b>. Les chiffres de chaque ligue sont juste au-dessus.</li>
+      <li><b>Battre plus fort que soi</b> rapporte plus, et perdre contre plus fort coûte moins.</li>
+      <li><b>Ton deck défend</b> quand on t'attaque, avec la même règle : une défense perdue coûte jusqu'à −20 🏆 en Légende, une défense gagnée ne rapporte que +5. Soigne ton deck !</li>
       <li><b>Les matchs entre amis</b> (amicale ou en direct) ne changent pas tes trophées.</li>
-      <li><b>À la fin de chaque saison</b> (avec le Pass), chacun reçoit le cadeau de sa ligue, puis les trophées au-dessus de 900 redescendent à mi-chemin : 2 000 🏆 deviennent 1 450.</li>
+      <li><b>À la fin de chaque saison</b> (avec le Pass), chacun reçoit le cadeau de sa ligue, puis <b>les trophées sont divisés par deux</b> (jamais sous 400 pour ceux qui étaient au-dessus) : une Légende à 3 400 🏆 repart en Platine à 1 700, un joueur Or à 1 000 repart en Argent. Chaque saison, il faut tout regagner.</li>
     </ul></section>
     ${top.length ? `<section><h3>L'élite en ce moment</h3><ol class="bt-board">${top.map((p, i) => `<li class="${p.me ? "me" : ""}"><span class="rk">${i + 1}</span>${btEmblem(p.league, 22)}<button class="ps-link" data-p="${p.id}">${esc(p.pseudo)}</button><b>${fmt(p.trophies)} 🏆</b></li>`).join("")}</ol></section>` : ""}
     <p class="lg-replay"><button class="ps-link" id="lgFilm">▶ Revoir l'animation de ma ligue</button></p>`;

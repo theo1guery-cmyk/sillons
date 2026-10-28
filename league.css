@@ -72,3 +72,4 @@
 .lgf-crown{position:absolute;left:50%;top:14%;translate:-50% 0;font-size:clamp(3rem,12vw,5.5rem);opacity:0;filter:drop-shadow(0 0 24px #ffd36b);animation:lgCrown .9s cubic-bezier(.2,1.5,.4,1) 2.2s forwards}
 @keyframes lgCrown{from{opacity:0;transform:translateY(-40vh) rotate(-30deg)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.lgf *{animation-duration:.01s!important;animation-delay:0s!important}.lgf-old{display:none}}
+.lg-stake{display:flex;gap:6px;margin-top:4px;font:800 .78rem var(--mono)}.lg-stake em{font-style:normal;padding:1px 7px;border-radius:99px}.lg-stake .w{background:rgba(87,227,137,.15);color:#57e389}.lg-stake .l{background:rgba(255,107,122,.15);color:#ff6b7a}
