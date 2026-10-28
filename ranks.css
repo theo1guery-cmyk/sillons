@@ -29,3 +29,22 @@
 .rk-list small{color:var(--muted);font-size:.75rem}.rk-list b{margin-left:auto;white-space:nowrap}.rk-list b em{font-style:normal;font-weight:500;color:var(--muted);font-size:.75rem}
 .rk-last{margin-top:22px}.rk-last ol{list-style:none;margin:0;padding:0;display:grid;gap:6px}
 .rk-last li{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:12px;background:rgba(255,255,255,.035)}.rk-last li small{margin-left:auto;color:var(--muted);font-size:.78rem}
+
+/* the trophies: the main leaderboard */
+.rk-tabs button.rk-star{font-weight:800}
+.rk-tabs button.rk-star[aria-selected="false"]{border-color:rgba(255,95,158,.5);background:rgba(255,95,158,.1)}
+.rk-hero.rk-tr{grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:20px;padding:24px;position:relative;overflow:hidden;
+  background:radial-gradient(70% 140% at 0 50%,color-mix(in srgb,var(--lc) 30%,transparent),transparent 65%),linear-gradient(140deg,rgba(255,95,158,.14),rgba(255,255,255,.02));
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--lc) 45%,transparent)}
+.rk-tr::before{content:"";position:absolute;left:-60px;top:50%;width:300px;aspect-ratio:1;translate:0 -50%;pointer-events:none;opacity:.5;
+  background:repeating-conic-gradient(from 0deg,color-mix(in srgb,var(--lc) 40%,transparent) 0 4deg,transparent 4deg 14deg);-webkit-mask:radial-gradient(closest-side,#000 20%,transparent);mask:radial-gradient(closest-side,#000 20%,transparent);animation:rkSpin 40s linear infinite}
+@keyframes rkSpin{to{rotate:360deg}}
+.rk-tr-e{position:relative;animation:rkFloat 3.5s ease-in-out infinite}@keyframes rkFloat{50%{transform:translateY(-6px)}}
+.rk-tr-t{position:relative;display:grid;gap:6px}.rk-tr h2{background:linear-gradient(180deg,#fff 30%,var(--lc));-webkit-background-clip:text;background-clip:text;color:transparent}
+.rk-tr-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}.rk-tr-acts .btn{margin:0}
+.rk-tr .rk-mine{position:relative;flex-direction:column;align-items:center;gap:0;margin:0;padding:12px 18px;border-radius:16px;background:rgba(0,0,0,.25)}.rk-tr .rk-mine b{font-size:2.4rem;color:var(--lc)}
+.rk-pe{position:absolute;top:-6px;right:-4px}.rk-p{position:relative}
+.rk-lg{display:inline-flex;align-items:center;gap:4px;color:var(--lc)!important;font-weight:700}
+@media (max-width:640px){.rk-hero.rk-tr{grid-template-columns:minmax(0,1fr);justify-items:center;text-align:center;gap:10px;padding:20px 16px}.rk-tr::before{left:50%;top:70px;translate:-50% -50%}
+  .rk-tr-acts{justify-content:center}.rk-tr .rk-mine{flex-direction:row;align-items:baseline;gap:10px;padding:8px 18px}.rk-tr .rk-mine b{font-size:1.8rem}.rk-tr-e .bt-emb{width:76px;height:88px}}
+@media (prefers-reduced-motion:reduce){.rk-tr::before,.rk-tr-e{animation:none}}
