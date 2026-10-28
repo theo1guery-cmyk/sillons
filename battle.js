@@ -72,6 +72,7 @@ async function renderBattle() {
   $("#btFight").onclick = () => battleStart();
   $("#btFriendsB").onclick = () => btFriends();
   $("#btLeagues").onclick = () => { BT.sub = "leagues"; renderBattle(); };
+  window.b2Panel?.(box);                           // the Bataille 2.0 in simulation (admins only)
   $("#btEdit").onclick = () => btPick();
   const he = $("#btHeadEdit"); if (he) he.onclick = () => btPick();
   box.querySelectorAll("[data-p]").forEach(b => b.onclick = () => b.dataset.p && window.openProfile?.(b.dataset.p));
