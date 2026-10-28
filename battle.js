@@ -38,11 +38,13 @@ async function renderBattle() {
         <p class="bt-tr"><b>${fmt(h.trophies)}</b> 🏆 · ${h.rank}<sup>${h.rank === 1 ? "er" : "e"}</sup> au classement</p>
         <div class="bt-prog" aria-label="Progression vers la ligue suivante"><s style="width:${pct}%"></s></div>
         <small>${next ? `${fmt(next[1] - h.trophies)} 🏆 avant ${next[0]}` : "Tu es au sommet !"} · record ${fmt(h.best)} 🏆</small>
-        <button class="ps-link bt-lglink" id="btLeagues">🛡️ Les ligues et leurs récompenses →</button></div></div>
+</div></div>
       <div class="bt-go"><button class="btn primary bt-fight" id="btFight">⚔️ Combattre</button><button class="btn" id="btFriendsB">👥 Défier un ami</button>
         <small>${h.wins} victoire${h.wins > 1 ? "s" : ""} · ${h.losses} défaite${h.losses > 1 ? "s" : ""}</small>
         <small class="bt-day">Victoires du jour : <b>${Math.min(h.today, 5)} / 5</b> · +100 Streams chacune</small></div>
     </section>
+    <button class="bt-lgcta" id="btLeagues" style="--lc:${L[2]}"><span class="bt-lgcta-e">${btEmblem(h.league, 40)}</span>
+      <span><b>Les ligues et leurs récompenses</b><small>Ta place, les 6 ligues, le cadeau de fin de saison${next ? ` · ${fmt(next[1] - h.trophies)} 🏆 avant ${next[0]}` : ""}</small></span><em>Voir →</em></button>
     <div class="bt-fbox" id="btFriends" hidden></div>
     <details class="bt-rules"><summary>Comment ça marche ?</summary>
       <p>Ton deck de 5 cartes affronte celui d'un joueur de ton niveau. À chaque manche, une stat est tirée au sort : <b>Tempo</b> (la 1re barre de la carte : Flow, Éclat, Riff…), <b>Endurance</b> (la durée), <b>Hype</b> (la popularité) ou <b>Puissance</b> (la moyenne). Tu choisis quelle carte jouer sans voir la sienne : la plus forte dans cette stat gagne la manche. La rareté, la note et le Shiny donnent un petit bonus. <b>3 manches gagnées et c'est la victoire.</b> Chaque carte ne sert qu'une fois : garde tes meilleures pour le bon moment !</p>
