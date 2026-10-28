@@ -2,12 +2,12 @@
 /* Zik Hunter — the leagues of the Bataille de cartes: their page (the ladder, the thresholds, the presents of the end of
    the season, the rules) and the film when a player goes up or down a league, its own for each league. */
 const LG_INFO = {
-  Bronze: { prize: "500 Streams", ico: "🥉", line: "Le début de l'aventure : chaque victoire te rapproche de l'Argent." },
-  Argent: { prize: "3 boosters", ico: "🥈", line: "Tu as fait tes preuves. Les vrais combats commencent." },
-  Or: { prize: "1 Grand booster", ico: "🥇", line: "Le cœur de la compétition. À partir d'ici, chaque défaite fait plus mal." },
-  Platine: { prize: "1 carte Mythique", ico: "💠", line: "Les decks deviennent sérieux. Chaque manche compte." },
-  Diamant: { prize: "1 carte Légendaire", ico: "💎", line: "L'élite. Les victoires rapportent peu, les défaites coûtent cher." },
-  "Légende": { prize: "1 Légendaire Shiny + le titre « Légende »", ico: "👑", line: "Le sommet, et il faut le tenir : une défaite coûte presque 3 victoires." },
+  Bronze: { prize: "3 boosters", ico: "🥉", line: "Le début de l'aventure : chaque victoire te rapproche de l'Argent." },
+  Argent: { prize: "5 boosters", ico: "🥈", line: "Tu as fait tes preuves. Les vrais combats commencent." },
+  Or: { prize: "1 Grand booster + 1 Mythique", ico: "🥇", line: "Le cœur de la compétition. À partir d'ici, chaque défaite fait plus mal." },
+  Platine: { prize: "2 Grands boosters + 1 Mythique", ico: "💠", line: "Les decks deviennent sérieux. Chaque manche compte." },
+  Diamant: { prize: "1 Légendaire + 1 Grand booster + 15 Vinyles", ico: "💎", line: "L'élite. Les victoires rapportent peu, les défaites coûtent cher." },
+  "Légende": { prize: "1 Légendaire Shiny + 1 Légendaire + 2 Grands boosters + 30 Vinyles + le Médaillon et le Dos de carte Légende + le titre", ico: "👑", line: "Le sommet, et il faut le tenir : une défaite coûte presque 3 victoires." },
 };
 const LG_STAKE = { Bronze: [36, 10, 5, 12], Argent: [30, 16, 8, 10], Or: [27, 20, 10, 9], Platine: [24, 25, 13, 8], Diamant: [20, 30, 15, 7], "Légende": [15, 40, 20, 5] };
 const lgOf = n => LEAGUES.slice().reverse().find(l => n >= l[1]) || LEAGUES[0];

@@ -499,3 +499,12 @@
 .ps-winter .ps-cell.prem{background:linear-gradient(170deg,#12284a,#080f1e 70%);border-color:rgba(160,215,255,.3)}
 .ps-winter .ps-cell.prem.star{background:radial-gradient(90% 70% at 50% 35%,var(--sc),transparent 70%),linear-gradient(170deg,#12284a,#080f1e 70%)}
 .ps-winter .ps-upsell{border-color:rgba(160,215,255,.55);background:linear-gradient(110deg,rgba(140,210,255,.14),rgba(140,210,255,.03))}
+/* the Médaillon Légende (end of a season in the Légende league): rose and gold turning around, a crown on top */
+.avatar.av-avatar-legende{position:relative;overflow:visible;background:radial-gradient(circle at 50% 35%,#5a1030,#1a0410 72%);box-shadow:0 0 0 2px #ffd36b,0 0 14px rgba(255,95,158,.7)}
+.avatar.av-avatar-legende span{position:relative;z-index:1;background:linear-gradient(180deg,#fff4dc,#ffd36b 50%,#ff8ab4);-webkit-background-clip:text;background-clip:text;color:transparent}
+.avatar.av-avatar-legende:before{content:"";position:absolute;inset:-4px;border-radius:50%;background:conic-gradient(from 0deg,#ff5f9e,#ffd36b,#ff5f9e,#ffd36b,#ff5f9e);
+  -webkit-mask:radial-gradient(closest-side,transparent 80%,#000 82%);mask:radial-gradient(closest-side,transparent 80%,#000 82%);animation:avLeg 4s linear infinite}
+@keyframes avLeg{to{transform:rotate(360deg)}}
+.avatar.av-avatar-legende:after{content:"👑";position:absolute;left:50%;top:-14px;translate:-50% 0;font-size:.8em;filter:drop-shadow(0 0 4px #ffd36b)}
+.avatar.av-avatar-legende i{display:none}
+@media (prefers-reduced-motion:reduce){.avatar.av-avatar-legende:before{animation:none}}

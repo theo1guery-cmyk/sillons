@@ -303,7 +303,7 @@ function packXp(p, god) {
 
 // every item a season gave (the same as cosmetic_items on the server): item, slot, name
 const COS_ITEMS = [["avatar-tour", "avatar", "Médaillon Tournée"], ["pack-tour", "pack", "Sachet Tournée"], ["back-tour", "back", "Dos de carte Tournée"], ["name-gold", "name", "Pseudo gravé à l'or"],
-  ["avatar-givre", "avatar", "Médaillon Givré"], ["pack-winter", "pack", "Sachet Blizzard"], ["back-winter", "back", "Dos de carte Aurore"], ["name-ice", "name", "Pseudo de glace"]];
+  ["avatar-givre", "avatar", "Médaillon Givré"], ["avatar-legende", "avatar", "Médaillon Légende"], ["back-legende", "back", "Dos de carte Légende"], ["pack-winter", "pack", "Sachet Blizzard"], ["back-winter", "back", "Dos de carte Aurore"], ["name-ice", "name", "Pseudo de glace"]];
 // "Tes objets de saison": the items received, worn or not
 async function renderCosmetics(d) {
   document.getElementById("psCos")?.remove();

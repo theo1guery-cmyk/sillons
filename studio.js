@@ -150,7 +150,7 @@ function dancePeaks(t) {
 /* ---------- materials, loaded on demand ---------- */
 const BACK = { "back-vinyl": { edge: 0xc9a04a }, "back-eq": { edge: 0xe7b14a, peaks: true }, "back-mono": { edge: 0x6b4423 }, "back-holo": { edge: 0xc8c8dc, env: 1.6, relief: 1, prism: true },   // the holo needs its full diffraction relief
   "back-spectre": { edge: 0x1a1426, glow: 1.6, coat: .8 },
-  "back-tour": { edge: 0xd9a84a }, "back-winter": { edge: 0xcfe8ff, env: 1.3 } };                                     // the season's back (Pass Tournée)          // Spectre: neon with its own light, which pulses
+  "back-tour": { edge: 0xd9a84a }, "back-winter": { edge: 0xcfe8ff, env: 1.3 }, "back-legende": { edge: 0xffb3cf, env: 1.4 } };                                     // the season's back (Pass Tournée)          // Spectre: neon with its own light, which pulses
 const mats = new Map();
 function material(name) {
   if (mats.has(name)) return mats.get(name);
