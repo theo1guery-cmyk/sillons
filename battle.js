@@ -30,7 +30,8 @@ async function renderBattle() {
   try { [h, board] = await Promise.all([rpc("battle_home"), rpc("battle_leaderboard")]); } catch (e) { return toast(message(e)); }
   BT.home = h;
   if (BT.sub === "leagues") return renderLeagues(box);
-  if (!BT.el) leagueCheck(h.trophies);             // a league won or lost while away (my deck defends)
+  if (!BT.el) leagueCheck(h.trophies).then(() => { if (h.defenses > 0 && !BT.el) btDefenses(); });   // a league won or lost while away (my deck defends), then how
+
   const L = btLeague(h.league), k = LEAGUES.indexOf(L), next = LEAGUES[k + 1];
   const pct = next ? Math.round((h.trophies - L[1]) / (next[1] - L[1]) * 100) : 100;
   box.innerHTML = `<section class="bt-hero" style="--lc:${L[2]}">
@@ -49,13 +50,13 @@ async function renderBattle() {
     <details class="bt-rules"><summary>Comment ça marche ?</summary>
       <p>Ton deck de 5 cartes affronte celui d'un joueur de ton niveau. À chaque manche, une stat est tirée au sort : <b>Tempo</b> (la 1re barre de la carte : Flow, Éclat, Riff…), <b>Endurance</b> (la durée), <b>Hype</b> (la popularité) ou <b>Puissance</b> (la moyenne). Tu choisis quelle carte jouer sans voir la sienne : la plus forte dans cette stat gagne la manche. La rareté, la note et le Shiny donnent un petit bonus. <b>3 manches gagnées et c'est la victoire.</b> Chaque carte ne sert qu'une fois : garde tes meilleures pour le bon moment !</p>
       <p>Tu peux aussi <b>défier un ami</b> : en amicale contre son deck, ou <b>en direct</b> s'il est en ligne (chacun choisit sa carte à chaque manche, 25 secondes pour jouer). Les matchs entre amis ne donnent pas de trophées.</p>
-      <p>Les trophées font ta ligue : Bronze, Argent (400), Or (900), Platine (1 500), Diamant (2 300), Légende (3 200). Ton deck défend aussi quand on t'attaque.</p></details>
+      <p>Les trophées font ta ligue : Bronze, Argent (400), Or (900), Platine (1 500), Diamant (2 300), Légende (3 200). Ton deck défend aussi quand on t'attaque : à ton retour, le <b>journal de défense</b> te dit qui t'a attaqué, et tu as 24 h pour prendre ta <b>revanche</b> sur ceux qui ont gagné.</p></details>
     <section class="bt-deck"><h3>Mon deck${h.chosen ? "" : " <small>(automatique : tes 5 cartes les plus fortes)</small>"} <button class="ps-link" id="btEdit">✎ Modifier</button></h3>
       <div class="bt-row" id="btDeck"></div><div id="btPick"></div></section>
     <div class="bt-cols">
       <section><h3>Mes dernières batailles</h3>${h.history.length ? `<ul class="bt-hist">${h.history.map(x => `<li class="${x.won ? "w" : "l"}">
         <span class="bt-res">${x.won ? "Victoire" : "Défaite"}</span><span>${x.mode === "live" ? "en direct contre" : x.mode === "friend" ? (x.attack ? "amicale contre" : "amicale, défense contre") : x.attack ? "contre" : "défense contre"} <button class="ps-link" data-p="${x.other_id || ""}">${esc(x.other || "?")}</button> · ${x.score}</span>
-        <b>${x.delta > 0 ? "+" : ""}${x.delta ?? 0} 🏆</b></li>`).join("")}</ul>` : `<p class="empty-line">Aucune bataille pour l'instant. Lance ta première !</p>`}</section>
+        <b>${x.delta > 0 ? "+" : ""}${x.delta ?? 0} 🏆</b>${x.revenge ? `<button class="btn bt-rvb" data-rv="${x.id}">⚔️ Revanche</button>` : ""}</li>`).join("")}</ul>` : `<p class="empty-line">Aucune bataille pour l'instant. Lance ta première !</p>`}</section>
       <section><h3>Classement des batailles</h3><ol class="bt-board">${board.map((p, i) => `<li class="${p.me ? "me" : ""}"><span class="rk">${i + 1}</span>${btEmblem(p.league, 22)}
         <button class="ps-link" data-p="${p.id}">${esc(p.pseudo)}</button><b>${fmt(p.trophies)} 🏆</b></li>`).join("") || `<p class="empty-line">Le classement attend ses premiers combattants.</p>`}</ol></section>
     </div>`;
@@ -66,6 +67,7 @@ async function renderBattle() {
   $("#btLeagues").onclick = () => { BT.sub = "leagues"; renderBattle(); };
   $("#btEdit").onclick = () => btPick();
   box.querySelectorAll("[data-p]").forEach(b => b.onclick = () => b.dataset.p && window.openProfile?.(b.dataset.p));
+  box.querySelectorAll("[data-rv]").forEach(b => b.onclick = () => battleRevenge(b.dataset.rv));
 }
 
 // my deck: 5 different tracks, the strongest shown first with their stats
@@ -112,9 +114,58 @@ function btOpen() {
 async function battleStart(friend) {
   if (BT.busy) return; BT.busy = true;
   try { BT.b = await rpc("battle_start", { p_friend: friend || null }); } catch (e) { BT.busy = false; return toast(message(e)); }
-  BT.busy = false; BT.again = friend ? { friend } : {};
+  BT.busy = false; BT.again = friend ? { friend } : {}; BT.revenge = false;
   btOpen(); btIntro();
 }
+// the revenge: a ranked battle against the one who beat my deck while I was away (once, within 24 hours)
+async function battleRevenge(id) {
+  if (BT.busy) return; BT.busy = true;
+  try { BT.b = await rpc("battle_revenge", { p_battle: id }); } catch (e) { BT.busy = false; return toast(message(e)); }
+  BT.busy = false; BT.again = {}; BT.revenge = true;
+  btOpen(); btIntro();
+}
+// the defense log: while I was away my deck was attacked, here is how it went (shown once, then marked seen)
+async function btDefenses() {
+  if (BT.defShown || document.getElementById("btDef")) return; BT.defShown = true;
+  let d; try { d = await rpc("battle_defenses"); } catch (e) { BT.defShown = false; return; }
+  if (!d.total) return;
+  rpc("battle_defenses_seen").catch(() => {});
+  if (BT.home) BT.home.defenses = 0;
+  const n = d.total, held = d.held, lost = d.lost, net = d.delta;
+  const el = document.createElement("div"); el.id = "btDef"; el.className = "bt-def"; el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); el.setAttribute("aria-labelledby", "btDefT");
+  const line = held && lost ? `${held} défense${held > 1 ? "s" : ""} tenue${held > 1 ? "s" : ""}, ${lost} perdue${lost > 1 ? "s" : ""}` : lost ? `${lost > 1 ? "toutes perdues" : "perdue"}` : `${held > 1 ? "toutes tenues" : "tenue"}`;
+  el.innerHTML = `<div class="bt-def-in ${lost > held ? "l" : "w"}">
+      <button class="news-x" type="button" aria-label="Fermer">×</button>
+      <div class="bt-def-sh" aria-hidden="true">🛡️</div>
+      <p class="bt-k">Journal de défense</p>
+      <h2 id="btDefT">Pendant ton absence, ton deck a été attaqué ${n === 1 ? "une fois" : `${n} fois`}</h2>
+      <p class="bt-def-sum">${n === 1 ? "Défense" : "Défenses"} : <b>${line}</b> · <b class="${net >= 0 ? "w" : "l"}">${net > 0 ? "+" : ""}${net} 🏆</b></p>
+      <ul class="bt-def-list">${d.list.map(x => `<li class="${x.held ? "w" : "l"}" style="--d:${.25 + d.list.indexOf(x) * .08}s">
+        <span class="bt-res">${x.held ? "Tenue" : "Perdue"}</span>
+        <span class="bt-def-who">${btEmblem(x.league, 20)}<button class="ps-link" data-p="${x.who_id}">${esc(x.who)}</button><small>${x.score} · ${btAgo(x.at)}</small></span>
+        <b>${x.delta > 0 ? "+" : ""}${x.delta ?? 0} 🏆</b>
+        ${x.revenge ? `<button class="btn primary bt-rvb" data-rv="${x.id}">⚔️ Revanche</button>` : `<span class="bt-rvx"></span>`}</li>`).join("")}</ul>
+      ${lost ? `<p class="bt-def-tip">Une revanche, c'est une bataille classée contre ce joueur, avec les trophées en jeu. Une seule par défaite, pendant 24 h. Si tu gagnes, il le saura.</p>` : `<p class="bt-def-tip">Ton deck tient bon. Continue comme ça !</p>`}
+      <div class="bt-acts"><button class="btn" type="button" data-x>${lost ? "Plus tard" : "Super"}</button></div></div>`;
+  document.body.appendChild(el); document.body.classList.add("fx-on");
+  requestAnimationFrame(() => el.classList.add("on"));
+  const close = then => { el.classList.remove("on"); document.body.classList.remove("fx-on"); setTimeout(() => { el.remove(); then?.(); }, 300); };
+  el.querySelector(".news-x").onclick = () => close(); el.querySelector("[data-x]").onclick = () => close();
+  el.addEventListener("keydown", e => { if (e.key === "Escape") close(); });
+  el.addEventListener("click", e => { if (e.target === el) close(); });
+  el.querySelectorAll("[data-p]").forEach(b => b.onclick = () => close(() => window.openProfile?.(b.dataset.p)));
+  el.querySelectorAll("[data-rv]").forEach(b => b.onclick = () => close(() => { if (views.battle.hidden) show("battle"); battleRevenge(b.dataset.rv); }));
+  setTimeout(() => (el.querySelector("[data-rv]") || el.querySelector("[data-x]")).focus({ preventScroll: true }), 100);
+}
+const btAgo = t => { const m = Math.max(1, Math.round((Date.now() - Date.parse(t)) / 6e4)); return m < 60 ? `il y a ${m} min` : m < 1440 ? `il y a ${Math.round(m / 60)} h` : `il y a ${Math.round(m / 1440)} j`; };
+// when I come back to the game (anywhere, once it is open and nothing else is on screen)
+const btDefTimer = setInterval(() => {
+  if (!BT.ready || !me || !Online.active || BT.defShown) return;
+  if (document.body.classList.contains("fx-on") || document.body.classList.contains("landing-on") || document.querySelector(".op:not([hidden]), #updCard, .wr, #maintScreen, #newsCard")) return;
+  if (typeof NEWS !== "undefined") { try { if (!localStorage.getItem(NEWS.KEY)) return; } catch (e) {} }     // the announcement first
+  clearInterval(btDefTimer);
+  rpc("battle_home").then(h => { if (h.defenses > 0) btDefenses(); }).catch(() => {});
+}, 4000);
 // live: I invite a friend and wait (2 minutes at most) for him to accept
 async function battleInvite(friend, pseudo) {
   if (BT.busy) return; BT.busy = true;
@@ -158,7 +209,7 @@ setInterval(btInvites, 6000);
 
 function btIntro() {
   const b = BT.b, el = BT.el;
-  el.innerHTML = `<div class="bt-vs"><p class="bt-mode">${BT_MODE[b.mode]}</p><div class="bt-side bt-me">${btEmblem(b.me.league, 70)}<b>${esc(b.me.pseudo)}</b><small>${fmt(b.me.trophies)} 🏆</small></div>
+  el.innerHTML = `<div class="bt-vs"><p class="bt-mode">${b.revenge || BT.revenge ? "⚔️ Revanche" : BT_MODE[b.mode]}</p><div class="bt-side bt-me">${btEmblem(b.me.league, 70)}<b>${esc(b.me.pseudo)}</b><small>${fmt(b.me.trophies)} 🏆</small></div>
     <div class="bt-vsx">VS</div><div class="bt-side bt-op">${btEmblem(b.opp.league, 70)}<b>${esc(b.opp.pseudo)}</b><small>${fmt(b.opp.trophies)} 🏆 · ${b.opp.league}</small></div></div>`;
   setTimeout(() => btDraw(), 1900);
 }
@@ -243,7 +294,7 @@ async function btEnd() {
   const b = BT.b, el = BT.el, won = b.winner, ranked = b.mode === "ranked", after = b.me.trophies, before = after - (b.delta || 0);
   const lg = n => LEAGUES.slice().reverse().find(l => n >= l[1]) || LEAGUES[0], L = lg(after), up = L !== lg(before);
   if (ranked) { lgSave(L[0]); if (up && !BT.filmed?.has(b.id)) { (BT.filmed ??= new Set()).add(b.id); await leagueFilm(lg(before)[0], L[0], after > before); } }
-  el.innerHTML = `<div class="bt-end ${won ? "w" : "l"}"><p class="bt-k">${BT_MODE[b.mode]} · ${b.a_won} – ${b.d_won} contre ${esc(b.opp.pseudo)}</p><h2>${won ? "Victoire !" : "Défaite"}</h2>
+  el.innerHTML = `<div class="bt-end ${won ? "w" : "l"}"><p class="bt-k">${BT.revenge ? "Revanche" : BT_MODE[b.mode]} · ${b.a_won} – ${b.d_won} contre ${esc(b.opp.pseudo)}</p><h2>${won ? (BT.revenge ? "Vengé !" : "Victoire !") : "Défaite"}</h2>${BT.revenge && won ? `<p class="bt-friendly">${esc(b.opp.pseudo)} va savoir que tu as pris ta revanche.</p>` : ""}
     ${ranked ? `<div class="bt-delta">${btEmblem(L[0], 110)}<b>${b.delta > 0 ? "+" : ""}${b.delta || 0} 🏆</b><small>${fmt(after)} trophées · ${L[0]}${up ? (won ? " · nouvelle ligue !" : " · tu redescends") : ""}</small></div>`
       : `<p class="bt-friendly">Match amical : pas de trophées en jeu, juste l'honneur.</p>`}
     ${b.reward ? `<p class="bt-rw">+${b.reward} Streams</p>` : ""}
@@ -254,7 +305,7 @@ async function btEnd() {
   try { loadProfile(); } catch (e) {}
 }
 function btClose(quiet) {
-  clearInterval(BT.tick); BT.waiting = false;
+  clearInterval(BT.tick); BT.revenge = false; BT.waiting = false;
   const el = BT.el; if (!el) return; BT.el = null;
   el.classList.remove("on"); document.body.classList.remove("fx-on"); setTimeout(() => el.remove(), quiet ? 0 : 350);
   if (!quiet && !views.battle.hidden) renderBattle();
