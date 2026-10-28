@@ -50,7 +50,7 @@ async function renderBattle() {
     <details class="bt-rules"><summary>Comment ça marche ?</summary>
       <p>Ton deck de 5 cartes affronte celui d'un joueur de ton niveau. À chaque manche, une stat est tirée au sort : <b>Tempo</b> (la 1re barre de la carte : Flow, Éclat, Riff…), <b>Endurance</b> (la durée), <b>Hype</b> (la popularité) ou <b>Puissance</b> (la moyenne). Tu choisis quelle carte jouer sans voir la sienne : la plus forte dans cette stat gagne la manche. La rareté, la note et le Shiny donnent un petit bonus. <b>3 manches gagnées et c'est la victoire.</b> Chaque carte ne sert qu'une fois : garde tes meilleures pour le bon moment !</p>
       <p>Tu peux aussi <b>défier un ami</b> : en amicale contre son deck, ou <b>en direct</b> s'il est en ligne (chacun choisit sa carte à chaque manche, 25 secondes pour jouer). Les matchs entre amis ne donnent pas de trophées.</p>
-      <p>Les trophées font ta ligue : Bronze, Argent (400), Or (900), Platine (1 500), Diamant (2 300), Légende (3 200). Ton deck défend aussi quand on t'attaque : à ton retour, le <b>journal de défense</b> te dit qui t'a attaqué, et tu as 24 h pour prendre ta <b>revanche</b> sur ceux qui ont gagné.</p></details>
+      <p>Les trophées font ta ligue : Bronze, Argent (400), Or (900), Platine (1 500), Diamant (2 300), Légende (3 200). Ton deck défend aussi quand on t'attaque : à ton retour, le <b>journal de défense</b> te dit qui t'a attaqué, et tu as 24 h pour prendre ta <b>revanche</b> sur ceux qui ont gagné (une par joueur, 3 par jour, et une revanche ne se rend pas).</p></details>
     <section class="bt-deck"><h3>Mon deck${h.chosen ? "" : " <small>(automatique : tes 5 cartes les plus fortes)</small>"} <button class="ps-link" id="btEdit">✎ Modifier</button></h3>
       <div class="bt-row" id="btDeck"></div><div id="btPick"></div></section>
     <div class="bt-cols">
@@ -145,7 +145,7 @@ async function btDefenses() {
         <span class="bt-def-who">${btEmblem(x.league, 20)}<button class="ps-link" data-p="${x.who_id}">${esc(x.who)}</button><small>${x.score} · ${btAgo(x.at)}</small></span>
         <b>${x.delta > 0 ? "+" : ""}${x.delta ?? 0} 🏆</b>
         ${x.revenge ? `<button class="btn primary bt-rvb" data-rv="${x.id}">⚔️ Revanche</button>` : `<span class="bt-rvx"></span>`}</li>`).join("")}</ul>
-      ${lost ? `<p class="bt-def-tip">Une revanche, c'est une bataille classée contre ce joueur, avec les trophées en jeu. Une seule par défaite, pendant 24 h. Si tu gagnes, il le saura.</p>` : `<p class="bt-def-tip">Ton deck tient bon. Continue comme ça !</p>`}
+      ${lost ? `<p class="bt-def-tip">Une revanche, c'est une bataille classée contre ce joueur, avec les trophées en jeu. Une par joueur et 3 par jour, pendant 24 h. Si tu gagnes, il le saura (mais il ne pourra pas te la rendre).</p>` : `<p class="bt-def-tip">Ton deck tient bon. Continue comme ça !</p>`}
       <div class="bt-acts"><button class="btn" type="button" data-x>${lost ? "Plus tard" : "Super"}</button></div></div>`;
   document.body.appendChild(el); document.body.classList.add("fx-on");
   requestAnimationFrame(() => el.classList.add("on"));

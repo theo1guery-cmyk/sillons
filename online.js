@@ -36,6 +36,8 @@ const MESSAGES = {
   pack_not_found: "Ce booster a expiré. Ouvre-en un autre.",
   need_five_tracks: "Le booster n'a pas pu être rempli. Réessaie.",
   revenge_gone: "Cette revanche n'est plus possible (déjà prise, ou plus de 24 h).",
+  revenge_same: "Tu as déjà pris ta revanche contre ce joueur aujourd'hui.",
+  revenge_limit: "3 revanches par jour maximum. Reviens demain !",
   battle_need_five: "Il te faut au moins 5 morceaux différents pour combattre.",
   battle_opp_five: "Ce joueur n'a plus assez de cartes pour défendre.",
   account_too_new: "Ton compte doit avoir 48 h avant de pouvoir échanger.",
