@@ -29,13 +29,16 @@ async function renderBattle() {
   let h, board;
   try { [h, board] = await Promise.all([rpc("battle_home"), rpc("battle_leaderboard")]); } catch (e) { return toast(message(e)); }
   BT.home = h;
+  if (BT.sub === "leagues") return renderLeagues(box);
+  if (!BT.el) leagueCheck(h.trophies);             // a league won or lost while away (my deck defends)
   const L = btLeague(h.league), k = LEAGUES.indexOf(L), next = LEAGUES[k + 1];
   const pct = next ? Math.round((h.trophies - L[1]) / (next[1] - L[1]) * 100) : 100;
   box.innerHTML = `<section class="bt-hero" style="--lc:${L[2]}">
       <div class="bt-lg">${btEmblem(h.league, 92)}<div><p class="bt-k">Ligue</p><h2>${h.league}</h2>
         <p class="bt-tr"><b>${fmt(h.trophies)}</b> 🏆 · ${h.rank}<sup>${h.rank === 1 ? "er" : "e"}</sup> au classement</p>
         <div class="bt-prog" aria-label="Progression vers la ligue suivante"><s style="width:${pct}%"></s></div>
-        <small>${next ? `${fmt(next[1] - h.trophies)} 🏆 avant ${next[0]}` : "Tu es au sommet !"} · record ${fmt(h.best)} 🏆</small></div></div>
+        <small>${next ? `${fmt(next[1] - h.trophies)} 🏆 avant ${next[0]}` : "Tu es au sommet !"} · record ${fmt(h.best)} 🏆</small>
+        <button class="ps-link bt-lglink" id="btLeagues">🛡️ Les ligues et leurs récompenses →</button></div></div>
       <div class="bt-go"><button class="btn primary bt-fight" id="btFight">⚔️ Combattre</button><button class="btn" id="btFriendsB">👥 Défier un ami</button>
         <small>${h.wins} victoire${h.wins > 1 ? "s" : ""} · ${h.losses} défaite${h.losses > 1 ? "s" : ""}</small>
         <small class="bt-day">Victoires du jour : <b>${Math.min(h.today, 5)} / 5</b> · +100 Streams chacune</small></div>
@@ -58,6 +61,7 @@ async function renderBattle() {
   for (const j of h.deck) { const w = document.createElement("div"); w.className = "bt-dc"; w.appendChild(btCardEl(j)); w.insertAdjacentHTML("beforeend", btBars(j)); deck.appendChild(w); }
   $("#btFight").onclick = () => battleStart();
   $("#btFriendsB").onclick = () => btFriends();
+  $("#btLeagues").onclick = () => { BT.sub = "leagues"; renderBattle(); };
   $("#btEdit").onclick = () => btPick();
   box.querySelectorAll("[data-p]").forEach(b => b.onclick = () => b.dataset.p && window.openProfile?.(b.dataset.p));
 }
@@ -233,9 +237,10 @@ function wrCountTo(n, to) {
   const f = t => { const k = Math.min(1, (t - t0) / 700); n.textContent = Math.round(to * (1 - Math.pow(1 - k, 3))); if (k < 1 && n.isConnected) requestAnimationFrame(f); };
   requestAnimationFrame(f);
 }
-function btEnd() {
+async function btEnd() {
   const b = BT.b, el = BT.el, won = b.winner, ranked = b.mode === "ranked", after = b.me.trophies, before = after - (b.delta || 0);
   const lg = n => LEAGUES.slice().reverse().find(l => n >= l[1]) || LEAGUES[0], L = lg(after), up = L !== lg(before);
+  if (ranked) { lgSave(L[0]); if (up && !BT.filmed?.has(b.id)) { (BT.filmed ??= new Set()).add(b.id); await leagueFilm(lg(before)[0], L[0], after > before); } }
   el.innerHTML = `<div class="bt-end ${won ? "w" : "l"}"><p class="bt-k">${BT_MODE[b.mode]} · ${b.a_won} – ${b.d_won} contre ${esc(b.opp.pseudo)}</p><h2>${won ? "Victoire !" : "Défaite"}</h2>
     ${ranked ? `<div class="bt-delta">${btEmblem(L[0], 110)}<b>${b.delta > 0 ? "+" : ""}${b.delta || 0} 🏆</b><small>${fmt(after)} trophées · ${L[0]}${up ? (won ? " · nouvelle ligue !" : " · tu redescends") : ""}</small></div>`
       : `<p class="bt-friendly">Match amical : pas de trophées en jeu, juste l'honneur.</p>`}
