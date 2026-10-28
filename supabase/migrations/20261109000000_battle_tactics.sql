@@ -1,7 +1,5 @@
--- The Bataille de cartes gets tactics, while staying simple:
--- * the program: the 5 stats of the battle are known from the start (plan which card goes where);
--- * the opposing deck is shown (its 5 cards, not the order it plays them in);
--- * the Boost: once per battle, +15 to my card on the round I choose. The other side has one too.
+-- The Bataille de cartes gets a gamble, while staying simple: the Boost. Once per battle, +15 to my card on the round
+-- I choose. The other side has one too, and I only know whether it is spent.
 -- The deck that defends plays smarter: it keeps its cards for the stats where they matter most, and boosts on the
 -- decisive rounds.
 
@@ -71,8 +69,6 @@ language sql stable security definer set search_path = public as $$
   with s as (select p_uid = b.attacker a)
   select jsonb_build_object('id', b.id, 'mode', b.mode, 'status', b.status, 'round', b.round,
     'stat', case when b.status = 'playing' then b.stats[b.round + 1] end,
-    'program', to_jsonb(b.stats),
-    'opp_deck', case when s.a then b.d_vals else b.a_vals end, 'opp_used', to_jsonb(case when s.a then b.d_used else b.a_used end),
     'boost', case when s.a then b.a_boost else b.d_boost end, 'opp_boost', case when s.a then b.d_boost else b.a_boost end,
     'a_won', case when s.a then b.a_won else b.d_won end, 'd_won', case when s.a then b.d_won else b.a_won end,
     'mine', case when s.a then b.a_vals else b.d_vals end, 'used', to_jsonb(case when s.a then b.a_used else b.d_used end),

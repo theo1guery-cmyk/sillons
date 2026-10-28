@@ -54,7 +54,7 @@ async function renderBattle() {
     <div class="bt-fbox" id="btFriends" hidden></div>
     <details class="bt-rules"><summary>Comment ça marche ?</summary>
       <p>Ton deck de 5 cartes affronte celui d'un joueur de ton niveau. À chaque manche, une stat est tirée au sort : <b>Tempo</b> (la 1re barre de la carte : Flow, Éclat, Riff…), <b>Endurance</b> (la durée), <b>Hype</b> (la popularité) ou <b>Puissance</b> (la moyenne). Tu choisis quelle carte jouer sans voir la sienne : la plus forte dans cette stat gagne la manche. La rareté, la note et le Shiny donnent un petit bonus. <b>3 manches gagnées et c'est la victoire.</b> Chaque carte ne sert qu'une fois : garde tes meilleures pour le bon moment !</p>
-      <p><b>Les tactiques</b> : tu vois dès le début <b>le programme</b> (les 5 stats des 5 manches) et <b>les 5 cartes de l'adversaire</b>, mais pas l'ordre dans lequel il les jouera. Et une fois par bataille, ton <b>🔥 Boost</b> ajoute +15 à ta carte : à toi de choisir la bonne manche. L'adversaire a le sien aussi.</p>
+      <p><b>🔥 Le Boost</b> : une fois par bataille, il ajoute +15 à ta carte. À toi de sentir la bonne manche… L'adversaire a le sien aussi : tu sais seulement s'il l'a déjà utilisé.</p>
       <p>Tu peux aussi <b>défier un ami</b> : en amicale contre son deck, ou <b>en direct</b> s'il est en ligne (chacun choisit sa carte à chaque manche, 25 secondes pour jouer). Les matchs entre amis ne donnent pas de trophées.</p>
       <p><b>Tes cartes gradées comptent</b> : une note 6 donne +3 à toutes les stats, 7 : +5, 8 : +7, 9 : +11, 10 : +16, et une 9 ou une 10 a le <b>Sang-froid</b> (elle gagne les égalités). <b>Tes cartes artistes aussi</b> : choisis ta <b>Tête d'affiche</b>, ses morceaux dans ton deck prennent un gros bonus (+5, plus 2 par certification, plus 4 si Shiny ou Collector) et les autres une petite aura.</p>
       <p>Les trophées font ta ligue : Bronze, Argent (400), Or (900), Platine (1 500), Diamant (2 300), Légende (3 200). Ton deck défend aussi quand on t'attaque : à ton retour, le <b>journal de défense</b> te dit qui t'a attaqué, et tu as 24 h pour prendre ta <b>revanche</b> sur ceux qui ont gagné (une par joueur, 3 par jour, et une revanche ne se rend pas).</p></details>
@@ -258,18 +258,15 @@ function btDraw() {
   const st = b.stat ? BT_STAT[b.stat] : null, his = b.log.map(x => x.his), live = b.mode === "live";
   el.innerHTML = `<button class="bt-quit" aria-label="Quitter">×</button>
     <div class="bt-top"><div class="bt-who">${btEmblem(b.opp.league, 30)}<b>${esc(b.opp.pseudo)}</b><em class="bt-tag">${BT_MODE[b.mode]}</em></div>
-      ${b.opp_deck ? `<div class="bt-opp deck">${b.opp_deck.map((j, i) => `<div class="bt-mini shown${(b.opp_used || []).includes(i) ? " used" : ""}">${btCardEl(j).outerHTML}${st && !(b.opp_used || []).includes(i) ? `<span class="bt-val">${j[b.stat]}</span>` : ""}</div>`).join("")}</div>
-        <div class="bt-oboost ${b.opp_boost != null ? "off" : ""}">🔥 Son Boost : <b>${b.opp_boost != null ? "utilisé" : "disponible"}</b></div>`
-      : `<div class="bt-opp">${Array.from({ length: 5 }, (_, i) => his[i] ? `<div class="bt-mini shown">${btCardEl(his[i]).outerHTML}</div>` : `<div class="bt-mini back"><span>?</span></div>`).join("")}</div>`}</div>
+      ${`<div class="bt-opp">${Array.from({ length: 5 }, (_, i) => his[i] ? `<div class="bt-mini shown">${btCardEl(his[i]).outerHTML}</div>` : `<div class="bt-mini back"><span>?</span></div>`).join("")}</div>`}
+      <div class="bt-oboost ${b.opp_boost != null ? "off" : ""}"${b.boost === undefined ? " hidden" : ""}>🔥 Son Boost : <b>${b.opp_boost != null ? "utilisé" : "encore en main"}</b></div></div>
     <div class="bt-mid">
       <div class="bt-score"><b class="bt-me">${b.a_won}</b><span>Manche ${Math.min(b.round + 1, 5)} / 5</span><b class="bt-op">${b.d_won}</b></div>
       ${live ? `<div class="bt-timer"><i><s id="btTime"></s></i><small id="btTimeT"></small></div>` : ""}
-      ${b.program ? `<ol class="bt-prog5" aria-label="Le programme de la bataille">${b.program.map((s, i) => { const x = b.log[i];
-        return `<li class="${i === b.round ? "now" : i < b.round ? (x?.won ? "w" : "l") : ""}" title="Manche ${i + 1} : ${BT_STAT[s][0]}"><span>${BT_STAT[s][2]}</span><small>${i < b.round ? (x?.won ? "✓" : "✗") : { flow: "Tempo", endu: "Endur.", hype: "Hype", pw: "Puiss." }[s]}</small></li>`; }).join("")}</ol>` : ""}
       <div class="bt-clash" id="btClash"></div>
       ${st ? `<div class="bt-stat" data-s="${b.stat}"><span>${st[2]}</span><div><b>${st[0]}</b><small>${st[1]} · la plus haute gagne</small></div></div>` : ""}
     </div>
-    ${b.program && b.status === "playing" ? `<div class="bt-boostbar"><button type="button" class="bt-boost${BT.boostOn ? " on" : ""}" id="btBoost"${b.boost != null || b.picked ? " disabled" : ""}>
+    ${b.boost !== undefined && b.status === "playing" ? `<div class="bt-boostbar"><button type="button" class="bt-boost${BT.boostOn ? " on" : ""}" id="btBoost"${b.boost != null || b.picked ? " disabled" : ""}>
       🔥 ${b.boost != null ? "Boost utilisé" : BT.boostOn ? "Boost activé : +15 sur cette manche" : "Boost +15 (1 par bataille)"}</button></div>` : ""}
     <div class="bt-hand">${b.mine.map((j, i) => `<button class="bt-card${b.used.includes(i) ? " used" : ""}" data-i="${i}"${b.used.includes(i) || b.status !== "playing" || b.picked ? " disabled" : ""}>
       <div class="bt-cw"></div>${st ? `<span class="bt-val${BT.boostOn ? " up" : ""}">${j[b.stat] + (BT.boostOn ? 15 : 0)}</span>` : ""}</button>`).join("")}</div>`;
