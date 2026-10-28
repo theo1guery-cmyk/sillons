@@ -22,11 +22,18 @@ const B2_PLAN = {
   spec: ["🎯", "Spécialiste", "La meilleure carte pour chaque stat."],
   random: ["🎲", "Imprévisible", "Un ordre au hasard, impossible à lire."],
 };
+const B2_NEWS = [
+  ["⚡", "Jetons", "3 par combat, +8 chacun"],
+  ["✨", "Compétences", "1 pouvoir par combat"],
+  ["🎸", "Familles", "+10 si ta famille bat la sienne"],
+  ["💰", "Budget", "les cartes rares coûtent plus"],
+];
+const b2Dots = n => `<span class="b2-dots">${[0, 1, 2, 3].slice(0, Math.max(3, n)).map(i => `<i class="${i < n ? "on" : ""}"></i>`).join("")}</span>`;
 const b2Admin = () => typeof ADM !== "undefined" && ADM.admin;
 // the same rules as the server, for a card of the collection
 const b2Skill = (id, tier) => tier >= 4 ? B2_SKILLS[Math.abs(Number(id)) * 7919 % 7] : null;
 const b2Fam = c => B2_FAM_OF[c.g] ?? null;
-const b2Chips = j => `<div class="b2-chips"><span class="b2-cost" title="Coût">${j.cost}</span>${j.fam != null ? `<span class="b2-fam" style="--c:${B2_FAM[j.fam][2]}" title="${B2_FAM[j.fam][1]}">${B2_FAM[j.fam][0]}</span>` : ""}
+const b2Chips = j => `<div class="b2-chips"><span class="b2-cost" title="Coût dans le budget">💰${j.cost}</span>${j.fam != null ? `<span class="b2-fam" style="--c:${B2_FAM[j.fam][2]}" title="${B2_FAM[j.fam][1]}">${B2_FAM[j.fam][0]}</span>` : ""}
   ${j.skill ? `<span class="b2-sk" title="${esc(B2_SK[j.skill][2])}">${B2_SK[j.skill][0]} ${B2_SK[j.skill][1]}</span>` : ""}${(j.combo || []).map(k => `<span class="b2-cb">${k === "album" ? "💿 Album +5" : "📅 Millésime +5"}</span>`).join("")}</div>`;
 
 /* ---------------------------------------------------------------- the panel in the Bataille tab */
@@ -38,21 +45,17 @@ async function b2Panel(box) {
   let h; try { h = B2.home = await rpc("battle2_home"); } catch (e) { sec.innerHTML = `<p class="empty-line">Bataille 2.0 : lance le SQL de la simulation pour l'activer.</p>`; return; }
   const pct = Math.min(100, Math.round(h.cost / h.budget * 100));
   sec.innerHTML = `<header class="b2-head"><div><p class="bt-k">Admins seulement · rien ne compte</p><h3>⚡ Bataille 2.0 · simulation</h3>
-      <p class="b2-sub">Pas de trophées, et l'adversaire ne voit rien. Teste les nouvelles règles contre de vrais decks.</p></div>
-      <button class="btn primary" id="b2Go">⚔️ Lancer une simulation</button></header>
-    <div class="b2-budget"><span>💰 Budget du deck</span><i><s style="width:${pct}%"></s></i><b>${h.cost} / ${h.budget}</b><small>${h.league}</small></div>
-    ${h.recomposed ? `<p class="b2-warn">Ton deck 2.0 dépassait le budget de ta ligue : il a été recomposé au mieux.</p>` : ""}
+      <p class="b2-sub">La même Bataille, avec 4 nouveautés. Pas de trophées en jeu.</p></div>
+      <div class="b2-hacts"><button class="btn" id="b2Help">❓ Comment ça marche</button><button class="btn primary" id="b2Go">⚔️ Lancer une simulation</button></div></header>
+    <ul class="b2-news">${B2_NEWS.map(([i, t, d]) => `<li><span>${i}</span><b>${t}</b><small>${d}</small></li>`).join("")}</ul>
+    <div class="b2-budget"><span>💰 Budget</span><i><s style="width:${pct}%"></s></i><b>${h.cost} / ${h.budget}</b><small>en ${h.league}</small></div>
+    ${h.recomposed ? `<p class="b2-warn">Ton deck dépassait le budget de ta ligue : il a été recomposé au mieux.</p>` : ""}
     <div class="b2-deck">${h.deck.map(j => `<div class="b2-dc">${btCardEl(j).outerHTML}${b2Chips(j)}</div>`).join("")}</div>
-    <div class="b2-acts"><button class="ps-link" id="b2Edit">✎ Composer mon deck 2.0</button>${h.chosen ? `<button class="ps-link" id="b2Auto">Deck automatique</button>` : `<small>Deck automatique (le meilleur dans ton budget)</small>`}</div>
+    <div class="b2-acts"><button class="ps-link" id="b2Edit">✎ Composer mon deck</button>${h.chosen ? `<button class="ps-link" id="b2Auto">Deck automatique</button>` : `<small>Deck automatique : le meilleur possible dans ton budget</small>`}</div>
     <div id="b2Pick"></div>
-    <div class="b2-plan"><p><b>🛡️ Mon plan de défense</b> : la façon dont ton deck se défend quand on l'attaque.</p>
-      <div class="b2-plans">${Object.entries(B2_PLAN).map(([k, [i, n, d]]) => `<button type="button" data-plan="${k}" aria-pressed="${h.plan === k}"><span>${i}</span><b>${n}</b><small>${d}</small></button>`).join("")}</div></div>
-    <details class="bt-rules b2-rules"><summary>Les règles de la 2.0</summary>
-      <p><b>💰 Le budget</b> : chaque carte coûte selon sa rareté (Commune et Peu commune 1, Rare 2, Épique 3, Mythique 4, Légendaire 5). Ton budget dépend de ta ligue : 14 en Bronze, puis 15, 16, 17, et 18 en Diamant et Légende.</p>
-      <p><b>🎸 Les familles</b> : 🎤 Street (rap, latino, afro) bat 💖 Mainstream (pop, soul, chanson), qui bat 🎸 Live (rock, électro, jazz, classique), qui bat Street. La carte qui a l'avantage prend +10.</p>
-      <p><b>🔗 Les combos</b> : 2 morceaux du même album, +5 chacun. 3 morceaux de la même année, +5 chacun.</p>
-      <p><b>✨ Les compétences</b> : chaque Mythique et Légendaire a la sienne. Tu n'en déclenches qu'une par bataille. ${Object.values(B2_SK).map(([i, n, d]) => `${i} <b>${n}</b> : ${d}`).join(" ")}</p>
-      <p><b>⚡ Les jetons de Hype</b> : 3 par bataille. À chaque manche, mise-en 0, 1 ou 2 (+8 chacun). L'adversaire ne voit que ce qu'il te reste.</p></details>`;
+    <div class="b2-plan"><p><b>🛡️ Quand on t'attaque</b>, ton deck se défend seul. Comment ?</p>
+      <div class="b2-plans">${Object.entries(B2_PLAN).map(([k, [i, n, d]]) => `<button type="button" data-plan="${k}" aria-pressed="${h.plan === k}"><span>${i}</span><b>${n}</b><small>${d}</small></button>`).join("")}</div></div>`;
+  sec.querySelector("#b2Help").onclick = () => b2Tuto();
   sec.querySelector("#b2Go").onclick = () => b2Start();
   sec.querySelector("#b2Edit").onclick = () => b2Pick();
   const auto = sec.querySelector("#b2Auto"); if (auto) auto.onclick = async () => { try { await rpc("set_battle_deck2", { p_cards: [], p_plan: null }); b2Panel(box); } catch (e) { toast(message(e)); } };
@@ -90,9 +93,43 @@ function b2Pick() {
   draw(); box.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
+/* ---------------------------------------------------------------- the tutorial: the 2.0 in 5 screens */
+const B2_TUTO = [
+  { i: "⚔️", t: "La même Bataille, en plus malin", d: "Toujours 5 cartes et 5 manches. Une stat tombe, la carte la plus forte gagne la manche, 3 manches pour gagner. Tout ce qui suit est en plus, et facultatif.",
+    v: `<div class="b2-tv">${["⚡", "⏱", "🔥", "💥", "⏱"].map(x => `<span>${x}</span>`).join("")}</div>` },
+  { i: "⚡", t: "Les jetons de Hype", d: "Tu as 3 jetons pour tout le combat. Avant de jouer ta carte, mise 0, 1 ou 2 jetons : +8 chacun. Ils ne reviennent pas : garde-les pour les manches serrées !",
+    v: `<div class="b2-tv">${b2Dots(3)}<b>64</b><em>+ 8 + 8</em><b class="g">= 80</b></div>` },
+  { i: "✨", t: "Les compétences", d: "Les Mythiques et Légendaires ont un pouvoir (leur icône est sur la carte). Tu n'en utilises qu'un seul par combat : choisis bien le moment.",
+    v: `<ul class="b2-tsk">${Object.values(B2_SK).map(([i, n, d]) => `<li><span>${i}</span><b>${n}</b><small>${d}</small></li>`).join("")}</ul>` },
+  { i: "🎸", t: "Les familles", d: "Chaque morceau a une famille. Comme pierre-feuille-ciseaux : si la famille de ta carte bat celle de la sienne, tu prends +10.",
+    v: `<div class="b2-tri"><span style="--c:${B2_FAM[0][2]}">🎤<b>Street</b><small>rap, latino, afro</small></span><i>bat</i><span style="--c:${B2_FAM[1][2]}">💖<b>Mainstream</b><small>pop, soul, chanson</small></span><i>bat</i><span style="--c:${B2_FAM[2][2]}">🎸<b>Live</b><small>rock, électro, jazz…</small></span><i>bat</i><span style="--c:${B2_FAM[0][2]}">🎤<b>Street</b></span></div>` },
+  { i: "💰", t: "Le budget", d: "Chaque carte coûte des points selon sa rareté. Ton deck de 5 cartes doit tenir dans ton budget (plus grand dans les hautes ligues). Impossible d'aligner 5 Légendaires : à toi de doser.",
+    v: `<div class="b2-tv b2-tcost">${RAR.map((r, k) => `<span><b>💰${B2_COST[k]}</b><small>${r}</small></span>`).join("")}</div>` },
+];
+function b2Tuto(then) {
+  let k = 0;
+  const el = document.createElement("div"); el.className = "b2-tuto"; el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); el.setAttribute("aria-label", "Comment jouer à la Bataille 2.0");
+  document.body.appendChild(el); requestAnimationFrame(() => el.classList.add("on"));
+  const done = () => { try { localStorage.setItem("zh-b2-tuto", "1"); } catch (e) {} el.classList.remove("on"); setTimeout(() => { el.remove(); then?.(); }, 300); };
+  const draw = () => { const x = B2_TUTO[k], last = k === B2_TUTO.length - 1;
+    el.innerHTML = `<div class="b2-tin"><button class="news-x" type="button" aria-label="Fermer">×</button>
+      <p class="bt-k">Bataille 2.0 · ${k + 1} / ${B2_TUTO.length}</p><div class="b2-ti">${x.i}</div><h2>${x.t}</h2><p>${x.d}</p>${x.v}
+      <div class="b2-tdots">${B2_TUTO.map((_, i) => `<i class="${i === k ? "on" : ""}"></i>`).join("")}</div>
+      <div class="bt-acts">${k ? `<button class="btn" data-t="prev">Retour</button>` : ""}<button class="btn primary" data-t="next">${last ? (then ? "C'est parti !" : "Compris") : "Suivant"}</button></div></div>`;
+    el.querySelector(".news-x").onclick = done;
+    el.querySelector('[data-t="next"]').onclick = () => last ? done() : (k++, draw());
+    const pv = el.querySelector('[data-t="prev"]'); if (pv) pv.onclick = () => { k--; draw(); };
+    el.querySelector('[data-t="next"]').focus({ preventScroll: true }); };
+  el.addEventListener("keydown", e => { if (e.key === "Escape") done(); });
+  draw();
+}
+
 /* ---------------------------------------------------------------- the battle */
 async function b2Start() {
-  if (B2.busy) return; B2.busy = true;
+  if (B2.busy) return;
+  let seen = true; try { seen = !!localStorage.getItem("zh-b2-tuto"); } catch (e) {}
+  if (!seen) return b2Tuto(() => b2Start());
+  B2.busy = true;
   try { B2.b = await rpc("battle2_start"); } catch (e) { B2.busy = false; return toast(message(e)); }
   B2.busy = false; B2.sel = null; B2.bet = 0; B2.sk = false;
   const el = B2.el = document.createElement("div"); el.className = "bt-arena b2-arena"; el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); el.setAttribute("aria-label", "Bataille 2.0");
@@ -104,8 +141,17 @@ async function b2Start() {
   setTimeout(b2Draw, 1700);
 }
 function b2Close() { const el = B2.el; B2.el = null; if (!el) return; el.classList.remove("on"); document.body.classList.remove("fx-on"); setTimeout(() => el.remove(), 350); if (!views.battle.hidden) renderBattle(); }
-const b2Dots = n => `<span class="b2-dots">${[0, 1, 2, 3].slice(0, Math.max(3, n)).map(i => `<i class="${i < n ? "on" : ""}"></i>`).join("")}</span>`;
 
+// the value of my card if I play it now, as far as I can know it (the family depends on his card)
+function b2Total(b, j) {
+  const base = j[b.stat], parts = [`<b>${base}</b>`]; let t = base;
+  if (B2.bet) { parts.push(`${B2.bet * 8} jeton${B2.bet > 1 ? "s" : ""}`); t += B2.bet * 8; }
+  if (B2.sk) { const lostPrev = b.log.length && !b.log[b.log.length - 1].won, point = b.a_won === 2 || b.d_won === 2;
+    const add = j.skill === "refrain" ? (lostPrev ? 12 : 0) : j.skill === "hymne" ? (point ? 10 : 0) : 0;
+    if (add) { parts.push(`${add} ${B2_SK[j.skill][1]}`); t += add; } }
+  const fam = j.fam != null ? `<small>${B2_FAM[j.fam][0]} +10 si sa carte est ${B2_FAM[(j.fam + 1) % 3][0]} ${B2_FAM[(j.fam + 1) % 3][1]} · +10 pour lui si elle est ${B2_FAM[(j.fam + 2) % 3][0]} ${B2_FAM[(j.fam + 2) % 3][1]}</small>` : "";
+  return `Ta valeur : ${parts.join(" + ")}${parts.length > 1 ? ` = <b class="g">${t}</b>` : ""}${B2.sk && j.skill === "larsen" ? " · <b>−10 pour lui</b>" : ""}${fam}`;
+}
 function b2Draw() {
   const b = B2.b, el = B2.el; if (!el) return;
   if (b.status === "done") return b2End();
@@ -122,10 +168,11 @@ function b2Draw() {
       <div class="bt-stat" data-s="${b.stat}"><span>${st[2]}</span><div><b>${st[0]}</b><small>${st[1]} · la plus haute gagne</small></div></div>
     </div>
     <div class="b2-ctrl${sel ? " on" : ""}">
-      <div class="b2-bet"><span>⚡ Jetons ${b2Dots(b.tokens)}</span>${[0, 1, 2].map(n => `<button type="button" data-bet="${n}" aria-pressed="${B2.bet === n}"${n > b.tokens ? " disabled" : ""}>${n ? "+" + n * 8 : "0"}</button>`).join("")}</div>
-      ${canSk ? `<button type="button" class="b2-skb${B2.sk ? " on" : ""}" id="b2Sk">${B2_SK[sel.skill][0]} ${B2_SK[sel.skill][1]}<small>${B2_SK[sel.skill][2]}</small></button>`
-        : sel?.skill ? `<span class="b2-skx">✨ Compétence déjà utilisée dans ce combat</span>` : ""}
-      <button class="btn primary b2-play" id="b2Play"${sel ? "" : " disabled"}>${sel ? `Jouer ${esc(sel.title || "")}` : "Choisis une carte"}</button></div>
+      <div class="b2-step${sel ? " ok" : " now"}"><em>1</em><span>${sel ? `<b>${esc(sel.title || "Ta carte")}</b>` : "Choisis ta carte"}</span></div>
+      <div class="b2-step${sel ? " now" : ""}"><em>2</em><span>Jetons ${b2Dots(b.tokens)}</span>${[0, 1, 2].map(n => `<button type="button" class="b2-bt" data-bet="${n}" aria-pressed="${B2.bet === n}"${n > b.tokens || !sel ? " disabled" : ""}>${n ? "+" + n * 8 : "0"}</button>`).join("")}</div>
+      ${sel?.skill ? `<div class="b2-step${sel ? " now" : ""}"><em>3</em>${canSk ? `<button type="button" class="b2-skb${B2.sk ? " on" : ""}" id="b2Sk">${B2_SK[sel.skill][0]} ${B2.sk ? "Activée" : "Activer"} ${B2_SK[sel.skill][1]}<small>${B2_SK[sel.skill][2]}</small></button>` : `<span class="b2-skx">✨ Compétence déjà utilisée</span>`}</div>` : ""}
+      ${sel ? `<p class="b2-total">${b2Total(b, sel)}</p>` : `<p class="b2-total b2-hint">Touche une carte de ta main. Les jetons et la compétence sont facultatifs.</p>`}
+      <button class="btn primary b2-play" id="b2Play"${sel ? "" : " disabled"}>⚔️ Jouer</button></div>
     <div class="bt-hand">${b.mine.map((j, i) => `<button class="bt-card${b.used.includes(i) ? " used" : ""}${B2.sel === i ? " b2-sel" : ""}" data-i="${i}"${b.used.includes(i) ? " disabled" : ""}>
       <div class="bt-cw"></div><span class="bt-val">${j[b.stat] + (B2.sel === i ? B2.bet * 8 : 0)}</span>${j.skill ? `<span class="b2-hsk">${B2_SK[j.skill][0]}</span>` : ""}${j.fam != null ? `<span class="b2-hf">${B2_FAM[j.fam][0]}</span>` : ""}</button>`).join("")}</div>`;
   el.querySelectorAll(".bt-card").forEach((btn, i) => btn.querySelector(".bt-cw").appendChild(btCardEl(b.mine[i])));
