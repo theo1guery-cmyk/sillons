@@ -90,11 +90,11 @@ const inTier = (rank, t) => rank >= TIER_MIN[t] && (t === TOP || rank < TIER_MIN
 const tierDistance = (rank, t) => rank < TIER_MIN[t] ? TIER_MIN[t] - rank : t < TOP && rank >= TIER_MIN[t + 1] ? rank - TIER_MIN[t + 1] + 1 : 0;
 
 // Every card of a booster uses the same odds (no guaranteed slot).
-const DROP = [70, 21, 7, 1.7, 0.28, 0.02];
-const PITY = 70;                         // boosters without a Mythique or better before one is guaranteed
+const DROP = [67, 22.5, 8, 2, 0.45, 0.05];
+const PITY = 50;                         // boosters without a Mythique or better before one is guaranteed
 let devShiny = false;                  // local preview (#shiny): every Mythique / Légendaire comes out Shiny
-const SHINY_CHANCE = 0.01;               // a Mythique or Légendaire has 1 chance in 100 to be Shiny
-const GOD_CHANCE = 1 / 3000;             // a booster turns into a GOD pack: 1 Légendaire + 4 cards that are Mythique or Légendaire (50/50)
+const SHINY_CHANCE = 0.02;               // a Mythique or Légendaire has 2 chances in 100 to be Shiny
+const GOD_CHANCE = 1 / 2000;             // a booster turns into a GOD pack: 1 Légendaire + 4 cards that are Mythique or Légendaire (50/50)
 const STOCK_MAX = 10;
 let REFILL_MS = 10 * 60 * 1000;          // 3 min for the VIP of the season (set by pass.js)
 let PAY_OFF = false;                   // real money payments paused from the admin page (read from the server)
@@ -1055,7 +1055,7 @@ async function openPack(p, opts = {}) {
   document.documentElement.dataset.back = worn("back") ? worn("back").replace(/^back-/, "") : plain ? "plain" : "eq";
   tornCut = null;                                   // the torn sachet stays on the scene while the cards are found
   op.classList.toggle("god", god); opPhase("load");
-  opHint(god ? "GOD PACK ! 1 chance sur 3 000…" : pick(LOADING_LINES));
+  opHint(god ? "GOD PACK ! 1 chance sur 2 000…" : pick(LOADING_LINES));
   const lineTimer = setInterval(() => { if (!god) opHint(pick(LOADING_LINES)); }, 1600);
   try {
     const pulls = p.demo ? await window.Haunted.demoPulls() : serverPack ? await Online.drawPack(p, serverPack) : await drawPack(p, god, opts.slots, opts.artist);
@@ -1129,7 +1129,7 @@ const Stage = (() => {
       </div>
       <div class="fx-title" aria-live="polite"><b></b><small></small></div>
       <p class="fx-hint"></p>
-      <div class="fx-god" aria-live="polite"><b></b><small>1 chance sur 3 000</small></div>
+      <div class="fx-god" aria-live="polite"><b></b><small>1 chance sur 2 000</small></div>
       <div class="fx-row" aria-hidden="true"></div>`;
     document.body.appendChild(el);
     el.querySelector(".face.back").appendChild(backEl(true));
