@@ -110,16 +110,21 @@ async function btPick() {
         ${arts.map(([a, cp]) => { const n = BT.edit.filter(id => list.find(([, x]) => x.id === id)?.[0].a === a.t).length;
           return `<button type="button" class="bt-art${BT.art === cp.id ? " on" : ""}" data-a="${cp.id}">${a.cov ? `<img src="${esc(a.cov)}" alt="">` : `<span class="bt-art-ph">🎤</span>`}<b>${esc(a.t)}</b>
             <small>+${synOf([a, cp])}${n ? ` × ${n} morceau${n > 1 ? "x" : ""}` : ""} · ${CERT[a.tier] || ""}${a.collector ? " · Collector" : cp.holo ? " · Shiny" : ""}</small></button>`; }).join("") || `<p class="empty-line">Pas encore de carte artiste.</p>`}</div></div>
+      <div class="bt-sort" role="group" aria-label="Trier les cartes"><span>Trier par</span>${[["pw", "💥 Puissance"], ["flow", "⚡ Tempo"], ["endu", "⏱ Endurance"], ["hype", "🔥 Hype"]].map(([k, t]) =>
+        `<button type="button" data-s="${k}" aria-pressed="${(BT.sort || "pw") === k}">${t}</button>`).join("")}</div>
       <div class="pf-grid" id="btGrid"></div></div>`;
+    box.querySelectorAll("[data-s]").forEach(b => b.onclick = () => { BT.sort = b.dataset.s; draw(); });
     box.querySelectorAll("[data-a]").forEach(b => b.onclick = () => { BT.art = b.dataset.a || null; draw(); });
     const head = BT.art ? arts.find(([, cp]) => cp.id === BT.art) : null;
     const g = $("#btGrid"), tracks = new Set(BT.edit.map(id => list.find(([, cp]) => cp.id === id)?.[0].id));
-    for (const [c, cp] of list.slice(0, 240)) {
+    // the values with every bonus (grade, Shiny, rarity, Tête d'affiche), sorted by the chosen stat
+    const vOf = ([c, cp]) => { const st = stats(c), star = head && head[0].t === c.a, syn = head ? star ? synOf(head) : auraOf(head) : 0, b = c.tier * 3 + gb(cp) + (cp.holo ? 4 : 0) + syn;
+      return { flow: st.flow + b, endu: st.endu + b, hype: st.hype + b, pw: st.pw + b, grade: cp.grade, syn, star, head: head?.[0].t }; };
+    const k = BT.sort || "pw", shown = list.map(x => [...x, vOf(x)]).sort((a, b) => b[2][k] - a[2][k]);
+    for (const [c, cp, v] of shown.slice(0, 240)) {
       const w = document.createElement("button"); w.type = "button"; w.className = "pf-gc pick bt-pk"; const k = BT.edit.indexOf(cp.id);
       if (k >= 0) { w.classList.add("on"); w.dataset.k = k + 1; }
-      const star = head && head[0].t === c.a, syn = head ? star ? synOf(head) : auraOf(head) : 0;
-      w.appendChild(cardEl(c, cp.holo)); const s = stats(c), bonus = c.tier * 3 + gb(cp) + (cp.holo ? 4 : 0) + syn;
-      w.insertAdjacentHTML("beforeend", btBars({ flow: s.flow + bonus, endu: s.endu + bonus, hype: s.hype + bonus, pw: s.pw + bonus, grade: cp.grade, syn, star, head: head?.[0].t }));
+      w.appendChild(cardEl(c, cp.holo)); w.insertAdjacentHTML("beforeend", btBars(v));
       w.onclick = () => { const i = BT.edit.indexOf(cp.id);
         if (i >= 0) BT.edit.splice(i, 1);
         else if (tracks.has(c.id)) return toast("Ce morceau est déjà dans ton deck.");
