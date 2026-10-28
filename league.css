@@ -1,0 +1,74 @@
+/* Zik Hunter — the leagues (league.js): the page, and the film of a change of league */
+.bt-lglink{display:inline-block;margin-top:8px;font-weight:700}
+.lg-hero{display:flex;align-items:center;gap:22px;padding:24px;border-radius:24px;margin-bottom:18px;
+  background:radial-gradient(80% 140% at 0 50%,color-mix(in srgb,var(--lc) 30%,transparent),transparent 65%),linear-gradient(160deg,rgba(255,255,255,.06),rgba(255,255,255,.015));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--lc) 40%,transparent)}
+.lg-hero-e{flex:none;filter:drop-shadow(0 0 30px color-mix(in srgb,var(--lc) 60%,transparent));animation:lgFloat 4s ease-in-out infinite}
+@keyframes lgFloat{50%{transform:translateY(-6px)}}
+.lg-hero h2{margin:0;font:900 clamp(2rem,6vw,3rem)/1 var(--display);color:var(--lc)}
+.lg-tr{margin:6px 0 8px}.lg-tr b{font:900 1.3rem var(--display)}
+.lg-prog{max-width:360px}.lg-hero small{display:block;margin-top:6px;color:var(--muted);font-size:.8rem}
+.lg-season{margin:12px 0 0;padding:8px 12px;border-radius:12px;background:rgba(0,0,0,.25);font-size:.88rem}
+.lg-ladder{list-style:none;margin:0 0 20px;padding:0;display:grid;gap:8px}
+.lg-ladder li{position:relative;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:14px;padding:12px 16px;border-radius:18px;
+  background:linear-gradient(90deg,color-mix(in srgb,var(--lc) 14%,transparent),rgba(255,255,255,.02));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--lc) 25%,transparent)}
+.lg-ladder li.up{opacity:.78}.lg-ladder li.up .lg-e{filter:grayscale(.5) brightness(.8)}
+.lg-ladder li.me{background:linear-gradient(90deg,color-mix(in srgb,var(--lc) 30%,transparent),rgba(255,255,255,.04));box-shadow:inset 0 0 0 2px var(--lc),0 10px 40px -16px var(--lc)}
+.lg-t b{font:900 1.2rem var(--display);color:var(--lc)}.lg-t small{margin-left:8px;color:var(--muted);font-size:.78rem}.lg-t p{margin:3px 0 0;color:#cfc9da;font-size:.82rem}
+.lg-p{display:grid;justify-items:end;text-align:right}.lg-p small{font:600 .62rem var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}.lg-p b{font-size:.88rem}
+.lg-here{position:absolute;top:-9px;left:18px;padding:2px 10px;border-radius:99px;background:var(--lc);color:#120a18;font:800 .66rem var(--mono);letter-spacing:.1em;text-transform:uppercase}
+.lg-rules ul{margin:0;padding-left:18px;display:grid;gap:6px;color:#d8d0e6;font-size:.9rem;line-height:1.5}
+.lg-replay{text-align:center;margin-top:18px}
+@media (max-width:640px){.lg-hero{flex-direction:column;text-align:center}.lg-hero .bt-prog{margin:0 auto}
+  .lg-ladder li{grid-template-columns:auto minmax(0,1fr)}.lg-p{grid-column:2;justify-items:start;text-align:left}.lg-t small{display:block;margin:0}}
+
+/* the film */
+.lgf{position:fixed;inset:0;z-index:99;display:grid;place-items:center;overflow:hidden;color:#fff;opacity:0;transition:opacity .35s}
+.lgf.go{opacity:1}.lgf.out{opacity:0}
+.lgf-bg{position:absolute;inset:0;background:radial-gradient(60% 50% at 50% 45%,color-mix(in srgb,var(--lc) 35%,#0a0612),#05030a 75%)}
+.lgf.down .lgf-bg{background:radial-gradient(60% 50% at 50% 45%,color-mix(in srgb,var(--lc) 14%,#0a0612),#030206 75%)}
+.lgf-old,.lgf-new{position:absolute;left:50%;top:42%;translate:-50% -50%}
+.lgf-old{animation:lgOldIn .6s ease-out both}
+@keyframes lgOldIn{from{opacity:0;transform:scale(.6)}}
+.lgf.up .lgf-old{animation:lgOldIn .6s ease-out both,lgShake .7s ease-in-out .8s both,lgBreak .35s ease-in 1.5s forwards}
+@keyframes lgShake{20%,60%{transform:rotate(-6deg) scale(1.04)}40%,80%{transform:rotate(6deg) scale(1.06)}}
+@keyframes lgBreak{to{opacity:0;transform:scale(1.6);filter:brightness(4) blur(6px)}}
+.lgf.down .lgf-old{animation:lgOldIn .6s ease-out both,lgSink 1.2s cubic-bezier(.5,0,.8,.6) 1s forwards}
+@keyframes lgSink{to{opacity:0;transform:translateY(40vh) scale(.7) rotate(14deg);filter:grayscale(1) brightness(.4)}}
+.lgf-new{opacity:0;filter:drop-shadow(0 0 40px var(--lc))}
+.lgf.up .lgf-new{animation:lgNewUp 1s cubic-bezier(.2,1.4,.4,1) 1.55s forwards,lgFloat 4s ease-in-out 2.6s infinite}
+@keyframes lgNewUp{from{opacity:0;transform:translateY(-30vh) scale(.3)}to{opacity:1;transform:none}}
+.lgf.down .lgf-new{filter:saturate(.6) drop-shadow(0 0 16px color-mix(in srgb,var(--lc) 50%,transparent));animation:lgNewDown 1s ease-out 2s forwards}
+@keyframes lgNewDown{from{opacity:0;transform:scale(.85)}to{opacity:.9;transform:none}}
+.lgf-flash{position:absolute;inset:0;background:radial-gradient(circle at 50% 42%,#fff,color-mix(in srgb,var(--lc) 70%,transparent) 25%,transparent 60%);opacity:0;animation:lgFlash .8s ease-out 1.5s}
+@keyframes lgFlash{15%{opacity:1}100%{opacity:0}}
+.lgf-rays{position:absolute;left:50%;top:42%;width:220vmax;aspect-ratio:1;translate:-50% -50%;opacity:0;
+  background:repeating-conic-gradient(from 0deg,color-mix(in srgb,var(--lc) 45%,transparent) 0 4deg,transparent 4deg 14deg);
+  -webkit-mask:radial-gradient(closest-side,#000 5%,transparent 55%);mask:radial-gradient(closest-side,#000 5%,transparent 55%);animation:lgRays 1s ease 1.6s forwards,lgSpin 30s linear 1.6s infinite}
+@keyframes lgRays{to{opacity:.9}}@keyframes lgSpin{to{rotate:360deg}}
+.lgf-parts i{position:absolute;left:50%;top:42%;width:calc(16px * var(--s));height:calc(16px * var(--s));opacity:0;background:var(--lc);border-radius:2px;
+  animation:lgPart 1.6s cubic-bezier(.15,.7,.3,1) calc(1.5s + var(--d)) forwards}
+@keyframes lgPart{0%{opacity:1;transform:translate(-50%,-50%) scale(.3)}100%{opacity:0;transform:translate(calc(-50% + var(--x)),calc(-50% + var(--y) + 14vmin)) rotate(var(--r)) scale(1)}}
+.lgf-txt{position:absolute;left:0;right:0;top:66%;display:grid;justify-items:center;gap:6px;padding:0 20px;text-align:center;opacity:0;animation:lgTxt .6s ease 2.3s forwards}
+@keyframes lgTxt{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.lgf-txt p{margin:0;font:600 .8rem var(--mono);letter-spacing:.28em;text-transform:uppercase;color:#e6dcf5}
+.lgf-txt h2{margin:0;font:900 clamp(2.4rem,10vw,4.4rem)/1 var(--display);color:var(--lc);text-shadow:0 0 30px color-mix(in srgb,var(--lc) 60%,transparent)}
+.lgf-txt small{max-width:40ch;color:#d8d0e6}.lgf-txt .btn{margin-top:10px}
+.lgf.down .lgf-txt h2{text-shadow:none;opacity:.85}
+/* each league its own touch */
+.t-argent .lgf-parts i{width:3px;height:calc(30px * var(--s));border-radius:1px;background:linear-gradient(#fff,#c9d2de);box-shadow:0 0 6px #fff}
+.t-or .lgf-parts i{width:calc(24px * var(--s));height:calc(24px * var(--s));border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff6d0,#f2c14e 45%,#a36d12);box-shadow:0 0 8px rgba(255,200,80,.8)}
+.t-or .lgf-parts i{animation-name:lgCoin}
+@keyframes lgCoin{0%{opacity:1;transform:translate(-50%,-50%) scale(.3) rotateY(0)}100%{opacity:0;transform:translate(calc(-50% + var(--x)),calc(-50% + var(--y) + 40vmin)) rotateY(1080deg) scale(1)}}
+.t-platine .lgf-rays{background:repeating-radial-gradient(circle,color-mix(in srgb,var(--lc) 55%,transparent) 0 3px,transparent 3px 26px);animation:lgRays 1s ease 1.6s forwards,lgPulse 1.6s ease-in-out 1.6s infinite}
+@keyframes lgPulse{50%{transform:scale(1.08)}}
+.t-platine .lgf-parts i{border-radius:50%;background:#bffff4;box-shadow:0 0 10px var(--lc)}
+.t-diamant .lgf-parts i{width:calc(20px * var(--s));height:calc(34px * var(--s));border-radius:0;clip-path:polygon(50% 0,100% 40%,60% 100%,0 70%);background:linear-gradient(135deg,#fff,#9fd2ff,#c4a2ff,#7aa8ff)}
+.t-diamant .lgf-new{animation:lgNewUp 1s cubic-bezier(.2,1.4,.4,1) 1.55s forwards,lgPrism 3s linear 2.6s infinite}
+@keyframes lgPrism{0%,100%{filter:drop-shadow(0 0 40px #7aa8ff) hue-rotate(0)}50%{filter:drop-shadow(0 0 50px #c4a2ff) hue-rotate(40deg)}}
+.t-legende .lgf-bg{background:radial-gradient(60% 50% at 50% 45%,#5a1030,#0a0206 75%)}
+.t-legende .lgf-parts i{width:calc(20px * var(--s));height:calc(26px * var(--s));border-radius:50% 50% 50% 50% / 60% 60% 40% 40%;background:radial-gradient(circle at 50% 60%,#fff3c4,#ffb03a 40%,#ff3b6b 80%);box-shadow:0 0 12px #ff8a3d}
+.t-legende.up{animation:lgQuake .5s ease-in-out 1.5s 2}
+@keyframes lgQuake{25%{transform:translate(6px,-4px)}50%{transform:translate(-5px,3px)}75%{transform:translate(4px,4px)}}
+.lgf-crown{position:absolute;left:50%;top:14%;translate:-50% 0;font-size:clamp(3rem,12vw,5.5rem);opacity:0;filter:drop-shadow(0 0 24px #ffd36b);animation:lgCrown .9s cubic-bezier(.2,1.5,.4,1) 2.2s forwards}
+@keyframes lgCrown{from{opacity:0;transform:translateY(-40vh) rotate(-30deg)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.lgf *{animation-duration:.01s!important;animation-delay:0s!important}.lgf-old{display:none}}
