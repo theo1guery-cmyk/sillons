@@ -176,7 +176,23 @@
 .bt-sort button{padding:6px 12px;border-radius:99px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:inherit;font-size:.8rem;font-weight:600;cursor:pointer}
 .bt-sort button[aria-pressed="true"]{background:var(--gold-grad);color:#1c1305;border-color:transparent}
 .pf-grid .bt-pk{align-self:start}
-.bt-fvcta{display:flex;align-items:center;gap:14px;width:100%;margin:10px 0 0;padding:12px 18px;border:0;border-radius:16px;color:inherit;text-align:left;cursor:pointer;
-  background:linear-gradient(100deg,rgba(124,92,255,.3),rgba(255,95,158,.2));box-shadow:inset 0 0 0 1px rgba(255,95,158,.45)}
-.bt-fvcta>span:first-child{font-size:1.8rem}.bt-fvcta>span:nth-child(2){flex:1;display:grid}.bt-fvcta b{font:900 1.05rem var(--display)}.bt-fvcta small{color:#cfc4df;font-size:.78rem}
-.bt-fvcta em{font-style:normal;font-weight:800;padding:8px 14px;border-radius:99px;background:#ff5f9e;color:#fff}
+
+/* the tactics: the program, the opposing deck, the Boost */
+.bt-opp.deck .bt-mini{position:relative;overflow:visible}.bt-opp.deck .bt-mini.shown{opacity:1;filter:none}
+.bt-opp.deck .bt-mini.used{opacity:.3;filter:grayscale(1)}
+.bt-opp.deck .bt-val{top:auto;bottom:-10px;min-width:26px;padding:1px 6px;font-size:.72rem;background:linear-gradient(180deg,#ff9aa5,#ff6b7a);color:#fff}
+.bt-oboost{font-size:.72rem;color:#ffb3a0;margin-top:6px}.bt-oboost.off{color:var(--muted);text-decoration:line-through}
+.bt-prog5{list-style:none;margin:0;padding:0;display:flex;gap:6px}
+.bt-prog5 li{display:grid;justify-items:center;gap:1px;min-width:56px;padding:6px 6px 5px;border-radius:12px;background:rgba(255,255,255,.05);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.bt-prog5 li span{font-size:1.1rem}.bt-prog5 li small{font:700 .56rem var(--mono);letter-spacing:.04em;text-transform:uppercase;color:#bfb3d3}
+.bt-prog5 li.now{background:rgba(231,177,74,.2);box-shadow:inset 0 0 0 2px #e7b14a;transform:translateY(-3px)}.bt-prog5 li.now small{color:#ffe39a}
+.bt-prog5 li.w{opacity:.55}.bt-prog5 li.w small{color:#57e389;font-size:.8rem}.bt-prog5 li.l{opacity:.55}.bt-prog5 li.l small{color:#ff6b7a;font-size:.8rem}
+.bt-boostbar{position:relative;z-index:1;display:flex;justify-content:center;padding:0 10px}
+.bt-boost{padding:9px 18px;border-radius:99px;border:1px solid rgba(255,138,61,.6);background:rgba(255,138,61,.12);color:#ffcfa8;font-weight:800;font-size:.86rem;cursor:pointer;transition:all .2s}
+.bt-boost.on{background:linear-gradient(90deg,#ff8a3d,#ff4f6d);color:#fff;border-color:transparent;box-shadow:0 0 26px -4px #ff6b3d;animation:btBoost 1s ease-in-out infinite}
+@keyframes btBoost{50%{box-shadow:0 0 36px 0 #ff6b3d}}
+.bt-boost[disabled]{opacity:.45;cursor:default;animation:none}
+.bt-val.up{background:linear-gradient(180deg,#ffb36b,#ff5f3d);color:#fff}
+.bt-bst{display:block;margin-top:2px;font:900 .8rem var(--display);font-style:normal;color:#ff9a5c;text-align:center}
+@media (max-width:520px){.bt-prog5{gap:4px}.bt-prog5 li{min-width:0;flex:1;padding:5px 3px}.bt-prog5 li small{font-size:.48rem}.bt-opp.deck{gap:4px}}
+.bt-boost.fired{animation:none;opacity:.8}
