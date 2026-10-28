@@ -48,10 +48,15 @@ async function renderLeagues(box) {
       <li><b>À la fin de chaque saison</b> (avec le Pass), chacun reçoit le cadeau de sa ligue, puis <b>les trophées sont divisés par deux</b> (jamais sous 400 pour ceux qui étaient au-dessus) : une Légende à 3 400 🏆 repart en Platine à 1 700, un joueur Or à 1 000 repart en Argent. Chaque saison, il faut tout regagner.</li>
     </ul></section>
     ${top.length ? `<section><h3>L'élite en ce moment</h3><ol class="bt-board">${top.map((p, i) => `<li class="${p.me ? "me" : ""}"><span class="rk">${i + 1}</span>${btEmblem(p.league, 22)}<button class="ps-link" data-p="${p.id}">${esc(p.pseudo)}</button><b>${fmt(p.trophies)} 🏆</b></li>`).join("")}</ol></section>` : ""}
-    <p class="lg-replay"><button class="ps-link" id="lgFilm">▶ Revoir l'animation de ma ligue</button></p>`;
+    <p class="lg-replay"><button class="ps-link" id="lgFilm">▶ Revoir l'animation de ma ligue</button></p>
+    ${typeof ADM !== "undefined" && ADM.admin ? `<section class="lg-admin"><h3>Aperçu admin : toutes les animations</h3><p class="sub">Visible par les admins seulement. Rien n'est changé sur ton compte.</p>
+      <div class="lg-adm-grid">${LEAGUES.map((l, i) => `<div class="lg-adm" style="--lc:${l[2]}">${btEmblem(l[0], 36)}<b>${l[0]}</b>
+        ${i ? `<button class="btn" data-up="${i}">▲ Montée</button>` : `<span class="lg-adm-x">—</span>`}${i < LEAGUES.length - 1 ? `<button class="btn" data-down="${i}">▼ Descente</button>` : `<span class="lg-adm-x">—</span>`}</div>`).join("")}</div></section>` : ""}`;
   $("#lgBack").onclick = () => { BT.sub = null; renderBattle(); };
   box.querySelectorAll("[data-p]").forEach(b => b.onclick = () => window.openProfile?.(b.dataset.p));
   $("#lgFilm").onclick = () => leagueFilm(LEAGUES[Math.max(0, k - 1)][0], cur[0], true);
+  box.querySelectorAll("[data-up]").forEach(b => b.onclick = () => { const i = +b.dataset.up; leagueFilm(LEAGUES[i - 1][0], LEAGUES[i][0], true); });
+  box.querySelectorAll("[data-down]").forEach(b => b.onclick = () => { const i = +b.dataset.down; leagueFilm(LEAGUES[i + 1][0], LEAGUES[i][0], false); });
 }
 
 /* ---------------------------------------------------------------- the film of a change of league */
