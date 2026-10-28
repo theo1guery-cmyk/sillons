@@ -54,7 +54,6 @@ async function renderBattle() {
     <div class="bt-fbox" id="btFriends" hidden></div>
     <details class="bt-rules"><summary>Comment ça marche ?</summary>
       <p>Ton deck de 5 cartes affronte celui d'un joueur de ton niveau. À chaque manche, une stat est tirée au sort : <b>Tempo</b> (la 1re barre de la carte : Flow, Éclat, Riff…), <b>Endurance</b> (la durée), <b>Hype</b> (la popularité) ou <b>Puissance</b> (la moyenne). Tu choisis quelle carte jouer sans voir la sienne : la plus forte dans cette stat gagne la manche. La rareté, la note et le Shiny donnent un petit bonus. <b>3 manches gagnées et c'est la victoire.</b> Chaque carte ne sert qu'une fois : garde tes meilleures pour le bon moment !</p>
-      <p><b>🔥 Le Boost</b> : une fois par bataille, il ajoute +15 à ta carte. À toi de sentir la bonne manche… L'adversaire a le sien aussi : tu sais seulement s'il l'a déjà utilisé.</p>
       <p>Tu peux aussi <b>défier un ami</b> : en amicale contre son deck, ou <b>en direct</b> s'il est en ligne (chacun choisit sa carte à chaque manche, 25 secondes pour jouer). Les matchs entre amis ne donnent pas de trophées.</p>
       <p><b>Tes cartes gradées comptent</b> : une note 6 donne +3 à toutes les stats, 7 : +5, 8 : +7, 9 : +11, 10 : +16, et une 9 ou une 10 a le <b>Sang-froid</b> (elle gagne les égalités). <b>Tes cartes artistes aussi</b> : choisis ta <b>Tête d'affiche</b>, ses morceaux dans ton deck prennent un gros bonus (+5, plus 2 par certification, plus 4 si Shiny ou Collector) et les autres une petite aura.</p>
       <p>Les trophées font ta ligue : Bronze, Argent (400), Or (900), Platine (1 500), Diamant (2 300), Légende (3 200). Ton deck défend aussi quand on t'attaque : à ton retour, le <b>journal de défense</b> te dit qui t'a attaqué, et tu as 24 h pour prendre ta <b>revanche</b> sur ceux qui ont gagné (une par joueur, 3 par jour, et une revanche ne se rend pas).</p></details>
@@ -258,23 +257,19 @@ function btDraw() {
   const st = b.stat ? BT_STAT[b.stat] : null, his = b.log.map(x => x.his), live = b.mode === "live";
   el.innerHTML = `<button class="bt-quit" aria-label="Quitter">×</button>
     <div class="bt-top"><div class="bt-who">${btEmblem(b.opp.league, 30)}<b>${esc(b.opp.pseudo)}</b><em class="bt-tag">${BT_MODE[b.mode]}</em></div>
-      ${`<div class="bt-opp">${Array.from({ length: 5 }, (_, i) => his[i] ? `<div class="bt-mini shown">${btCardEl(his[i]).outerHTML}</div>` : `<div class="bt-mini back"><span>?</span></div>`).join("")}</div>`}
-      <div class="bt-oboost ${b.opp_boost != null ? "off" : ""}"${b.boost === undefined ? " hidden" : ""}>🔥 Son Boost : <b>${b.opp_boost != null ? "utilisé" : "encore en main"}</b></div></div>
+      <div class="bt-opp">${Array.from({ length: 5 }, (_, i) => his[i] ? `<div class="bt-mini shown">${btCardEl(his[i]).outerHTML}</div>` : `<div class="bt-mini back"><span>?</span></div>`).join("")}</div></div>
     <div class="bt-mid">
       <div class="bt-score"><b class="bt-me">${b.a_won}</b><span>Manche ${Math.min(b.round + 1, 5)} / 5</span><b class="bt-op">${b.d_won}</b></div>
       ${live ? `<div class="bt-timer"><i><s id="btTime"></s></i><small id="btTimeT"></small></div>` : ""}
       <div class="bt-clash" id="btClash"></div>
       ${st ? `<div class="bt-stat" data-s="${b.stat}"><span>${st[2]}</span><div><b>${st[0]}</b><small>${st[1]} · la plus haute gagne</small></div></div>` : ""}
     </div>
-    ${b.boost !== undefined && b.status === "playing" ? `<div class="bt-boostbar"><button type="button" class="bt-boost${BT.boostOn ? " on" : ""}" id="btBoost"${b.boost != null || b.picked ? " disabled" : ""}>
-      🔥 ${b.boost != null ? "Boost utilisé" : BT.boostOn ? "Boost activé : +15 sur cette manche" : "Boost +15 (1 par bataille)"}</button></div>` : ""}
     <div class="bt-hand">${b.mine.map((j, i) => `<button class="bt-card${b.used.includes(i) ? " used" : ""}" data-i="${i}"${b.used.includes(i) || b.status !== "playing" || b.picked ? " disabled" : ""}>
-      <div class="bt-cw"></div>${st ? `<span class="bt-val${BT.boostOn ? " up" : ""}">${j[b.stat] + (BT.boostOn ? 15 : 0)}</span>` : ""}</button>`).join("")}</div>`;
+      <div class="bt-cw"></div>${st ? `<span class="bt-val">${j[b.stat]}</span>` : ""}</button>`).join("")}</div>`;
   el.querySelectorAll(".bt-card").forEach((btn, i) => btn.querySelector(".bt-cw").appendChild(btCardEl(b.mine[i])));
   el.querySelector(".bt-quit").onclick = () => {
     if (b.status === "playing" && !confirm(live ? "Quitter le combat ? Tes cartes seront jouées au hasard." : "Abandonner la bataille ? Elle sera comptée comme perdue dans 10 minutes.")) return; btClose(); };
   el.querySelectorAll(".bt-card:not([disabled])").forEach(btn => btn.onclick = () => btPlay(+btn.dataset.i));
-  const bo = $("#btBoost"); if (bo) bo.onclick = () => { BT.boostOn = !BT.boostOn; btDraw(); };
   if (live) { btTimer(); if (b.picked) btWait(); }
 }
 // live: the time left to play this round
@@ -303,9 +298,7 @@ async function btPlay(i) {
   const b = BT.b, el = BT.el;
   el.querySelectorAll(".bt-card").forEach(x => x.disabled = true);
   el.querySelector(`.bt-card[data-i="${i}"]`)?.classList.add("go");
-  const boost = !!BT.boostOn && b.boost == null; BT.boostOn = false;
-  if (boost) $("#btBoost")?.classList.add("fired"); else $("#btBoost")?.setAttribute("disabled", "");
-  let r; try { r = await rpc("battle_play", boost ? { p_battle: b.id, p_slot: i, p_boost: true } : { p_battle: b.id, p_slot: i }); } catch (e) { BT.busy = false; toast(message(e)); return btDraw(); }
+  let r; try { r = await rpc("battle_play", { p_battle: b.id, p_slot: i }); } catch (e) { BT.busy = false; toast(message(e)); return btDraw(); }
   BT.busy = false;
   if (!r.last) { BT.b = r; return btWait(); }          // live: the other one has not played yet
   clearInterval(BT.tick);
@@ -315,8 +308,8 @@ async function btPlay(i) {
 async function btShow(x, r) {
   const b = BT.b, clash = $("#btClash"); if (!clash) { BT.b = r; return btDraw(); }
   BT.busy = true;
-  clash.innerHTML = `<div class="bt-duel"><div class="bt-c bt-me"><div class="bt-cw"></div><b class="bt-v" data-v="${x.mv}">0</b>${x.mb ? `<em class="bt-bst">🔥 +15</em>` : ""}</div>
-    <div class="bt-c bt-op"><div class="bt-flip"><div class="bt-back"><span>?</span></div><div class="bt-front"></div></div><b class="bt-v" data-v="${x.hv}">0</b>${x.hb ? `<em class="bt-bst">🔥 +15</em>` : ""}</div></div>`;
+  clash.innerHTML = `<div class="bt-duel"><div class="bt-c bt-me"><div class="bt-cw"></div><b class="bt-v" data-v="${x.mv}">0</b></div>
+    <div class="bt-c bt-op"><div class="bt-flip"><div class="bt-back"><span>?</span></div><div class="bt-front"></div></div><b class="bt-v" data-v="${x.hv}">0</b></div></div>`;
   clash.querySelector(".bt-me .bt-cw").appendChild(btCardEl(b.mine[x.mine]));
   clash.querySelector(".bt-front").appendChild(btCardEl(x.his));
   await wait(450); clash.querySelector(".bt-flip").classList.add("on");
