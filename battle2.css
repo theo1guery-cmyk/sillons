@@ -1,0 +1,47 @@
+/* Zik Hunter — la Bataille 2.0, simulation for the admins (battle2.js) */
+.b2{margin:14px 0;padding:18px;border-radius:20px;background:linear-gradient(150deg,rgba(255,138,61,.12),rgba(124,92,255,.1));box-shadow:inset 0 0 0 1px rgba(255,138,61,.35)}
+.b2-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap}.b2-head>div{flex:1;min-width:220px}.b2-head h3{margin:2px 0 4px;font:900 1.3rem var(--display)}
+.b2-sub{margin:0;font-size:.84rem;color:#cfc4df}
+.b2-budget{display:flex;align-items:center;gap:10px;margin:14px 0 8px;font-size:.85rem}.b2-budget>span{font-weight:700}
+.b2-budget i{flex:1;height:10px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}.b2-budget s{display:block;height:100%;background:linear-gradient(90deg,#57e389,#e7b14a)}
+.b2-budget b{font:900 1rem var(--display)}.b2-budget small{color:var(--muted)}
+.b2-warn{margin:0 0 8px;padding:8px 12px;border-radius:10px;background:rgba(255,107,122,.12);color:#ffb3bd;font-size:.82rem}
+.b2-deck{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.b2-dc{display:grid;gap:6px;align-content:start;min-width:0}
+.b2-chips{display:flex;flex-wrap:wrap;gap:4px;align-items:center;min-width:0}
+.b2-chips>span{font:700 .62rem var(--mono);padding:3px 7px;border-radius:99px;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.b2-cost{min-width:20px;text-align:center;background:radial-gradient(circle at 35% 30%,#ffe39a,#e7b14a);color:#1c1305;font-weight:900!important}
+.b2-fam{background:color-mix(in srgb,var(--c) 22%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 50%,transparent)}
+.b2-sk{background:rgba(167,139,250,.2);color:#ddd0ff;box-shadow:inset 0 0 0 1px rgba(167,139,250,.5)}
+.b2-cb{background:rgba(87,227,137,.14);color:#a9f5c5}
+.b2-acts{display:flex;gap:14px;align-items:center;margin:10px 0 0;font-size:.85rem}.b2-acts small{color:var(--muted)}
+.b2-plan{margin-top:14px}.b2-plan>p{margin:0 0 8px;font-size:.86rem;color:#cfc4df}
+.b2-plans{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.b2-plans button{display:grid;gap:2px;justify-items:start;text-align:left;padding:10px 12px;border:0;border-radius:14px;background:rgba(255,255,255,.04);color:inherit;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.b2-plans button span{font-size:1.2rem}.b2-plans button b{font-size:.9rem}.b2-plans button small{font-size:.7rem;color:var(--muted);line-height:1.35}
+.b2-plans button[aria-pressed="true"]{background:rgba(231,177,74,.16);box-shadow:inset 0 0 0 2px #e7b14a}
+.b2-rules{margin-top:14px}
+.b2-pk.no{opacity:.35}
+/* the arena */
+.b2-oinfo{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:6px;font-size:.74rem;color:#d6cbe6}.b2-oinfo .off{color:var(--muted);text-decoration:line-through}
+.b2-dots{display:inline-flex;gap:3px;vertical-align:middle;margin-left:4px}.b2-dots i{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.12)}
+.b2-dots i.on{background:radial-gradient(circle at 35% 30%,#ffe39a,#ff8a3d);box-shadow:0 0 8px #ff8a3d}
+.b2-ctrl{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:10px;padding:6px 10px;opacity:.55;transition:opacity .2s}.b2-ctrl.on{opacity:1}
+.b2-bet{display:flex;align-items:center;gap:6px;font-size:.8rem}.b2-bet>span{margin-right:4px}
+.b2-bet button{min-width:44px;padding:7px 10px;border-radius:99px;border:1px solid rgba(255,138,61,.5);background:rgba(255,138,61,.1);color:#ffd2b0;font-weight:800;cursor:pointer}
+.b2-bet button[aria-pressed="true"]{background:linear-gradient(90deg,#ff8a3d,#ff4f6d);color:#fff;border-color:transparent;box-shadow:0 0 18px -4px #ff6b3d}
+.b2-bet button[disabled]{opacity:.3;cursor:default}
+.b2-skb{display:grid;text-align:left;padding:7px 14px;border-radius:14px;border:1px solid rgba(167,139,250,.6);background:rgba(167,139,250,.12);color:#e6dcff;font-weight:800;cursor:pointer;max-width:260px}
+.b2-skb small{font-weight:500;font-size:.68rem;color:#c8bce6}.b2-skb.on{background:linear-gradient(90deg,#7c5cff,#c05cff);border-color:transparent;color:#fff;box-shadow:0 0 22px -4px #a07cff}
+.b2-skx{font-size:.72rem;color:var(--muted)}
+.b2-play{padding:11px 20px}
+.bt-card.b2-sel{transform:translateY(-16px)}.bt-card.b2-sel .bt-cw{outline:3px solid #ff8a3d;outline-offset:3px;border-radius:8px}
+.b2-hsk,.b2-hf{position:absolute;top:6px;font-size:.85rem;filter:drop-shadow(0 1px 3px rgba(0,0,0,.8))}.b2-hsk{left:-6px}.b2-hf{right:-6px}
+.b2-bon{list-style:none;margin:4px 0 0;padding:0;display:grid;gap:1px;font-size:.66rem;color:#cfc4df;text-align:center}.b2-bon b{color:#fff}.b2-bon .neg b{color:#ff6b7a}.b2-bon .sk{color:#d6c6ff;font-weight:800}
+.b2-remix{margin:0 0 6px;text-align:center;font-weight:800;color:#d6c6ff}
+@media (max-width:700px){.b2-deck{grid-template-columns:repeat(3,minmax(0,1fr))}.b2-plans{grid-template-columns:repeat(2,minmax(0,1fr))}.b2-ctrl{gap:6px}.b2-bet button{min-width:38px;padding:6px 8px}}
+.b2-arena .bt-c{width:clamp(96px,20vw,140px)}
+.b2-arena .bt-duel{align-items:flex-start}
+.b2-bon{display:flex;flex-wrap:wrap;justify-content:center;gap:2px 6px;max-width:170px}
+.b2-arena.showing .b2-ctrl,.b2-arena.showing .bt-stat{display:none}
+.b2-arena.showing .bt-hand{opacity:.5;pointer-events:none}
+.b2-hsk,.b2-hf{top:auto;bottom:6px}
