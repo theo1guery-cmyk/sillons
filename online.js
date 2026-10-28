@@ -35,6 +35,9 @@ const MESSAGES = {
   too_many_open_packs: "Trop de boosters en cours d'ouverture. Attends quelques secondes.",
   pack_not_found: "Ce booster a expiré. Ouvre-en un autre.",
   need_five_tracks: "Le booster n'a pas pu être rempli. Réessaie.",
+  revenge_gone: "Cette revanche n'est plus possible (déjà prise, ou plus de 24 h).",
+  battle_need_five: "Il te faut au moins 5 morceaux différents pour combattre.",
+  battle_opp_five: "Ce joueur n'a plus assez de cartes pour défendre.",
   account_too_new: "Ton compte doit avoir 48 h avant de pouvoir échanger.",
   target_too_new: "Le compte de ce joueur a moins de 48 h : il ne peut pas encore échanger.",
   give_not_owned: "Une des cartes que tu proposes n'est plus dans ta collection, ou ne s'échange pas.",
@@ -1594,7 +1597,7 @@ async function checkNotifications() {
     else if (x.type === "referral") { toast("🤝 " + x.title); rpc("notification_seen", { p_id: x.id }).catch(() => {}); }
     else if (x.type === "admin_warning" || x.type === "admin_message") Online.showNotice?.(x);
     else if (x.type === "friend_request") { toast(`🤝 ${x.title} veut devenir ton ami : réponds dans l'onglet Joueurs.`); rpc("notification_seen", { p_id: x.id }).catch(() => {}); }
-    else if (x.type === "podium" || x.type === "league_end") { toast("🏆 " + x.title); rpc("notification_seen", { p_id: x.id }).catch(() => {}); }
+    else if (x.type === "podium" || x.type === "league_end" || x.type === "battle_revenge") { toast("🏆 " + x.title); rpc("notification_seen", { p_id: x.id }).catch(() => {}); }
     else if (x.type === "friend_accepted") { toast(`🤝 ${x.title} a accepté ta demande d'ami !`); rpc("notification_seen", { p_id: x.id }).catch(() => {}); }
   }
   if ((data || []).some(x => x.type.startsWith("friend"))) rpc("my_friends").then(d => Online.updatePlayersBadge?.(d.incoming.length)).catch(() => {});

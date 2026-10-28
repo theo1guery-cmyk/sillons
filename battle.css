@@ -116,3 +116,35 @@
 .bt-timer i.low s{background:#ff6b7a}.bt-timer small{font:700 .8rem var(--mono);color:#cfc9da}
 .bt-hold{margin:0;padding:10px 18px;border-radius:99px;background:rgba(255,255,255,.06);color:#e6dcf5;font-weight:600;animation:btPulse 1.4s ease-in-out infinite}
 .bt-friendly{margin:0;padding:8px 16px;border-radius:99px;background:rgba(255,255,255,.07);color:#e6dcf5}
+
+/* the defense log and the revenge */
+.bt-rvb{padding:6px 12px;font-size:.78rem;border-radius:10px;white-space:nowrap}
+.bt-hist .bt-rvb{margin-left:4px}
+.bt-def{position:fixed;inset:0;z-index:90;display:grid;place-items:center;padding:16px;background:rgba(6,4,12,.78);backdrop-filter:blur(6px);opacity:0;transition:opacity .3s}
+.bt-def.on{opacity:1}
+.bt-def-in{position:relative;width:min(560px,100%);max-height:calc(100vh - 32px);overflow:auto;padding:28px 24px 22px;border-radius:24px;text-align:center;
+  background:radial-gradient(120% 70% at 50% 0,var(--dc) 0,transparent 60%),linear-gradient(170deg,#1d1628,#120d1a);box-shadow:0 30px 80px -20px rgba(0,0,0,.8),inset 0 0 0 1px rgba(255,255,255,.08);
+  transform:translateY(18px) scale(.97);transition:transform .4s cubic-bezier(.2,.9,.3,1.2)}
+.bt-def-in.w{--dc:rgba(87,227,137,.22)}.bt-def-in.l{--dc:rgba(255,107,122,.24)}
+.bt-def.on .bt-def-in{transform:none}
+.bt-def-sh{font-size:3.2rem;line-height:1;margin-bottom:6px;filter:drop-shadow(0 8px 20px rgba(0,0,0,.6));animation:btDefSh 1.4s ease-out}
+.bt-def-in.l .bt-def-sh{animation:btDefHit .9s ease-out}
+@keyframes btDefSh{0%{transform:scale(.4) rotate(-20deg);opacity:0}60%{transform:scale(1.15) rotate(6deg);opacity:1}100%{transform:none}}
+@keyframes btDefHit{0%{transform:scale(.4);opacity:0}40%{transform:scale(1.15);opacity:1}55%{transform:translateX(-8px) rotate(-8deg)}70%{transform:translateX(7px) rotate(6deg)}85%{transform:translateX(-3px)}100%{transform:none}}
+.bt-def-in h2{margin:8px 0 6px;font:900 clamp(1.3rem,4.4vw,1.7rem)/1.15 var(--display)}
+.bt-def-sum{margin:0 0 16px;color:#cfc9da}.bt-def-sum b.w,.bt-def-sum b.l{white-space:nowrap}.bt-def-sum b.w{color:#57e389}.bt-def-sum b.l{color:#ff6b7a}
+.bt-def-list{list-style:none;margin:0;padding:0;display:grid;gap:7px;text-align:left}
+.bt-def-list li{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.04);font-size:.86rem;opacity:0;animation:btDefIn .45s var(--d) ease-out forwards}
+.bt-def-list li.l{background:linear-gradient(90deg,rgba(255,107,122,.12),rgba(255,255,255,.03))}
+@keyframes btDefIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.bt-def-list .bt-res{width:58px;flex:none}
+.bt-def-list li.w .bt-res,.bt-def-list li.w>b{color:#57e389}.bt-def-list li.l .bt-res,.bt-def-list li.l>b{color:#ff6b7a}
+.bt-def-who{flex:1;min-width:0;display:flex;align-items:center;gap:6px;flex-wrap:wrap}.bt-def-who .ps-link{font-weight:800}
+.bt-def-who small{width:100%;color:var(--muted);font-size:.72rem;padding-left:26px}
+.bt-def-list li>b{font-family:var(--mono);white-space:nowrap}
+.bt-rvx{width:0}
+.bt-def-tip{margin:14px 0 0;color:var(--muted);font-size:.8rem;line-height:1.5}
+.bt-def .bt-acts{margin-top:14px;display:flex;justify-content:center}
+.bt-def .news-x{position:absolute;top:10px;right:12px}
+@media (max-width:520px){.bt-def-list li{flex-wrap:wrap}.bt-def-list .bt-rvb{width:100%}.bt-hist li{flex-wrap:wrap}.bt-hist .bt-rvb{margin-left:auto}}
+@media (prefers-reduced-motion:reduce){.bt-def-sh,.bt-def-list li{animation:none;opacity:1}}
