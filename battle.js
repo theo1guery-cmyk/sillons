@@ -51,6 +51,7 @@ async function renderBattle() {
     </section>
     <button class="bt-lgcta" id="btLeagues" style="--lc:${L[2]}"><span class="bt-lgcta-e">${btEmblem(h.league, 40)}</span>
       <span><b>Les ligues et leurs récompenses</b><small>Ta place, les 6 ligues, le cadeau de fin de saison${next ? ` · ${fmt(next[1] - h.trophies)} 🏆 avant ${next[0]}` : ""}</small></span><em>Voir →</em></button>
+    ${typeof ADM !== "undefined" && ADM.admin && window.festivalDemo ? `<button class="bt-fvcta" id="btFestival"><span aria-hidden="true">🎪</span><span><b>Le Festival</b><small>Prototype du nouveau mode, contre un bot · visible par les admins seulement</small></span><em>Tester →</em></button>` : ""}
     <div class="bt-fbox" id="btFriends" hidden></div>
     <details class="bt-rules"><summary>Comment ça marche ?</summary>
       <p>Ton deck de 5 cartes affronte celui d'un joueur de ton niveau. À chaque manche, une stat est tirée au sort : <b>Tempo</b> (la 1re barre de la carte : Flow, Éclat, Riff…), <b>Endurance</b> (la durée), <b>Hype</b> (la popularité) ou <b>Puissance</b> (la moyenne). Tu choisis quelle carte jouer sans voir la sienne : la plus forte dans cette stat gagne la manche. La rareté, la note et le Shiny donnent un petit bonus. <b>3 manches gagnées et c'est la victoire.</b> Chaque carte ne sert qu'une fois : garde tes meilleures pour le bon moment !</p>
@@ -72,6 +73,7 @@ async function renderBattle() {
   $("#btFight").onclick = () => battleStart();
   $("#btFriendsB").onclick = () => btFriends();
   $("#btLeagues").onclick = () => { BT.sub = "leagues"; renderBattle(); };
+  const fv = $("#btFestival"); if (fv) fv.onclick = () => festivalDemo();
   $("#btEdit").onclick = () => btPick();
   const he = $("#btHeadEdit"); if (he) he.onclick = () => btPick();
   box.querySelectorAll("[data-p]").forEach(b => b.onclick = () => b.dataset.p && window.openProfile?.(b.dataset.p));

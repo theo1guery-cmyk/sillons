@@ -176,3 +176,7 @@
 .bt-sort button{padding:6px 12px;border-radius:99px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:inherit;font-size:.8rem;font-weight:600;cursor:pointer}
 .bt-sort button[aria-pressed="true"]{background:var(--gold-grad);color:#1c1305;border-color:transparent}
 .pf-grid .bt-pk{align-self:start}
+.bt-fvcta{display:flex;align-items:center;gap:14px;width:100%;margin:10px 0 0;padding:12px 18px;border:0;border-radius:16px;color:inherit;text-align:left;cursor:pointer;
+  background:linear-gradient(100deg,rgba(124,92,255,.3),rgba(255,95,158,.2));box-shadow:inset 0 0 0 1px rgba(255,95,158,.45)}
+.bt-fvcta>span:first-child{font-size:1.8rem}.bt-fvcta>span:nth-child(2){flex:1;display:grid}.bt-fvcta b{font:900 1.05rem var(--display)}.bt-fvcta small{color:#cfc4df;font-size:.78rem}
+.bt-fvcta em{font-style:normal;font-weight:800;padding:8px 14px;border-radius:99px;background:#ff5f9e;color:#fff}
