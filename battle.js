@@ -16,9 +16,32 @@ const btAsCard = j => ({ id: j.track_id, t: j.title || "?", a: j.artist || "", a
   ...(j.edition ? { ed: j.edition, eno: j.edition_no } : {}) });
 const btCardEl = j => cardEl(btAsCard(j), j.holo);
 const BT_GRADE = [0, 0, 0, 1, 1, 1, 3, 5, 7, 11, 16];      // the bonus of a grade (on every stat); a 9 or a 10 also wins the ties
+// the synergies: the more cards of the deck share an artist, an album, a year or a genre, the stronger they all get
+const BT_SYN = { artist: ["🎤", "Même artiste", [0, 0, 4, 8, 12, 16]], album: ["💿", "Même album", [0, 0, 6, 12, 18, 24]], year: ["📅", "Même année", [0, 0, 0, 4, 7, 10]],
+  genre: ["🎶", "Même genre", [0, 0, 0, 3, 5, 8]], rainbow: ["🌈", "Arc-en-ciel", [0, 0, 0, 0, 0, 6]] };
+const BT_SYN_MAX = 30;
+// the same count as the server, for cards of the collection ({ a, al, y, g, tier })
+function btSynergy(cards) {
+  const cnt = f => { const m = {}; cards.forEach(c => { const k = f(c); if (k != null && k !== "") m[k] = (m[k] || 0) + 1; }); return m; };
+  const art = cnt(c => (c.a || "").toLowerCase()), alb = cnt(c => c.al ? (c.a + "|" + c.al).toLowerCase() : null), yr = cnt(c => c.y || null), gen = cnt(c => c.g === AUTRE ? null : c.g);
+  const rainbow = new Set(cards.map(c => c.tier)).size >= 5;
+  return cards.map(c => { const syns = [], push = (k, n, of) => { const v = BT_SYN[k][2][Math.min(n, 5)]; if (v) syns.push({ k, n, v, of }); };
+    push("artist", art[(c.a || "").toLowerCase()] || 0, c.a);
+    if (c.al) push("album", alb[(c.a + "|" + c.al).toLowerCase()] || 0, c.al);
+    if (c.y) push("year", yr[c.y] || 0, String(c.y));
+    if (c.g !== AUTRE && c.g != null) push("genre", gen[c.g] || 0, String(c.g));
+    if (rainbow) syns.push({ k: "rainbow", n: 5, v: 6 });
+    return { syns, sb: Math.min(BT_SYN_MAX, syns.reduce((t, x) => t + x.v, 0)) }; });
+}
+const btSynOf = x => x.k === "genre" ? TYPES[+x.of]?.n || "" : x.k === "rainbow" ? "5 raretés" : x.of || "";
+// the synergies of a whole deck, each once: "🎤 Ninho ×3 +8"
+const btSynList = per => { const seen = new Map(); per.forEach(p => (p.syns || []).forEach(x => { const id = x.k + "|" + x.of; if (!seen.has(id)) seen.set(id, x); })); return [...seen.values()].sort((a, b) => b.v - a.v); };
+const btSynHTML = (list, empty) => list.length ? `<div class="bt-syns"><b>🔗 Synergies</b>${list.map(x => `<span class="bt-syn k-${x.k}" title="${BT_SYN[x.k][1]}">${BT_SYN[x.k][0]} ${esc(btSynOf(x))}${x.k === "rainbow" ? "" : ` ×${x.n}`} <em>+${x.v}</em></span>`).join("")}</div>`
+  : empty ? `<div class="bt-syns none"><b>🔗 Synergies</b><small>${empty}</small></div>` : "";
 const btChips = (j, wide) => { const c = [];
   if (j.grade) c.push(`<span class="bt-chip g${j.grade >= 9 ? " gem" : ""}" title="Carte gradée : +${BT_GRADE[j.grade] || 0} à toutes les stats${j.grade >= 9 ? ", et le Sang-froid : elle gagne les égalités" : ""}">${j.grade >= 9 ? "💎" : "🔖"} Note ${j.grade} · +${BT_GRADE[j.grade] || 0}${j.grade >= 9 && wide ? " · Sang-froid" : ""}</span>`);
   if (j.syn && j.star) c.push(`<span class="bt-chip ${j.star ? "s" : "a"}" title="${j.star ? "Morceau de ta Tête d'affiche" : "L'aura de ta Tête d'affiche"}">🎤 +${j.syn}${j.star ? " · " + esc(j.head || "") : ""}</span>`);
+  if (j.sb) c.push(`<span class="bt-chip y" title="${(j.syns || []).map(x => `${BT_SYN[x.k][1]} (${btSynOf(x)}) +${x.v}`).join(", ")}${j.sb >= BT_SYN_MAX ? " · plafond atteint" : ""}">🔗 +${j.sb}${wide ? " " + (j.syns || []).map(x => BT_SYN[x.k][0]).join("") : ""}</span>`);
   return c.length ? `<div class="bt-chips">${c.join("")}</div>` : ""; };
 const btBars = (j, wide) => btChips(j, wide) + `<ul class="bt-bars">${["flow", "endu", "hype", "pw"].map(s => `<li><span>${BT_STAT[s][0]}</span><i><s style="width:${Math.min(100, j[s])}%"></s></i><b>${j[s]}</b></li>`).join("")}</ul>`;
 
@@ -55,10 +78,12 @@ async function renderBattle() {
     <details class="bt-rules"><summary>Comment ça marche ?</summary>
       <p>Ton deck de 5 cartes affronte celui d'un joueur de ton niveau. À chaque manche, une stat est tirée au sort : <b>Tempo</b> (la 1re barre de la carte : Flow, Éclat, Riff…), <b>Endurance</b> (la durée), <b>Hype</b> (la popularité) ou <b>Puissance</b> (la moyenne). Tu choisis quelle carte jouer sans voir la sienne : la plus forte dans cette stat gagne la manche. La rareté, la note et le Shiny donnent un petit bonus. <b>3 manches gagnées et c'est la victoire.</b> Chaque carte ne sert qu'une fois : garde tes meilleures pour le bon moment !</p>
       <p>Tu peux aussi <b>défier un ami</b> : en amicale contre son deck, ou <b>en direct</b> s'il est en ligne (chacun choisit sa carte à chaque manche, 25 secondes pour jouer). Les matchs entre amis ne donnent pas de trophées.</p>
+      <p><b>🔗 Les synergies</b> : plus ton deck a de morceaux en commun, plus ils sont forts. Même artiste (2 : +4 chacun, jusqu'à +16 pour 5), même album (2 : +6, jusqu'à +24), même année (3 : +4, jusqu'à +10), même genre (3 : +3, jusqu'à +8), et l'Arc-en-ciel (5 raretés différentes : +6 à toutes). Elles se cumulent, jusqu'à +30 par carte.</p>
       <p><b>Tes cartes gradées comptent</b> : une note 6 donne +3 à toutes les stats, 7 : +5, 8 : +7, 9 : +11, 10 : +16, et une 9 ou une 10 a le <b>Sang-froid</b> (elle gagne les égalités). <b>Tes cartes artistes aussi</b> : choisis ta <b>Tête d'affiche</b>, ses morceaux dans ton deck prennent un gros bonus (+5, plus 2 par certification, plus 4 si Shiny ou Collector) et les autres une petite aura.</p>
       <p>Les trophées font ta ligue : Bronze, Argent (400), Or (900), Platine (1 500), Diamant (2 300), Légende (3 200). Ton deck défend aussi quand on t'attaque : à ton retour, le <b>journal de défense</b> te dit qui t'a attaqué, et tu as 24 h pour prendre ta <b>revanche</b> sur ceux qui ont gagné (une par joueur, 3 par jour, et une revanche ne se rend pas).</p></details>
     <section class="bt-deck"><h3>Mon deck${h.chosen ? "" : " <small>(automatique : tes 5 cartes les plus fortes)</small>"} <button class="ps-link" id="btEdit">✎ Modifier</button></h3>
       ${btHeadBlock(h)}
+      ${btSynHTML(btSynList(h.deck), h.deck.length ? "Aucune pour l'instant : mets plusieurs morceaux du même artiste, du même album, de la même année ou du même genre." : "")}
       <div class="bt-row" id="btDeck"></div><div id="btPick"></div></section>
     <div class="bt-cols">
       <section><h3>Mes dernières batailles</h3>${h.history.length ? `<ul class="bt-hist">${h.history.map(x => `<li class="${x.won ? "w" : "l"}">
@@ -104,7 +129,7 @@ async function btPick() {
   list.sort((a, b) => val(b) - val(a));
   BT.edit ??= BT.home.chosen ? BT.home.deck.map(j => j.id) : [];
   const draw = () => {
-    box.innerHTML = `<div class="pf-picker"><p>Choisis 5 cartes (des morceaux différents). Pense à varier : une carte rapide pour le Tempo, une longue pour l'Endurance, une star pour la Hype. Les cartes gradées et les morceaux de ta Tête d'affiche sont boostés. <b>${BT.edit.length} / 5</b></p>
+    box.innerHTML = `<div class="pf-picker"><p>Choisis 5 cartes (des morceaux différents). Pense à varier : une carte rapide pour le Tempo, une longue pour l'Endurance, une star pour la Hype. Les cartes gradées, les morceaux de ta Tête d'affiche et les <b>synergies</b> (même artiste, même album, même année, même genre) sont boostés. <b>${BT.edit.length} / 5</b></p>
       <div class="pf-pacts"><button class="btn" id="btAuto">Deck automatique</button><button class="btn" id="btCancel">Annuler</button><button class="btn primary" id="btSave"${BT.edit.length === 5 ? "" : " disabled"}>Enregistrer mon deck</button></div>
       <div class="bt-arts"><p><b>🎤 Tête d'affiche</b> : ses morceaux dans ton deck prennent un gros bonus, les autres une petite aura.</p>
         <div class="bt-arts-l"><button type="button" class="bt-art${BT.art ? "" : " on"}" data-a=""><span class="bt-art-ph">✨</span><b>Automatique</b><small>la mieux adaptée</small></button>
@@ -113,14 +138,19 @@ async function btPick() {
             <small>+${synOf([a, cp])}${n ? ` × ${n} morceau${n > 1 ? "x" : ""}` : ""} · ${CERT[a.tier] || ""}${a.collector ? " · Collector" : cp.holo ? " · Shiny" : ""}</small></button>`; }).join("") || `<p class="empty-line">Pas encore de carte artiste.</p>`}</div></div>
       <div class="bt-sort" role="group" aria-label="Trier les cartes"><span>Trier par</span>${[["best", "⭐ Recommandé"], ["pw", "💥 Puissance"], ["flow", "⚡ Tempo"], ["endu", "⏱ Endurance"], ["hype", "🔥 Hype"]].map(([k, t]) =>
         `<button type="button" data-s="${k}" aria-pressed="${(BT.sort || "best") === k}">${t}</button>`).join("")}</div>
+      <div id="btSynNow"></div>
       <div class="pf-grid" id="btGrid"></div></div>`;
     box.querySelectorAll("[data-s]").forEach(b => b.onclick = () => { BT.sort = b.dataset.s; draw(); });
     box.querySelectorAll("[data-a]").forEach(b => b.onclick = () => { BT.art = b.dataset.a || null; draw(); });
     const head = BT.art ? arts.find(([, cp]) => cp.id === BT.art) : null;
     const g = $("#btGrid"), tracks = new Set(BT.edit.map(id => list.find(([, cp]) => cp.id === id)?.[0].id));
     // the values with every bonus (grade, Shiny, rarity, Tête d'affiche), sorted by the chosen stat
-    const vOf = ([c, cp]) => { const st = stats(c), star = head && head[0].t === c.a, syn = head ? star ? synOf(head) : auraOf(head) : 0, b = c.tier * 3 + gb(cp) + (cp.holo ? 4 : 0) + syn;
-      return { flow: st.flow + b, endu: st.endu + b, hype: st.hype + b, pw: st.pw + b, grade: cp.grade, syn, star, head: head?.[0].t }; };
+    // with the synergies it would have in the deck (the cards picked, plus this one)
+    const picked = BT.edit.map(id => list.find(([, cp]) => cp.id === id)?.[0]).filter(Boolean);
+    const synIn = c => { const deck = picked.includes(c) ? picked : [...picked, c].slice(-5); return btSynergy(deck)[deck.indexOf(c)]; };
+    const vOf = ([c, cp]) => { const st = stats(c), star = head && head[0].t === c.a, syn = head ? star ? synOf(head) : auraOf(head) : 0, sy = synIn(c), b = c.tier * 3 + gb(cp) + (cp.holo ? 4 : 0) + syn + sy.sb;
+      return { flow: st.flow + b, endu: st.endu + b, hype: st.hype + b, pw: st.pw + b, grade: cp.grade, syn, star, head: head?.[0].t, sb: sy.sb, syns: sy.syns }; };
+    $("#btSynNow").innerHTML = btSynHTML(btSynList(btSynergy(picked)), picked.length ? "Aucune pour l'instant. Les chiffres des cartes montrent ce qu'elles vaudraient avec ton deck." : "Les chiffres des cartes tiennent compte des synergies avec les cartes déjà choisies.");
     const k = BT.sort || "best", shown = list.map(x => [...x, vOf(x)]);   // "Recommandé": the usual order (the strongest cards overall)
     if (k !== "best") shown.sort((a, b) => b[2][k] - a[2][k]);
     for (const [c, cp, v] of shown.slice(0, 240)) {
