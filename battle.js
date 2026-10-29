@@ -102,10 +102,11 @@ async function renderBattle() {
     <button class="bt-lgcta" id="btLeagues" style="--lc:${L[2]}"><span class="bt-lgcta-e">${btEmblem(h.league, 40)}</span>
       <span><b>Les ligues et leurs récompenses</b><small>Ta place, les 6 ligues, le cadeau de fin de saison${next ? ` · ${fmt(next[1] - h.trophies)} 🏆 avant ${next[0]}` : ""}</small></span><em>Voir →</em></button>
     <div class="bt-fbox" id="btFriends" hidden></div>
-    <section class="bt-tac"><div class="bt-tac-h"><div><p class="bt-k">Nouveau · les tactiques</p><h3>Trois façons de prendre l'avantage</h3></div><button class="btn" id="btTuto">❓ Comment ça marche</button></div>
+    <section class="bt-tac"><div class="bt-tac-h"><div><p class="bt-k">Nouveau · les tactiques</p><h3>Quatre façons de prendre l'avantage</h3></div><button class="btn" id="btTuto">❓ Comment ça marche</button></div>
       <ul class="bt-tac-l">
         <li><span>✨</span><b>Les compétences</b><small>Chaque Mythique et Légendaire a un pouvoir. Tu en déclenches <b>un seul</b> par combat, en jouant la carte.</small></li>
         <li><span>🎸</span><b>Les familles</b><small>🎤 Street bat 💖 Mainstream, qui bat 🎸 Live, qui bat 🎤 Street. La carte qui a l'avantage prend <b>+10</b>.</small></li>
+        <li><span>🔗</span><b>Les synergies</b><small>Même artiste, même album, même année, même genre : plus ton deck a de morceaux en commun, plus ils sont forts.</small></li>
         <li><span>🛡️</span><b>Ton plan de défense</b><small>Quand on t'attaque, ton deck joue seul. Choisis comment, juste en dessous.</small></li>
       </ul></section>
     <details class="bt-rules"><summary>Comment ça marche ?</summary>
@@ -217,6 +218,8 @@ function btTuto(then) {
       v: `<ul class="bt-tsk">${Object.values(BT_SK).map(([i, n, d]) => `<li><span>${i}</span><b>${n}</b><small>${d}</small></li>`).join("")}</ul>` },
     { i: "🎸", t: "Les familles", d: "Chaque morceau a une famille. Comme pierre-feuille-ciseaux : si la famille de ta carte bat celle de la sienne, <b>+10</b> pour toi.",
       v: `<div class="bt-tri">${[0, 1, 2, 0].map((f, k) => `${k ? "<i>bat</i>" : ""}<span style="--c:${BT_FAM[f][2]}">${BT_FAM[f][0]}<b>${BT_FAM[f][1]}</b>${k < 3 ? `<small>${BT_FAM[f][3]}</small>` : ""}</span>`).join("")}</div>` },
+    { i: "🔗", t: "Les synergies", d: "Plus ton deck a de morceaux en commun, plus ils sont forts. Elles se cumulent, jusqu'à <b>+30</b> par carte. Compose ton deck pour les voir en direct.",
+      v: `<ul class="bt-tsk">${Object.values(BT_SYN).map(([i, n, t]) => `<li><span>${i}</span><b>${n}</b><small>${n === "Arc-en-ciel" ? "5 raretés différentes : +6 à toutes" : t.map((v, k) => v ? `${k} : +${v}` : "").filter(Boolean).join(" · ") + " chacune"}</small></li>`).join("")}</ul>` },
     { i: "🛡️", t: "Ton plan de défense", d: "Quand quelqu'un attaque ton deck, il joue seul. Choisis son style dans « Mon deck » : les attaquants devront le deviner.",
       v: `<ul class="bt-tsk">${Object.values(BT_PLAN).map(([i, n, d]) => `<li><span>${i}</span><b>${n}</b><small>${d}</small></li>`).join("")}</ul>` },
     { i: "⚔️", t: "En combat", d: "1. Touche une carte de ta main. 2. Si elle a une compétence, active-la (ou garde-la pour plus tard). 3. Joue ! La valeur affichée tient compte de tout, sauf de la famille de sa carte, que tu découvres à la révélation.",

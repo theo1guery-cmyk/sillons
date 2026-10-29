@@ -224,3 +224,6 @@
 .bt-arena .bt-duel{align-items:flex-start}
 @media (max-width:700px){.bt-tac-l{grid-template-columns:minmax(0,1fr)}.bt-plans{grid-template-columns:repeat(2,minmax(0,1fr))}.bt-tsk li{grid-template-columns:24px 84px 1fr;font-size:.74rem}.bt-skb{max-width:220px}}
 .bt-ctrl{margin-bottom:16px}
+.bt-tac-l{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:900px){.bt-tac-l{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:520px){.bt-tac-l{grid-template-columns:minmax(0,1fr)}}
