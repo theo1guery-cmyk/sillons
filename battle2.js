@@ -6,7 +6,7 @@ const B2 = { home: null, b: null, sel: null, bet: 0, sk: false, edit: null, busy
 const B2_COST = [1, 1, 2, 3, 4, 5];
 const B2_FAM = [["🎤", "Street", "#ff8a3d"], ["💖", "Mainstream", "#ff5f9e"], ["🎸", "Live", "#59b8ff"]];
 const B2_FAM_OF = { 0: 0, 7: 0, 8: 0, 1: 1, 4: 1, 5: 1, 2: 2, 3: 2, 6: 2, 9: 2 };
-const B2_SKILLS = ["remix", "encore", "refrain", "feat", "larsen", "hymne", "jackpot"];
+const B2_SKILLS = ["remix", "encore", "refrain", "feat", "larsen", "hymne", "ovation"];
 const B2_SK = {
   remix: ["🎛️", "Remix", "La stat de la manche est retirée au sort."],
   encore: ["🔁", "Encore", "Ta carte revient dans ta main après la manche."],
@@ -14,7 +14,7 @@ const B2_SK = {
   feat: ["🎤", "Featuring", "+10 si un morceau du même artiste a déjà joué de ton côté."],
   larsen: ["📢", "Larsen", "−10 à la carte adverse."],
   hymne: ["🏟️", "Hymne", "+10 sur une balle de match."],
-  jackpot: ["🪙", "Jackpot", "+1 jeton de Hype."],
+  ovation: ["🔥", "Ovation", "+8 sur cette manche."],
 };
 const B2_PLAN = {
   aggro: ["⚡", "Agressif", "Les meilleures cartes d'abord, et ses jetons tôt."],
