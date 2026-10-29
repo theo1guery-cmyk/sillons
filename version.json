@@ -1,10 +1,9 @@
 {
-  "id": "2026-10-29.3",
-  "title": "Bataille : les tactiques arrivent",
+  "id": "2026-10-29.4",
+  "title": "Bataille : plusieurs decks",
   "notes": [
-    "✨ Les compétences : chaque Mythique et Légendaire a un pouvoir, 1 seule compétence par combat",
-    "🎸 Les familles : Street bat Mainstream, qui bat Live, qui bat Street (+10)",
-    "🛡️ Ton plan de défense : choisis comment ton deck se défend quand on l'attaque",
-    "Un tutoriel t'explique tout au premier combat"
+    "Crée jusqu'à 5 decks, chacun avec son nom et sa Tête d'affiche",
+    "Avant chaque combat, choisis le deck avec lequel tu attaques",
+    "🛡️ Choisis aussi le deck qui se défend quand on t'attaque"
   ]
 }
