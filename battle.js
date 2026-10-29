@@ -138,7 +138,6 @@ async function renderBattle() {
   $("#btLeagues").onclick = () => { BT.sub = "leagues"; renderBattle(); };
   $("#btTuto").onclick = () => btTuto();
   box.querySelectorAll("[data-plan]").forEach(b => b.onclick = async () => { try { await rpc("set_battle_plan", { p_plan: b.dataset.plan }); toast(`Plan de défense : ${BT_PLAN[b.dataset.plan][0]} ${BT_PLAN[b.dataset.plan][1]}`); renderBattle(); } catch (e) { toast(message(e)); } });
-  window.b2Panel?.(box);                           // the Bataille 2.0 in simulation (admins only)
   $("#btEdit").onclick = () => btPick();
   const he = $("#btHeadEdit"); if (he) he.onclick = () => btPick();
   box.querySelectorAll("[data-p]").forEach(b => b.onclick = () => b.dataset.p && window.openProfile?.(b.dataset.p));
