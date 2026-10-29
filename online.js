@@ -36,6 +36,7 @@ const MESSAGES = {
   pack_not_found: "Ce booster a expiré. Ouvre-en un autre.",
   need_five_tracks: "Le booster n'a pas pu être rempli. Réessaie.",
   revenge_gone: "Cette revanche n'est plus possible (déjà prise, ou plus de 24 h).",
+  battle_live_busy: "Tu as déjà un combat en direct en cours.",
   battle_deck_invalid: "Ce deck n'est plus complet (une carte a été vendue ou échangée). Modifie-le avant de combattre.",
   battle_deck_defense: "C'est ton deck de défense : choisis d'abord un autre deck pour défendre.",
   battle_deck_slot: "Tu as déjà 5 decks.",

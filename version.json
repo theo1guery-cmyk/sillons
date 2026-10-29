@@ -1,9 +1,9 @@
 {
-  "id": "2026-10-29.4",
-  "title": "Bataille : plusieurs decks",
+  "id": "2026-10-29.5",
+  "title": "Bataille : le classé en direct",
   "notes": [
-    "Crée jusqu'à 5 decks, chacun avec son nom et sa Tête d'affiche",
-    "Avant chaque combat, choisis le deck avec lequel tu attaques",
-    "🛡️ Choisis aussi le deck qui se défend quand on t'attaque"
+    "⚡ Affronte un vrai joueur de ton niveau, en direct, trophées en jeu",
+    "+10 🏆 de bonus pour le gagnant",
+    "Personne en ligne ? Le combat se lance contre un deck au bout de 30 secondes"
   ]
 }
