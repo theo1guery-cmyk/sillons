@@ -2,25 +2,20 @@
 /* Zik Hunter — the big announcement of a release, shown once to each player after it (a full screen of what is new,
    and what comes next). The content is here; NEWS.KEY changes with each big release. */
 const NEWS = {
-  KEY: "zh-news-2026-10-bataille",
+  KEY: "zh-news-2026-10-tactiques",
   cls: "news-bt",
-  kick: "Bataille de cartes · Saison classée",
-  title: "Grimpe jusqu'à la Légende",
-  sub: "Six ligues, un seul sommet. Chaque victoire te fait monter, chaque défaite te fait glisser… et plus tu montes, plus ça se mérite.",
-  // the climb: the six shields light up one after the other while the trophies count up to the Légende
-  hero: () => `<div class="nb-climb" aria-hidden="true"><div class="nb-glow"></div>
-      <ol>${LEAGUES.map((l, i) => `<li style="--lc:${l[2]};--i:${i}"><div class="nb-e">${btEmblem(l[0], i === 5 ? 84 : 52 + i * 4)}</div><b>${l[0]}</b><small>${i ? fmt(l[1]) + " 🏆" : "Départ"}</small></li>`).join("")}</ol>
-      <div class="nb-line"><s></s></div>
-      <p class="nb-count"><b data-to="3200">0</b> 🏆</p></div>`,
+  kick: "Mise à jour · Bataille de cartes",
+  title: "Place à la stratégie",
+  sub: "Ton deck ne se résume plus à ses meilleures cartes : bien le construire et bien le jouer, ça change tout.",
   feats: [
-    { ico: "📈", t: "Plus tu montes, plus c'est dur", d: "En Bronze, une victoire rapporte +36 🏆. En Légende, seulement +15, et une défaite coûte −40. Arriver au sommet, c'est bien. Y rester, c'est autre chose.", c: "#ff5f9e" },
-    { ico: "🎁", t: "Un cadeau à chaque fin de saison", d: "Selon ta ligue : des boosters, des Mythiques, des Légendaires… et pour les Légendes, une Légendaire Shiny, le Médaillon, le Dos de carte et le titre Légende.", c: "#e7b14a", tag: "Fin de saison" },
-    { ico: "🛡️", t: "Le journal de défense", d: "Ton deck se bat même quand tu n'es pas là. À ton retour, tu sais qui t'a attaqué, quelles défenses ont tenu et combien de trophées ça t'a coûté.", c: "#5fe0cf", tag: "Nouveau" },
-    { ico: "⚔️", t: "La revanche", d: "Quelqu'un t'a battu ? Tu as 24 h pour aller le chercher, en classé, trophées en jeu. Et si tu gagnes, il le saura.", c: "#ff6b7a", tag: "Nouveau" },
-    { ico: "🎬", t: "Chaque ligue a son entrée", d: "Monte d'une ligue et regarde : éclats d'argent, pluie d'or, anneaux de platine, diamants… et une couronne de feu pour la Légende.", c: "#7aa8ff" },
-    { ico: "🔄", t: "Chaque saison, tout se rejoue", d: "À la fin de la saison, les trophées sont divisés par deux. Personne ne reste en haut sans se battre.", c: "#a78bfa" },
+    { ico: "✨", t: "Les compétences", d: "Chaque Mythique et Légendaire a son pouvoir : Remix, Encore, Larsen, Hymne… Mais attention : 1 seule compétence par combat. À toi de choisir la bonne, au bon moment.", c: "#a78bfa", tag: "Nouveau" },
+    { ico: "🎸", t: "Les familles", d: "🎤 Street bat 💖 Mainstream, qui bat 🎸 Live, qui bat 🎤 Street. La carte qui a l'avantage prend +10.", c: "#ff8a3d", tag: "Nouveau" },
+    { ico: "🔗", t: "Les synergies", d: "Même artiste, même album, même année, même genre : plus ton deck a de morceaux en commun, plus ils sont forts, jusqu'à +30 par carte.", c: "#57e389", tag: "Nouveau" },
+    { ico: "🛡️", t: "Ton plan de défense", d: "Agressif, Patient, Spécialiste ou Imprévisible : choisis comment ton deck se défend quand on l'attaque.", c: "#5fe0cf", tag: "Nouveau" },
+    { ico: "💎", t: "Tes cartes gradées comptent", d: "Jusqu'à +16 sur toutes les stats selon la note, et les 9 et 10 ont le Sang-froid : elles gagnent les égalités.", c: "#7aa8ff" },
+    { ico: "🎤", t: "Ta Tête d'affiche", d: "Mets une carte artiste en tête d'affiche : ses morceaux dans ton deck prennent un gros bonus.", c: "#ff5f9e" },
   ],
-  cta: ["⚔️ Combattre maintenant", () => show("battle")],
+  cta: ["⚔️ Essayer maintenant", () => show("battle")],
   close: "Plus tard",
 };
 function newsShow(force) {
