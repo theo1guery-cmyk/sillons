@@ -391,7 +391,7 @@ async function btQueue(deck) {
   BT.busy = false;
   const el = btOpen(), t0 = Date.now(), MAX = 30;
   el.innerHTML = `<button class="bt-quit" aria-label="Annuler">×</button><div class="bt-wait bt-queue"><div class="bt-radar" aria-hidden="true"><i></i><i></i><i></i><span>⚡</span></div>
-    <p class="bt-k">Classé en direct</p><h2>Recherche d'un adversaire…</h2><p>Un joueur en ligne de ton niveau, trophées en jeu… et <b>+10 🏆 de bonus</b> si tu gagnes.</p>
+    <p class="bt-k">Classé en direct</p><h2>Recherche d'un adversaire…</h2><p>Le premier joueur en ligne qui cherche aussi, trophées en jeu… et <b>+10 🏆 de bonus</b> si tu gagnes.</p>
     <small id="btQT">0 s</small><small id="btQO"></small></div>`;
   let done = false;
   const go = m => { done = true; BT.b = m.battle; BT.again = { rlive: true, deck: dk.slot }; BT.revenge = false; btIntro(); };
@@ -404,7 +404,7 @@ async function btQueue(deck) {
     if (sec >= MAX) {
       done = true; const x = await rpc("battle_queue_leave").catch(() => null);
       if (x?.status === "matched") { done = false; return go(x); }
-      el.querySelector(".bt-queue").innerHTML = `<h2>Personne en ligne à ton niveau</h2><p>Pas de souci : ton adversaire sera le deck d'un joueur, trophées en jeu comme d'habitude.</p>`;
+      el.querySelector(".bt-queue").innerHTML = `<h2>Personne en ligne pour l'instant</h2><p>Pas de souci : ton adversaire sera le deck d'un joueur, trophées en jeu comme d'habitude.</p>`;
       await wait(1600); btClose(true); return battleStart(null, dk.slot ?? null);
     }
     try { r = await rpc("battle_queue_poll"); } catch (e) {}
