@@ -82,7 +82,7 @@ async function renderBattle() {
   if (!me) return;
   const box = views.battle;
   let h, board;
-  try { [h, board] = await Promise.all([rpc("battle_home"), rpc("battle_leaderboard")]); } catch (e) { return toast(message(e)); }
+  try { [h, board, BT.decks] = await Promise.all([rpc("battle_home"), rpc("battle_leaderboard"), rpc("battle_decks_list").catch(() => null)]); } catch (e) { return toast(message(e)); }
   BT.home = h;
   if (BT.sub === "leagues") return renderLeagues(box);
   if (!BT.el) leagueCheck(h.trophies).then(() => { if (h.defenses > 0 && !BT.el) btDefenses(); });   // a league won or lost while away (my deck defends), then how
@@ -118,9 +118,9 @@ async function renderBattle() {
       <p><b>🔗 Les synergies</b> : plus ton deck a de morceaux en commun, plus ils sont forts. Même artiste (2 : +4 chacun, jusqu'à +16 pour 5), même album (2 : +6, jusqu'à +24), même année (3 : +4, jusqu'à +10), même genre (3 : +3, jusqu'à +8), et l'Arc-en-ciel (5 raretés différentes : +6 à toutes). Elles se cumulent, jusqu'à +30 par carte.</p>
       <p><b>Tes cartes gradées comptent</b> : une note 6 donne +3 à toutes les stats, 7 : +5, 8 : +7, 9 : +11, 10 : +16, et une 9 ou une 10 a le <b>Sang-froid</b> (elle gagne les égalités). <b>Tes cartes artistes aussi</b> : choisis ta <b>Tête d'affiche</b>, ses morceaux dans ton deck prennent un gros bonus (+5, plus 2 par certification, plus 4 si Shiny ou Collector) et les autres une petite aura.</p>
       <p>Les trophées font ta ligue : Bronze, Argent (400), Or (900), Platine (1 500), Diamant (2 300), Légende (3 200). Ton deck défend aussi quand on t'attaque : à ton retour, le <b>journal de défense</b> te dit qui t'a attaqué, et tu as 24 h pour prendre ta <b>revanche</b> sur ceux qui ont gagné (une par joueur, 3 par jour, et une revanche ne se rend pas).</p></details>
-    <section class="bt-deck"><h3>Mon deck${h.chosen ? "" : " <small>(automatique : tes 5 cartes les plus fortes)</small>"} <button class="ps-link" id="btEdit">✎ Modifier</button></h3>
-      ${btHeadBlock(h)}
-      ${btSynHTML(btSynList(h.deck), h.deck.length ? "Aucune pour l'instant : mets plusieurs morceaux du même artiste, du même album, de la même année ou du même genre." : "")}
+    <section class="bt-deck">${btDeckHead(h)}
+      ${btHeadBlock(btView(h))}
+      ${btSynHTML(btSynList(btView(h).deck), btView(h).deck.length ? "Aucune pour l'instant : mets plusieurs morceaux du même artiste, du même album, de la même année ou du même genre." : "")}
       <div class="bt-row" id="btDeck"></div><div id="btPick"></div>
       ${h.plan !== undefined ? `<div class="bt-plan"><p><b>🛡️ Mon plan de défense</b> : quand on t'attaque, ton deck joue seul, comme ça (et il utilise sa compétence au bon moment).</p>
         <div class="bt-plans">${Object.entries(BT_PLAN).map(([k, [i, n, d]]) => `<button type="button" data-plan="${k}" aria-pressed="${(h.plan || "spec") === k}"><span>${i}</span><b>${n}</b><small>${d}</small></button>`).join("")}</div></div>` : ""}</section>
@@ -132,16 +132,61 @@ async function renderBattle() {
         <button class="ps-link" data-p="${p.id}">${esc(p.pseudo)}</button><b>${fmt(p.trophies)} 🏆</b></li>`).join("") || `<p class="empty-line">Le classement attend ses premiers combattants.</p>`}</ol></section>
     </div>`;
   const deck = $("#btDeck");
-  for (const j of h.deck) { const w = document.createElement("div"); w.className = "bt-dc"; w.appendChild(btCardEl(j)); w.insertAdjacentHTML("beforeend", btBars(j, true)); deck.appendChild(w); }
+  for (const j of btView(h).deck) { const w = document.createElement("div"); w.className = "bt-dc"; w.appendChild(btCardEl(j)); w.insertAdjacentHTML("beforeend", btBars(j, true)); deck.appendChild(w); }
   $("#btFight").onclick = () => battleStart();
   $("#btFriendsB").onclick = () => btFriends();
   $("#btLeagues").onclick = () => { BT.sub = "leagues"; renderBattle(); };
   $("#btTuto").onclick = () => btTuto();
   box.querySelectorAll("[data-plan]").forEach(b => b.onclick = async () => { try { await rpc("set_battle_plan", { p_plan: b.dataset.plan }); toast(`Plan de défense : ${BT_PLAN[b.dataset.plan][0]} ${BT_PLAN[b.dataset.plan][1]}`); renderBattle(); } catch (e) { toast(message(e)); } });
   $("#btEdit").onclick = () => btPick();
+  box.querySelectorAll("[data-slot]").forEach(b => b.onclick = () => { BT.slot = +b.dataset.slot; renderBattle(); });
+  const nd = $("#btNewDeck"); if (nd) nd.onclick = () => btPick(btFreeSlot());
+  const df = $("#btDefDeck"); if (df) df.onclick = async () => { try { await rpc("set_defense_deck", { p_slot: BT.slot }); toast("🛡️ Ce deck défend maintenant quand on t'attaque."); renderBattle(); } catch (e) { toast(message(e)); } };
+  const dl = $("#btDelDeck"); if (dl) dl.onclick = async () => { if (!confirm("Supprimer ce deck ?")) return; try { await rpc("delete_battle_deck", { p_slot: BT.slot }); BT.slot = null; renderBattle(); } catch (e) { toast(message(e)); } };
   const he = $("#btHeadEdit"); if (he) he.onclick = () => btPick();
   box.querySelectorAll("[data-p]").forEach(b => b.onclick = () => b.dataset.p && window.openProfile?.(b.dataset.p));
   box.querySelectorAll("[data-rv]").forEach(b => b.onclick = () => battleRevenge(b.dataset.rv));
+}
+
+/* ---------------------------------------------------------------- several decks */
+// the deck shown: one of my decks (the one picked in the tabs), else the deck that defends
+const btSlotOf = n => (BT.decks || []).find(d => d.slot === n);
+function btView(h) {
+  if (!BT.decks?.length) return h;
+  const d = btSlotOf(BT.slot) || BT.decks.find(x => x.defense) || BT.decks[0]; BT.slot = d.slot;
+  return { ...h, deck: d.deck, artist: d.artist, artist_chosen: !!d.artist_id, chosen: true, slot: d.slot, name: d.name, defense: d.defense };
+}
+const btFreeSlot = () => [1, 2, 3, 4, 5].find(n => !btSlotOf(n)) || null;
+function btDeckHead(h) {
+  if (!BT.decks) return `<h3>Mon deck${h.chosen ? "" : " <small>(automatique : tes 5 cartes les plus fortes)</small>"} <button class="ps-link" id="btEdit">✎ Modifier</button></h3>`;
+  const v = btView(h), free = btFreeSlot();
+  return `<h3>Mes decks <small>jusqu'à 5 · tu choisis avant chaque combat</small></h3>
+    <div class="bt-tabs" role="tablist">${BT.decks.map(d => `<button role="tab" data-slot="${d.slot}" aria-selected="${d.slot === v.slot}">${d.defense ? "🛡️ " : ""}${esc(d.name)}</button>`).join("")}
+      ${free ? `<button class="bt-tab-new" id="btNewDeck">＋ Nouveau deck</button>` : ""}</div>
+    ${BT.decks.length ? `<div class="bt-dk-acts"><b>${esc(v.name)}</b>${v.defense ? `<span class="bt-dk-def">🛡️ Deck de défense</span>` : ""}
+      <button class="ps-link" id="btEdit">✎ Modifier</button>${v.defense ? "" : `<button class="ps-link" id="btDefDeck">🛡️ Utiliser en défense</button><button class="ps-link bt-dk-del" id="btDelDeck">Supprimer</button>`}</div>`
+      : `<p class="bt-dk-none">Pour l'instant, ton deck est <b>automatique</b> (tes 5 cartes les plus fortes). Crée tes decks : un pour l'Endurance, un 100 % rap, un pour les synergies… et choisis avant chaque combat.</p>`}`;
+}
+// before a battle: which deck? (straight away if I have only one)
+async function btChooseDeck() {
+  if (BT.decks === undefined) BT.decks = await rpc("battle_decks_list").catch(() => null);
+  const ds = (BT.decks || []).filter(d => d.ok);
+  if (!ds.length) return { slot: null };
+  if (ds.length === 1) return { slot: ds[0].slot };
+  return new Promise(done => {
+    const el = document.createElement("div"); el.className = "bt-tuto bt-pickdk"; el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); el.setAttribute("aria-label", "Choisis ton deck");
+    const avg = d => Math.round(d.deck.reduce((t, j) => t + (j.pw || 0), 0) / Math.max(1, d.deck.length));
+    el.innerHTML = `<div class="bt-tin"><button class="news-x" type="button" aria-label="Annuler">×</button><p class="bt-k">Avant le combat</p><h2>Avec quel deck ?</h2>
+      <ul class="bt-dkl">${ds.map(d => `<li><button type="button" data-d="${d.slot}" class="${d.slot === BT.lastSlot ? "last" : ""}">
+        <span class="bt-dkl-h"><b>${d.defense ? "🛡️ " : ""}${esc(d.name)}</b><small>Puissance moyenne ${avg(d)}${d.artist ? ` · 🎤 ${esc(d.artist.name || "")}` : ""}${d.slot === BT.lastSlot ? " · le dernier utilisé" : ""}</small></span>
+        <span class="bt-dkl-c">${d.deck.map(j => `<i>${btCardEl(j).outerHTML}</i>`).join("")}</span></button></li>`).join("")}</ul></div>`;
+    document.body.appendChild(el); requestAnimationFrame(() => el.classList.add("on"));
+    const close = v => { el.classList.remove("on"); setTimeout(() => el.remove(), 250); done(v); };
+    el.querySelector(".news-x").onclick = () => close(null);
+    el.addEventListener("keydown", e => { if (e.key === "Escape") close(null); });
+    el.querySelectorAll("[data-d]").forEach(b => b.onclick = () => { BT.lastSlot = +b.dataset.d; close({ slot: +b.dataset.d }); });
+    (el.querySelector(".last") || el.querySelector("[data-d]")).focus({ preventScroll: true });
+  });
 }
 
 // the Tête d'affiche of my deck: one of my artist cards, a big bonus to its tracks, a small aura to the others
@@ -157,20 +202,23 @@ function btHeadBlock(h) {
     <span class="bt-head-cert">${CERT[a.tier] || ""}</span>${h.deck.length ? `<button class="ps-link" id="btHeadEdit">Changer</button>` : ""}</div>`;
 }
 // my deck: 5 different tracks, the strongest shown first with their stats
-async function btPick() {
+async function btPick(newSlot) {
   const box = $("#btPick");
+  const multi = !!BT.decks, slot = multi ? (newSlot || BT.slot || 1) : null, cur = multi ? btSlotOf(slot) : null;
+  if (BT.editSlot !== slot) { BT.edit = null; BT.art = undefined; BT.editSlot = slot; BT.editName = cur?.name || (BT.decks?.length ? `Deck ${slot}` : "Mon deck"); }
   const list = [];
   for (const c of Object.values(S.c)) { if (isArtist(c) || c.ed) continue; const cp = c.copies.find(x => x.grade) || c.copies.find(x => x.holo) || c.copies[0]; if (cp) list.push([c, cp]); }
   const gb = cp => BT_GRADE[cp.grade || 0] || 0;
   const val = ([c, cp]) => stats(c).pw + c.tier * 3 + gb(cp) + (cp.holo ? 4 : 0);
   const arts = Object.values(S.c).filter(c => isArtist(c) && c.copies?.length).map(c => [c, c.copies.find(x => x.holo) || c.copies[0]]).sort((a, b) => b[0].tier - a[0].tier);
   const synOf = ([a, cp]) => 5 + 2 * a.tier + (cp.holo || a.collector ? 4 : 0), auraOf = ([a]) => Math.floor(a.tier / 2) + (a.collector ? 1 : 0);
-  if (BT.art === undefined) BT.art = BT.home.artist_chosen ? BT.home.artist?.id : null;
+  if (BT.art === undefined) BT.art = multi ? (cur?.artist_id || null) : BT.home.artist_chosen ? BT.home.artist?.id : null;
   list.sort((a, b) => val(b) - val(a));
-  BT.edit ??= BT.home.chosen ? BT.home.deck.map(j => j.id) : [];
+  BT.edit ??= multi ? (cur ? cur.deck.map(j => j.id) : []) : BT.home.chosen ? BT.home.deck.map(j => j.id) : [];
   const draw = () => {
     box.innerHTML = `<div class="pf-picker"><p>Choisis 5 cartes (des morceaux différents). Pense à varier : une carte rapide pour le Tempo, une longue pour l'Endurance, une star pour la Hype. Les cartes gradées, les morceaux de ta Tête d'affiche et les <b>synergies</b> (même artiste, même album, même année, même genre) sont boostés. <b>${BT.edit.length} / 5</b></p>
-      <div class="pf-pacts"><button class="btn" id="btAuto">Deck automatique</button><button class="btn" id="btCancel">Annuler</button><button class="btn primary" id="btSave"${BT.edit.length === 5 ? "" : " disabled"}>Enregistrer mon deck</button></div>
+      ${multi ? `<label class="bt-dk-name">Nom du deck <input id="btDkName" maxlength="24" value="${esc(BT.editName || "")}" placeholder="Ex. : Rap 2021, Endurance…"></label>` : ""}
+      <div class="pf-pacts">${multi ? "" : `<button class="btn" id="btAuto">Deck automatique</button>`}<button class="btn" id="btCancel">Annuler</button><button class="btn primary" id="btSave"${BT.edit.length === 5 ? "" : " disabled"}>Enregistrer ${multi ? "ce deck" : "mon deck"}</button></div>
       <div class="bt-arts"><p><b>🎤 Tête d'affiche</b> : ses morceaux dans ton deck prennent un gros bonus, les autres une petite aura.</p>
         <div class="bt-arts-l"><button type="button" class="bt-art${BT.art ? "" : " on"}" data-a=""><span class="bt-art-ph">✨</span><b>Automatique</b><small>la mieux adaptée</small></button>
         ${arts.map(([a, cp]) => { const n = BT.edit.filter(id => list.find(([, x]) => x.id === id)?.[0].a === a.t).length;
@@ -204,8 +252,13 @@ async function btPick() {
         draw(); };
       g.appendChild(w);
     }
-    const save = async ids => { try { await rpc("set_battle_deck", { p_cards: ids, p_artist: BT.art || null }); toast("Deck enregistré !"); BT.edit = null; BT.art = undefined; renderBattle(); } catch (e) { toast(message(e)); } };
-    $("#btSave").onclick = () => save(BT.edit); $("#btAuto").onclick = () => save([]); $("#btCancel").onclick = () => { BT.edit = null; BT.art = undefined; box.innerHTML = ""; };
+    const nm = $("#btDkName"); if (nm) nm.oninput = () => { BT.editName = nm.value; };
+    const done = () => { BT.edit = null; BT.art = undefined; BT.editSlot = undefined; };
+    const save = async ids => { try {
+        if (multi) { await rpc("save_battle_deck", { p_slot: slot, p_name: (BT.editName || "").trim() || `Deck ${slot}`, p_cards: ids, p_artist: BT.art || null }); BT.slot = slot; }
+        else await rpc("set_battle_deck", { p_cards: ids, p_artist: BT.art || null });
+        toast("Deck enregistré !"); done(); renderBattle(); } catch (e) { toast(message(e)); } };
+    $("#btSave").onclick = () => save(BT.edit); const au = $("#btAuto"); if (au) au.onclick = () => save([]); $("#btCancel").onclick = () => { done(); box.innerHTML = ""; };
   };
   draw(); box.scrollIntoView({ behavior: "smooth", block: "start" });
 }
@@ -253,18 +306,21 @@ function btOpen() {
   return el;
 }
 // ranked (no friend) or friendly (a friend's deck answers for him)
-async function battleStart(friend) {
+async function battleStart(friend, deck) {
   if (BT.busy) return;
   if (!btTutoSeen()) return btTuto(() => battleStart(friend));
+  const dk = deck !== undefined ? { slot: deck } : await btChooseDeck(); if (!dk) return;
   BT.busy = true;
-  try { BT.b = await rpc("battle_start", { p_friend: friend || null }); } catch (e) { BT.busy = false; return toast(message(e)); }
-  BT.busy = false; BT.again = friend ? { friend } : {}; BT.revenge = false;
+  try { BT.b = await rpc("battle_start", dk.slot ? { p_friend: friend || null, p_deck: dk.slot } : { p_friend: friend || null }); } catch (e) { BT.busy = false; return toast(message(e)); }
+  BT.busy = false; BT.again = friend ? { friend, deck: dk.slot } : { deck: dk.slot }; BT.revenge = false;
   btOpen(); btIntro();
 }
 // the revenge: a ranked battle against the one who beat my deck while I was away (once, within 24 hours)
 async function battleRevenge(id) {
-  if (BT.busy) return; BT.busy = true;
-  try { BT.b = await rpc("battle_revenge", { p_battle: id }); } catch (e) { BT.busy = false; return toast(message(e)); }
+  if (BT.busy) return;
+  const dk = await btChooseDeck(); if (!dk) return;
+  BT.busy = true;
+  try { BT.b = await rpc("battle_revenge", dk.slot ? { p_battle: id, p_deck: dk.slot } : { p_battle: id }); } catch (e) { BT.busy = false; return toast(message(e)); }
   BT.busy = false; BT.again = {}; BT.revenge = true;
   btOpen(); btIntro();
 }
@@ -312,8 +368,10 @@ const btDefTimer = setInterval(() => {
 }, 4000);
 // live: I invite a friend and wait (2 minutes at most) for him to accept
 async function battleInvite(friend, pseudo) {
-  if (BT.busy) return; BT.busy = true;
-  let b; try { b = await rpc("battle_invite", { p_friend: friend }); } catch (e) { BT.busy = false; return toast(message(e)); }
+  if (BT.busy) return;
+  const dk = await btChooseDeck(); if (!dk) return;
+  BT.busy = true;
+  let b; try { b = await rpc("battle_invite", dk.slot ? { p_friend: friend, p_deck: dk.slot } : { p_friend: friend }); } catch (e) { BT.busy = false; return toast(message(e)); }
   BT.busy = false; BT.b = b; BT.again = { live: friend, pseudo };
   const el = btOpen(), t0 = Date.now();
   el.innerHTML = `<button class="bt-quit" aria-label="Annuler">×</button><div class="bt-wait"><div class="bt-spin" aria-hidden="true"></div><h2>Invitation envoyée</h2>
@@ -345,7 +403,8 @@ async function btInvites() {
   const gone = setTimeout(() => el.remove(), 110000);
   el.querySelectorAll("[data-a]").forEach(b => b.onclick = async () => {
     clearTimeout(gone); el.remove();
-    try { const r = await rpc("battle_answer", { p_battle: inv.id, p_accept: b.dataset.a === "1" }); if (r) { BT.b = r; BT.again = {}; btOpen(); btIntro(); } }
+    try { const yes = b.dataset.a === "1", dk = yes ? await btChooseDeck() : {}; if (!dk) return rpc("battle_answer", { p_battle: inv.id, p_accept: false }).catch(() => {});
+      const r = await rpc("battle_answer", dk.slot ? { p_battle: inv.id, p_accept: yes, p_deck: dk.slot } : { p_battle: inv.id, p_accept: yes }); if (r) { BT.b = r; BT.again = {}; btOpen(); btIntro(); } }
     catch (e) { toast(message(e)); }
   });
 }
@@ -475,7 +534,7 @@ async function btEnd() {
     ${b.reward ? `<p class="bt-rw">+${b.reward} Streams</p>` : ""}
     <div class="bt-oc">${(b.opp_cards || []).map(j => `<div>${btCardEl(j).outerHTML}</div>`).join("")}</div>
     <div class="bt-acts"><button class="btn primary" id="btAgain">${BT.again?.live ? "⚔️ Revanche en direct" : BT.again?.friend ? "⚔️ Revanche" : "⚔️ Rejouer"}</button><button class="btn" id="btBack">Retour</button></div></div>`;
-  $("#btAgain").onclick = () => { const a = BT.again || {}; btClose(true); if (a.live) battleInvite(a.live, a.pseudo); else battleStart(a.friend); };
+  $("#btAgain").onclick = () => { const a = BT.again || {}; btClose(true); if (a.live) battleInvite(a.live, a.pseudo); else battleStart(a.friend, "deck" in a ? a.deck : undefined); };
   $("#btBack").onclick = () => btClose();
   try { loadProfile(); } catch (e) {}
 }
