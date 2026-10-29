@@ -104,7 +104,7 @@ async function renderBattle() {
     <div class="bt-fbox" id="btFriends" hidden></div>
     <section class="bt-tac"><div class="bt-tac-h"><div><p class="bt-k">Nouveau · les tactiques</p><h3>Quatre façons de prendre l'avantage</h3></div><button class="btn" id="btTuto">❓ Comment ça marche</button></div>
       <ul class="bt-tac-l">
-        <li><span>✨</span><b>Les compétences</b><small>Chaque Mythique et Légendaire a un pouvoir. Tu en déclenches <b>un seul</b> par combat, en jouant la carte.</small></li>
+        <li><span>✨</span><b>Les compétences</b><small>Chaque Mythique et Légendaire a un pouvoir. <b class="bt-one">1 seule compétence par combat</b>, même si ton deck en a plusieurs : à toi de choisir laquelle, et quand.</small></li>
         <li><span>🎸</span><b>Les familles</b><small>🎤 Street bat 💖 Mainstream, qui bat 🎸 Live, qui bat 🎤 Street. La carte qui a l'avantage prend <b>+10</b>.</small></li>
         <li><span>🔗</span><b>Les synergies</b><small>Même artiste, même album, même année, même genre : plus ton deck a de morceaux en commun, plus ils sont forts.</small></li>
         <li><span>🛡️</span><b>Ton plan de défense</b><small>Quand on t'attaque, ton deck joue seul. Choisis comment, juste en dessous.</small></li>
@@ -112,7 +112,7 @@ async function renderBattle() {
     <details class="bt-rules"><summary>Comment ça marche ?</summary>
       <p>Ton deck de 5 cartes affronte celui d'un joueur de ton niveau. À chaque manche, une stat est tirée au sort : <b>Tempo</b> (la 1re barre de la carte : Flow, Éclat, Riff…), <b>Endurance</b> (la durée), <b>Hype</b> (la popularité) ou <b>Puissance</b> (la moyenne). Tu choisis quelle carte jouer sans voir la sienne : la plus forte dans cette stat gagne la manche. La rareté, la note et le Shiny donnent un petit bonus. <b>3 manches gagnées et c'est la victoire.</b> Chaque carte ne sert qu'une fois : garde tes meilleures pour le bon moment !</p>
       <p>Tu peux aussi <b>défier un ami</b> : en amicale contre son deck, ou <b>en direct</b> s'il est en ligne (chacun choisit sa carte à chaque manche, 25 secondes pour jouer). Les matchs entre amis ne donnent pas de trophées.</p>
-      <p><b>✨ Les compétences</b> : chaque Mythique et Légendaire a la sienne, toujours la même. Quand tu choisis la carte en combat, tu peux l'activer, mais <b>une seule fois par combat</b>. ${Object.values(BT_SK).map(([i, n, d]) => `${i} <b>${n}</b> : ${d}`).join(" ")}</p>
+      <p><b>✨ Les compétences</b> : chaque Mythique et Légendaire a la sienne, toujours la même. Quand tu choisis la carte en combat, tu peux l'activer. Attention : <b>1 seule compétence par combat</b>, même si ton deck a plusieurs Mythiques et Légendaires. ${Object.values(BT_SK).map(([i, n, d]) => `${i} <b>${n}</b> : ${d}`).join(" ")}</p>
       <p><b>🎸 Les familles</b> : ${BT_FAM.map(f => `${f[0]} <b>${f[1]}</b> (${f[3]})`).join(", ")}. Street bat Mainstream, Mainstream bat Live, Live bat Street : la carte qui a l'avantage prend +10. Les Inclassables sont neutres.</p>
       <p><b>🛡️ Le plan de défense</b> : quand on t'attaque, ton deck joue seul. ${Object.values(BT_PLAN).map(([i, n, d]) => `${i} <b>${n}</b> : ${d}`).join(" ")}</p>
       <p><b>🔗 Les synergies</b> : plus ton deck a de morceaux en commun, plus ils sont forts. Même artiste (2 : +4 chacun, jusqu'à +16 pour 5), même album (2 : +6, jusqu'à +24), même année (3 : +4, jusqu'à +10), même genre (3 : +3, jusqu'à +8), et l'Arc-en-ciel (5 raretés différentes : +6 à toutes). Elles se cumulent, jusqu'à +30 par carte.</p>
@@ -214,8 +214,8 @@ async function btPick() {
 /* ---------------------------------------------------------------- the tactics in 4 screens */
 function btTuto(then) {
   const pages = [
-    { i: "✨", t: "Les compétences", d: "Chaque Mythique et Légendaire a un pouvoir, toujours le même (l'étiquette ✨ sous la carte). En combat, choisis ta carte, puis active sa compétence si tu veux. Attention : <b>une seule par combat</b>.",
-      v: `<ul class="bt-tsk">${Object.values(BT_SK).map(([i, n, d]) => `<li><span>${i}</span><b>${n}</b><small>${d}</small></li>`).join("")}</ul>` },
+    { i: "✨", t: "Les compétences", d: "Chaque Mythique et Légendaire a un pouvoir, toujours le même (l'étiquette ✨ sous la carte). En combat, choisis ta carte, puis active sa compétence si tu veux.",
+      v: `<p class="bt-onebig">✨ 1 seule compétence par combat<small>même si ton deck a plusieurs Mythiques et Légendaires : choisis la bonne, au bon moment</small></p>`+`<ul class="bt-tsk">${Object.values(BT_SK).map(([i, n, d]) => `<li><span>${i}</span><b>${n}</b><small>${d}</small></li>`).join("")}</ul>` },
     { i: "🎸", t: "Les familles", d: "Chaque morceau a une famille. Comme pierre-feuille-ciseaux : si la famille de ta carte bat celle de la sienne, <b>+10</b> pour toi.",
       v: `<div class="bt-tri">${[0, 1, 2, 0].map((f, k) => `${k ? "<i>bat</i>" : ""}<span style="--c:${BT_FAM[f][2]}">${BT_FAM[f][0]}<b>${BT_FAM[f][1]}</b>${k < 3 ? `<small>${BT_FAM[f][3]}</small>` : ""}</span>`).join("")}</div>` },
     { i: "🔗", t: "Les synergies", d: "Plus ton deck a de morceaux en commun, plus ils sont forts. Elles se cumulent, jusqu'à <b>+30</b> par carte. Compose ton deck pour les voir en direct.",
@@ -372,6 +372,7 @@ function btDraw() {
       <div class="bt-clash" id="btClash"></div>
       ${st ? `<div class="bt-stat" data-s="${b.stat}"><span>${st[2]}</span><div><b>${st[0]}</b><small>${st[1]} · la plus haute gagne</small></div></div>` : ""}
     </div>
+    ${b.skill_used !== undefined && b.mine.some(x => x.skill) ? `<div class="bt-mysk ${b.skill_used ? "off" : ""}">✨ Ta compétence : <b>${b.skill_used ? "0 / 1 · déjà utilisée" : "1 / 1 disponible"}</b><small>1 seule par combat</small></div>` : ""}
     ${btCtrl(b)}
     <div class="bt-hand">${b.mine.map((j, i) => `<button class="bt-card${b.used.includes(i) ? " used" : ""}${BT.sel === i ? " bt-sel" : ""}" data-i="${i}"${b.used.includes(i) || b.status !== "playing" || b.picked ? " disabled" : ""}>
       <div class="bt-cw"></div>${st ? `<span class="bt-val">${j[b.stat] + (BT.sel === i ? btSkAdd(b, j) : 0)}</span>` : ""}${j.skill ? `<span class="bt-hsk" title="${esc(BT_SK[j.skill]?.[1] || "")}">${BT_SK[j.skill]?.[0] || "✨"}</span>` : ""}${j.fam != null ? `<span class="bt-hf">${BT_FAM[j.fam][0]}</span>` : ""}</button>`).join("")}</div>`;
@@ -401,8 +402,8 @@ function btCtrl(b) {
   if (!j) return `<div class="bt-ctrl"><p class="bt-hint">Touche une carte de ta main pour la choisir${b.mine.some((x, i) => x.skill && !b.used.includes(i)) && !b.skill_used ? " · les cartes ✨ ont une compétence" : ""}.</p></div>`;
   const s = BT_SK[j.skill], can = j.skill && !b.skill_used, add = btSkAdd(b, j), f = j.fam;
   return `<div class="bt-ctrl on"><div class="bt-ctrl-r">
-      ${can ? `<button type="button" class="bt-skb${BT.skOn ? " on" : ""}" id="btSk">${s[0]} ${BT.skOn ? "Compétence activée" : "Activer"} : ${s[1]}<small>${s[2]}${BT.skOn ? "" : " · une seule par combat"}</small></button>`
-        : j.skill ? `<span class="bt-skx">✨ Tu as déjà utilisé ta compétence dans ce combat</span>` : ""}
+      ${can ? `<button type="button" class="bt-skb${BT.skOn ? " on" : ""}" id="btSk">${s[0]} ${BT.skOn ? "Compétence activée" : "Activer"} : ${s[1]}<small>${s[2]}${BT.skOn ? " · c'est ta seule compétence du combat" : " · 1 seule par combat"}</small></button>`
+        : j.skill ? `<span class="bt-skx">✨ Compétence déjà utilisée : 1 seule par combat</span>` : ""}
       <button class="btn primary bt-go2" id="btGo">⚔️ Jouer ${esc(j.title || "")}</button></div>
     <p class="bt-hint">Valeur : <b>${j[b.stat]}</b>${add ? ` + ${add} = <b class="g">${j[b.stat] + add}</b>` : ""}${BT.skOn && j.skill === "larsen" ? " · <b>−10 pour lui</b>" : ""}${BT.skOn && j.skill === "remix" ? " · la stat va être retirée au sort !" : ""}
       ${f != null ? `<small>${BT_FAM[f][0]} +10 si sa carte est ${BT_FAM[(f + 1) % 3][0]} ${BT_FAM[(f + 1) % 3][1]} · +10 pour lui si elle est ${BT_FAM[(f + 2) % 3][0]} ${BT_FAM[(f + 2) % 3][1]}</small>` : ""}</p></div>`;
