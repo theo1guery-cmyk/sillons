@@ -226,9 +226,16 @@ async function btPick(newSlot) {
             <small>+${synOf([a, cp])}${n ? ` × ${n} morceau${n > 1 ? "x" : ""}` : ""} · ${CERT[a.tier] || ""}${a.collector ? " · Collector" : cp.holo ? " · Shiny" : ""}</small></button>`; }).join("") || `<p class="empty-line">Pas encore de carte artiste.</p>`}</div></div>
       <div class="bt-sort" role="group" aria-label="Trier les cartes"><span>Trier par</span>${[["best", "⭐ Recommandé"], ["pw", "💥 Puissance"], ["flow", "⚡ Tempo"], ["endu", "⏱ Endurance"], ["hype", "🔥 Hype"]].map(([k, t]) =>
         `<button type="button" data-s="${k}" aria-pressed="${(BT.sort || "best") === k}">${t}</button>`).join("")}</div>
+      <div class="bt-find"><input type="search" id="btFindQ" placeholder="🔎 Chercher un titre, un artiste, un album…" value="${esc(BT.q || "")}" aria-label="Chercher une carte">
+        <div class="bt-find-f" role="group" aria-label="Filtrer">${[["", "Toutes"], ...BT_FAM.map((f, i) => [String(i), `${f[0]} ${f[1]}`]), ["x", "Inclassables"]].map(([k, t]) =>
+          `<button type="button" data-fam="${k}" aria-pressed="${(BT.fam ?? "") === k}">${t}</button>`).join("")}
+          <button type="button" data-skf aria-pressed="${!!BT.skf}">✨ Avec compétence</button></div></div>
       <div id="btSynNow"></div>
       <div class="pf-grid" id="btGrid"></div></div>`;
     box.querySelectorAll("[data-s]").forEach(b => b.onclick = () => { BT.sort = b.dataset.s; draw(); });
+    box.querySelectorAll("[data-fam]").forEach(b => b.onclick = () => { BT.fam = b.dataset.fam; draw(); });
+    box.querySelector("[data-skf]").onclick = () => { BT.skf = !BT.skf; draw(); };
+    const fq = $("#btFindQ"); fq.oninput = () => { BT.q = fq.value; const pos = fq.selectionStart; draw(); const f2 = $("#btFindQ"); f2.focus({ preventScroll: true }); f2.setSelectionRange(pos, pos); };
     box.querySelectorAll("[data-a]").forEach(b => b.onclick = () => { BT.art = b.dataset.a || null; draw(); });
     const head = BT.art ? arts.find(([, cp]) => cp.id === BT.art) : null;
     const g = $("#btGrid"), tracks = new Set(BT.edit.map(id => list.find(([, cp]) => cp.id === id)?.[0].id));
@@ -239,8 +246,14 @@ async function btPick(newSlot) {
     const vOf = ([c, cp]) => { const st = stats(c), star = head && head[0].t === c.a, syn = head ? star ? synOf(head) : auraOf(head) : 0, sy = synIn(c), b = c.tier * 3 + gb(cp) + (cp.holo ? 4 : 0) + syn + sy.sb;
       return { flow: st.flow + b, endu: st.endu + b, hype: st.hype + b, pw: st.pw + b, grade: cp.grade, syn, star, head: head?.[0].t, sb: sy.sb, syns: sy.syns, fam: btFamOf(c), skill: btSkillOf(c.id, c.tier) }; };
     $("#btSynNow").innerHTML = btSynHTML(btSynList(btSynergy(picked)), picked.length ? "Aucune pour l'instant. Les chiffres des cartes montrent ce qu'elles vaudraient avec ton deck." : "Les chiffres des cartes tiennent compte des synergies avec les cartes déjà choisies.");
-    const k = BT.sort || "best", shown = list.map(x => [...x, vOf(x)]);   // "Recommandé": the usual order (the strongest cards overall)
+    // the search (title, artist, album, without accents) and the filters (family, skill); the cards picked always stay
+    const norm = t => (t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    const q = norm(BT.q || "").trim(), fam = BT.fam ?? "";
+    const keep = ([c, cp]) => BT.edit.includes(cp.id) || ((!q || norm(`${c.t} ${c.a} ${c.al}`).includes(q))
+      && (fam === "" || (fam === "x" ? btFamOf(c) == null : btFamOf(c) === +fam)) && (!BT.skf || btSkillOf(c.id, c.tier)));
+    const k = BT.sort || "best", shown = list.filter(keep).map(x => [...x, vOf(x)]);   // "Recommandé": the usual order (the strongest cards overall)
     if (k !== "best") shown.sort((a, b) => b[2][k] - a[2][k]);
+    if (!shown.length) g.innerHTML = `<p class="empty-line">Aucune carte ne correspond. Essaie un autre mot ou un autre filtre.</p>`;
     for (const [c, cp, v] of shown.slice(0, 240)) {
       const w = document.createElement("button"); w.type = "button"; w.className = "pf-gc pick bt-pk"; const k = BT.edit.indexOf(cp.id);
       if (k >= 0) { w.classList.add("on"); w.dataset.k = k + 1; }
