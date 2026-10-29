@@ -271,3 +271,4 @@
 @keyframes btRadar{0%{transform:scale(.3);opacity:.9}100%{transform:scale(1.3);opacity:0}}
 #btQO{font:600 .8rem var(--body,inherit);color:var(--muted)}
 @media (prefers-reduced-motion:reduce){.bt-radar i{animation:none;opacity:.4}}
+.bt-rlive em{font-style:normal;margin-left:4px;padding:1px 7px;border-radius:99px;background:rgba(255,255,255,.22);font-size:.78rem}

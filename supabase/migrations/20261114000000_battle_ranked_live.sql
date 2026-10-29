@@ -1,5 +1,5 @@
 -- The ranked live: a queue of the players online, matched by trophies (the gap allowed grows while waiting); two
--- real players, both choosing their cards each round, trophies at stake for both. Nobody after 30 seconds: the game
+-- real players, both choosing their cards each round, trophies at stake for both (+10 more for the winner). Nobody after 30 seconds: the game
 -- falls back on a ranked battle against a deck.
 
 alter table public.battles add column if not exists ranked boolean not null default false;
@@ -90,6 +90,8 @@ begin
         dd := greatest(1, round(greatest(15, least(45, 30 + (att.trophies - def.trophies) / 20)) * dm.g));
         ad := -least(att.trophies, round(greatest(8, least(30, 20 + (def.trophies - att.trophies) / 25)) * am.l)::int);
       end if;
+      -- the bonus of the live: +10 more for the winner
+      if b.winner = b.attacker then ad := ad + 10; else dd := dd + 10; end if;
       perform bump(b.winner, 'battle_win');
       if (select n from daily_counters where owner = b.winner and day = game_day() and metric = 'battle_win') <= 5 then
         rw := 100; perform add_streams(b.winner, rw, 'Bataille de cartes gagnée');
