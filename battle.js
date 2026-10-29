@@ -95,7 +95,7 @@ async function renderBattle() {
         <div class="bt-prog" aria-label="Progression vers la ligue suivante"><s style="width:${pct}%"></s></div>
         <small>${next ? `${fmt(next[1] - h.trophies)} 🏆 avant ${next[0]}` : "Tu es au sommet !"} · record ${fmt(h.best)} 🏆</small>
 </div></div>
-      <div class="bt-go"><button class="btn primary bt-fight" id="btFight">⚔️ Combattre</button><button class="btn" id="btFriendsB">👥 Défier un ami</button>
+      <div class="bt-go"><button class="btn primary bt-fight" id="btFight">⚔️ Combattre</button><button class="btn bt-rlive" id="btLive">⚡ Classé en direct</button><button class="btn" id="btFriendsB">👥 Défier un ami</button>
         <small>${h.wins} victoire${h.wins > 1 ? "s" : ""} · ${h.losses} défaite${h.losses > 1 ? "s" : ""}</small>
         <small class="bt-day">Victoires du jour : <b>${Math.min(h.today, 5)} / 5</b> · +100 Streams chacune</small></div>
     </section>
@@ -134,6 +134,7 @@ async function renderBattle() {
   const deck = $("#btDeck");
   for (const j of btView(h).deck) { const w = document.createElement("div"); w.className = "bt-dc"; w.appendChild(btCardEl(j)); w.insertAdjacentHTML("beforeend", btBars(j, true)); deck.appendChild(w); }
   $("#btFight").onclick = () => battleStart();
+  $("#btLive").onclick = () => btQueue();
   $("#btFriendsB").onclick = () => btFriends();
   $("#btLeagues").onclick = () => { BT.sub = "leagues"; renderBattle(); };
   $("#btTuto").onclick = () => btTuto();
@@ -310,6 +311,7 @@ const btTutoSeen = () => { try { return !!localStorage.getItem("zh-bt-tactics");
 
 /* ---------------------------------------------------------------- the battle */
 const BT_MODE = { ranked: "Classée", friend: "Amicale", live: "En direct" };
+const btModeName = b => b.mode === "live" && b.ranked ? "Classée en direct" : BT_MODE[b.mode];
 function btOpen() {
   BT.sel = null; BT.skOn = false;
   if (BT.el) return BT.el;
@@ -379,6 +381,37 @@ const btDefTimer = setInterval(() => {
   clearInterval(btDefTimer);
   rpc("battle_home").then(h => { if (h.defenses > 0) btDefenses(); }).catch(() => {});
 }, 4000);
+// the ranked live: the queue of the players online (30 seconds at most, then a battle against a deck)
+async function btQueue(deck) {
+  if (BT.busy || BT.el) return;
+  if (!btTutoSeen()) return btTuto(() => btQueue(deck));
+  const dk = deck !== undefined ? { slot: deck } : await btChooseDeck(); if (!dk) return;
+  BT.busy = true;
+  let r; try { r = await rpc("battle_queue_join", dk.slot ? { p_deck: dk.slot } : {}); } catch (e) { BT.busy = false; return toast(message(e)); }
+  BT.busy = false;
+  const el = btOpen(), t0 = Date.now(), MAX = 30;
+  el.innerHTML = `<button class="bt-quit" aria-label="Annuler">×</button><div class="bt-wait bt-queue"><div class="bt-radar" aria-hidden="true"><i></i><i></i><i></i><span>⚡</span></div>
+    <p class="bt-k">Classé en direct</p><h2>Recherche d'un adversaire…</h2><p>Un joueur en ligne de ton niveau, trophées en jeu.</p>
+    <small id="btQT">0 s</small><small id="btQO"></small></div>`;
+  let done = false;
+  const go = m => { done = true; BT.b = m.battle; BT.again = { rlive: true, deck: dk.slot }; BT.revenge = false; btIntro(); };
+  el.querySelector(".bt-quit").onclick = async () => { done = true; const x = await rpc("battle_queue_leave").catch(() => null); if (x?.status === "matched") { done = false; return go(x); } btClose(); };
+  const poll = async () => {
+    if (done || BT.el !== el) return;
+    if (r?.status === "matched") return go(r);
+    const sec = Math.round((Date.now() - t0) / 1000), t = $("#btQT"), o = $("#btQO");
+    if (t) t.textContent = `${sec} s`; if (o && r?.others != null) o.textContent = r.others ? `${r.others} joueur${r.others > 1 ? "s" : ""} en recherche` : "";
+    if (sec >= MAX) {
+      done = true; const x = await rpc("battle_queue_leave").catch(() => null);
+      if (x?.status === "matched") { done = false; return go(x); }
+      el.querySelector(".bt-queue").innerHTML = `<h2>Personne en ligne à ton niveau</h2><p>Pas de souci : ton adversaire sera le deck d'un joueur, trophées en jeu comme d'habitude.</p>`;
+      await wait(1600); btClose(true); return battleStart(null, dk.slot ?? null);
+    }
+    try { r = await rpc("battle_queue_poll"); } catch (e) {}
+    setTimeout(poll, 2000);
+  };
+  setTimeout(poll, 600);
+}
 // live: I invite a friend and wait (2 minutes at most) for him to accept
 async function battleInvite(friend, pseudo) {
   if (BT.busy) return;
@@ -425,7 +458,7 @@ setInterval(btInvites, 6000);
 
 function btIntro() {
   const b = BT.b, el = BT.el;
-  el.innerHTML = `<div class="bt-vs"><p class="bt-mode">${b.revenge || BT.revenge ? "⚔️ Revanche" : BT_MODE[b.mode]}</p><div class="bt-side bt-me">${btEmblem(b.me.league, 70)}<b>${esc(b.me.pseudo)}</b><small>${fmt(b.me.trophies)} 🏆</small></div>
+  el.innerHTML = `<div class="bt-vs"><p class="bt-mode">${b.revenge || BT.revenge ? "⚔️ Revanche" : btModeName(b)}</p><div class="bt-side bt-me">${btEmblem(b.me.league, 70)}<b>${esc(b.me.pseudo)}</b><small>${fmt(b.me.trophies)} 🏆</small></div>
     <div class="bt-vsx">VS</div><div class="bt-side bt-op">${btEmblem(b.opp.league, 70)}<b>${esc(b.opp.pseudo)}</b><small>${fmt(b.opp.trophies)} 🏆 · ${b.opp.league}</small></div></div>`;
   setTimeout(() => btDraw(), 1900);
 }
@@ -434,7 +467,7 @@ function btDraw() {
   if (b.status === "done") return btEnd();
   const st = b.stat ? BT_STAT[b.stat] : null, his = b.log.map(x => x.his), live = b.mode === "live";
   el.innerHTML = `<button class="bt-quit" aria-label="Quitter">×</button>
-    <div class="bt-top"><div class="bt-who">${btEmblem(b.opp.league, 30)}<b>${esc(b.opp.pseudo)}</b><em class="bt-tag">${BT_MODE[b.mode]}</em></div>
+    <div class="bt-top"><div class="bt-who">${btEmblem(b.opp.league, 30)}<b>${esc(b.opp.pseudo)}</b><em class="bt-tag">${btModeName(b)}</em></div>
       <div class="bt-opp">${Array.from({ length: 5 }, (_, i) => his[i] ? `<div class="bt-mini shown">${btCardEl(his[i]).outerHTML}</div>` : `<div class="bt-mini back"><span>?</span></div>`).join("")}</div>
       ${b.opp_skill_used !== undefined ? `<div class="bt-oinfo ${b.opp_skill_used ? "off" : ""}">✨ Sa compétence : <b>${b.opp_skill_used ? "déjà utilisée" : "encore en main"}</b></div>` : ""}</div>
     <div class="bt-mid">
@@ -538,16 +571,16 @@ function wrCountTo(n, to) {
   requestAnimationFrame(f);
 }
 async function btEnd() {
-  const b = BT.b, el = BT.el, won = b.winner, ranked = b.mode === "ranked", after = b.me.trophies, before = after - (b.delta || 0);
+  const b = BT.b, el = BT.el, won = b.winner, ranked = b.mode === "ranked" || !!b.ranked, after = b.me.trophies, before = after - (b.delta || 0);
   const lg = n => LEAGUES.slice().reverse().find(l => n >= l[1]) || LEAGUES[0], L = lg(after), up = L !== lg(before);
   if (ranked) { lgSave(L[0]); if (up && !BT.filmed?.has(b.id)) { (BT.filmed ??= new Set()).add(b.id); await leagueFilm(lg(before)[0], L[0], after > before); } }
-  el.innerHTML = `<div class="bt-end ${won ? "w" : "l"}"><p class="bt-k">${BT.revenge ? "Revanche" : BT_MODE[b.mode]} · ${b.a_won} – ${b.d_won} contre ${esc(b.opp.pseudo)}</p><h2>${won ? (BT.revenge ? "Vengé !" : "Victoire !") : "Défaite"}</h2>${BT.revenge && won ? `<p class="bt-friendly">${esc(b.opp.pseudo)} va savoir que tu as pris ta revanche.</p>` : ""}
+  el.innerHTML = `<div class="bt-end ${won ? "w" : "l"}"><p class="bt-k">${BT.revenge ? "Revanche" : btModeName(b)} · ${b.a_won} – ${b.d_won} contre ${esc(b.opp.pseudo)}</p><h2>${won ? (BT.revenge ? "Vengé !" : "Victoire !") : "Défaite"}</h2>${BT.revenge && won ? `<p class="bt-friendly">${esc(b.opp.pseudo)} va savoir que tu as pris ta revanche.</p>` : ""}
     ${ranked ? `<div class="bt-delta">${btEmblem(L[0], 110)}<b>${b.delta > 0 ? "+" : ""}${b.delta || 0} 🏆</b><small>${fmt(after)} trophées · ${L[0]}${up ? (won ? " · nouvelle ligue !" : " · tu redescends") : ""}</small></div>`
       : `<p class="bt-friendly">Match amical : pas de trophées en jeu, juste l'honneur.</p>`}
     ${b.reward ? `<p class="bt-rw">+${b.reward} Streams</p>` : ""}
     <div class="bt-oc">${(b.opp_cards || []).map(j => `<div>${btCardEl(j).outerHTML}</div>`).join("")}</div>
-    <div class="bt-acts"><button class="btn primary" id="btAgain">${BT.again?.live ? "⚔️ Revanche en direct" : BT.again?.friend ? "⚔️ Revanche" : "⚔️ Rejouer"}</button><button class="btn" id="btBack">Retour</button></div></div>`;
-  $("#btAgain").onclick = () => { const a = BT.again || {}; btClose(true); if (a.live) battleInvite(a.live, a.pseudo); else battleStart(a.friend, "deck" in a ? a.deck : undefined); };
+    <div class="bt-acts"><button class="btn primary" id="btAgain">${BT.again?.rlive ? "⚡ Nouveau classé en direct" : BT.again?.live ? "⚔️ Revanche en direct" : BT.again?.friend ? "⚔️ Revanche" : "⚔️ Rejouer"}</button><button class="btn" id="btBack">Retour</button></div></div>`;
+  $("#btAgain").onclick = () => { const a = BT.again || {}; btClose(true); if (a.rlive) btQueue(a.deck); else if (a.live) battleInvite(a.live, a.pseudo); else battleStart(a.friend, "deck" in a ? a.deck : undefined); };
   $("#btBack").onclick = () => btClose();
   try { loadProfile(); } catch (e) {}
 }
