@@ -16,6 +16,31 @@ const btAsCard = j => ({ id: j.track_id, t: j.title || "?", a: j.artist || "", a
   ...(j.edition ? { ed: j.edition, eno: j.edition_no } : {}) });
 const btCardEl = j => cardEl(btAsCard(j), j.holo);
 const BT_GRADE = [0, 0, 0, 1, 1, 1, 3, 5, 7, 11, 16];      // the bonus of a grade (on every stat); a 9 or a 10 also wins the ties
+// the tactics: the families of genres (Street beats Mainstream beats Live beats Street, +10), the skills of the
+// Mythiques and Légendaires (one fired per battle), and the plan my deck defends with
+const BT_FAM = [["🎤", "Street", "#ff8a3d", "rap, afro, latino"], ["💖", "Mainstream", "#ff5f9e", "pop, soul, chanson"], ["🎸", "Live", "#59b8ff", "rock, électro, jazz, classique"]];
+const BT_FAM_OF = { 0: 0, 7: 0, 8: 0, 1: 1, 4: 1, 5: 1, 2: 2, 3: 2, 6: 2, 9: 2 };
+const BT_SKILLS = ["remix", "encore", "refrain", "feat", "larsen", "hymne", "ovation"];
+const BT_SK = {
+  remix: ["🎛️", "Remix", "La stat de la manche est retirée au sort."],
+  encore: ["🔁", "Encore", "Ta carte revient dans ta main après la manche."],
+  refrain: ["🎵", "Refrain", "+12 si tu as perdu la manche d'avant."],
+  feat: ["🎤", "Featuring", "+10 si un morceau du même artiste a déjà joué de ton côté."],
+  larsen: ["📢", "Larsen", "−10 à la carte adverse."],
+  hymne: ["🏟️", "Hymne", "+10 sur une balle de match."],
+  ovation: ["🔥", "Ovation", "+8 sur cette manche."],
+};
+const BT_PLAN = {
+  aggro: ["⚡", "Agressif", "Il joue ses meilleures cartes d'abord."],
+  patient: ["🧘", "Patient", "Il garde ses grosses cartes pour la fin."],
+  spec: ["🎯", "Spécialiste", "Il joue la meilleure carte pour chaque stat."],
+  random: ["🎲", "Imprévisible", "Un ordre au hasard, impossible à lire."],
+};
+const btFamOf = c => BT_FAM_OF[c.g] ?? null;
+const btSkillOf = (id, tier) => tier >= 4 ? BT_SKILLS[Math.abs(Number(id)) * 7919 % 7] : null;
+const btFamChip = f => f == null ? "" : `<span class="bt-chip f" style="--c:${BT_FAM[f][2]}" title="Famille ${BT_FAM[f][1]} : bat ${BT_FAM[(f + 1) % 3][1]}, perd contre ${BT_FAM[(f + 2) % 3][1]}">${BT_FAM[f][0]} ${BT_FAM[f][1]}</span>`;
+const btSkChip = k => !k || !BT_SK[k] ? "" : `<span class="bt-chip k" title="Compétence : ${esc(BT_SK[k][2])}">✨ ${BT_SK[k][0]} ${BT_SK[k][1]}</span>`;
+
 // the synergies: the more cards of the deck share an artist, an album, a year or a genre, the stronger they all get
 const BT_SYN = { artist: ["🎤", "Même artiste", [0, 0, 4, 8, 12, 16]], album: ["💿", "Même album", [0, 0, 6, 12, 18, 24]], year: ["📅", "Même année", [0, 0, 0, 4, 7, 10]],
   genre: ["🎶", "Même genre", [0, 0, 0, 3, 5, 8]], rainbow: ["🌈", "Arc-en-ciel", [0, 0, 0, 0, 0, 6]] };
@@ -39,6 +64,8 @@ const btSynList = per => { const seen = new Map(); per.forEach(p => (p.syns || [
 const btSynHTML = (list, empty) => list.length ? `<div class="bt-syns"><b>🔗 Synergies</b>${list.map(x => `<span class="bt-syn k-${x.k}" title="${BT_SYN[x.k][1]}">${BT_SYN[x.k][0]} ${esc(btSynOf(x))}${x.k === "rainbow" ? "" : ` ×${x.n}`} <em>+${x.v}</em></span>`).join("")}</div>`
   : empty ? `<div class="bt-syns none"><b>🔗 Synergies</b><small>${empty}</small></div>` : "";
 const btChips = (j, wide) => { const c = [];
+  if (j.skill) c.push(btSkChip(j.skill));
+  if (j.fam != null) c.push(btFamChip(j.fam));
   if (j.grade) c.push(`<span class="bt-chip g${j.grade >= 9 ? " gem" : ""}" title="Carte gradée : +${BT_GRADE[j.grade] || 0} à toutes les stats${j.grade >= 9 ? ", et le Sang-froid : elle gagne les égalités" : ""}">${j.grade >= 9 ? "💎" : "🔖"} Note ${j.grade} · +${BT_GRADE[j.grade] || 0}${j.grade >= 9 && wide ? " · Sang-froid" : ""}</span>`);
   if (j.syn && j.star) c.push(`<span class="bt-chip ${j.star ? "s" : "a"}" title="${j.star ? "Morceau de ta Tête d'affiche" : "L'aura de ta Tête d'affiche"}">🎤 +${j.syn}${j.star ? " · " + esc(j.head || "") : ""}</span>`);
   if (j.sb) c.push(`<span class="bt-chip y" title="${(j.syns || []).map(x => `${BT_SYN[x.k][1]} (${btSynOf(x)}) +${x.v}`).join(", ")}${j.sb >= BT_SYN_MAX ? " · plafond atteint" : ""}">🔗 +${j.sb}${wide ? " " + (j.syns || []).map(x => BT_SYN[x.k][0]).join("") : ""}</span>`);
@@ -75,16 +102,27 @@ async function renderBattle() {
     <button class="bt-lgcta" id="btLeagues" style="--lc:${L[2]}"><span class="bt-lgcta-e">${btEmblem(h.league, 40)}</span>
       <span><b>Les ligues et leurs récompenses</b><small>Ta place, les 6 ligues, le cadeau de fin de saison${next ? ` · ${fmt(next[1] - h.trophies)} 🏆 avant ${next[0]}` : ""}</small></span><em>Voir →</em></button>
     <div class="bt-fbox" id="btFriends" hidden></div>
+    <section class="bt-tac"><div class="bt-tac-h"><div><p class="bt-k">Nouveau · les tactiques</p><h3>Trois façons de prendre l'avantage</h3></div><button class="btn" id="btTuto">❓ Comment ça marche</button></div>
+      <ul class="bt-tac-l">
+        <li><span>✨</span><b>Les compétences</b><small>Chaque Mythique et Légendaire a un pouvoir. Tu en déclenches <b>un seul</b> par combat, en jouant la carte.</small></li>
+        <li><span>🎸</span><b>Les familles</b><small>🎤 Street bat 💖 Mainstream, qui bat 🎸 Live, qui bat 🎤 Street. La carte qui a l'avantage prend <b>+10</b>.</small></li>
+        <li><span>🛡️</span><b>Ton plan de défense</b><small>Quand on t'attaque, ton deck joue seul. Choisis comment, juste en dessous.</small></li>
+      </ul></section>
     <details class="bt-rules"><summary>Comment ça marche ?</summary>
       <p>Ton deck de 5 cartes affronte celui d'un joueur de ton niveau. À chaque manche, une stat est tirée au sort : <b>Tempo</b> (la 1re barre de la carte : Flow, Éclat, Riff…), <b>Endurance</b> (la durée), <b>Hype</b> (la popularité) ou <b>Puissance</b> (la moyenne). Tu choisis quelle carte jouer sans voir la sienne : la plus forte dans cette stat gagne la manche. La rareté, la note et le Shiny donnent un petit bonus. <b>3 manches gagnées et c'est la victoire.</b> Chaque carte ne sert qu'une fois : garde tes meilleures pour le bon moment !</p>
       <p>Tu peux aussi <b>défier un ami</b> : en amicale contre son deck, ou <b>en direct</b> s'il est en ligne (chacun choisit sa carte à chaque manche, 25 secondes pour jouer). Les matchs entre amis ne donnent pas de trophées.</p>
+      <p><b>✨ Les compétences</b> : chaque Mythique et Légendaire a la sienne, toujours la même. Quand tu choisis la carte en combat, tu peux l'activer, mais <b>une seule fois par combat</b>. ${Object.values(BT_SK).map(([i, n, d]) => `${i} <b>${n}</b> : ${d}`).join(" ")}</p>
+      <p><b>🎸 Les familles</b> : ${BT_FAM.map(f => `${f[0]} <b>${f[1]}</b> (${f[3]})`).join(", ")}. Street bat Mainstream, Mainstream bat Live, Live bat Street : la carte qui a l'avantage prend +10. Les Inclassables sont neutres.</p>
+      <p><b>🛡️ Le plan de défense</b> : quand on t'attaque, ton deck joue seul. ${Object.values(BT_PLAN).map(([i, n, d]) => `${i} <b>${n}</b> : ${d}`).join(" ")}</p>
       <p><b>🔗 Les synergies</b> : plus ton deck a de morceaux en commun, plus ils sont forts. Même artiste (2 : +4 chacun, jusqu'à +16 pour 5), même album (2 : +6, jusqu'à +24), même année (3 : +4, jusqu'à +10), même genre (3 : +3, jusqu'à +8), et l'Arc-en-ciel (5 raretés différentes : +6 à toutes). Elles se cumulent, jusqu'à +30 par carte.</p>
       <p><b>Tes cartes gradées comptent</b> : une note 6 donne +3 à toutes les stats, 7 : +5, 8 : +7, 9 : +11, 10 : +16, et une 9 ou une 10 a le <b>Sang-froid</b> (elle gagne les égalités). <b>Tes cartes artistes aussi</b> : choisis ta <b>Tête d'affiche</b>, ses morceaux dans ton deck prennent un gros bonus (+5, plus 2 par certification, plus 4 si Shiny ou Collector) et les autres une petite aura.</p>
       <p>Les trophées font ta ligue : Bronze, Argent (400), Or (900), Platine (1 500), Diamant (2 300), Légende (3 200). Ton deck défend aussi quand on t'attaque : à ton retour, le <b>journal de défense</b> te dit qui t'a attaqué, et tu as 24 h pour prendre ta <b>revanche</b> sur ceux qui ont gagné (une par joueur, 3 par jour, et une revanche ne se rend pas).</p></details>
     <section class="bt-deck"><h3>Mon deck${h.chosen ? "" : " <small>(automatique : tes 5 cartes les plus fortes)</small>"} <button class="ps-link" id="btEdit">✎ Modifier</button></h3>
       ${btHeadBlock(h)}
       ${btSynHTML(btSynList(h.deck), h.deck.length ? "Aucune pour l'instant : mets plusieurs morceaux du même artiste, du même album, de la même année ou du même genre." : "")}
-      <div class="bt-row" id="btDeck"></div><div id="btPick"></div></section>
+      <div class="bt-row" id="btDeck"></div><div id="btPick"></div>
+      ${h.plan !== undefined ? `<div class="bt-plan"><p><b>🛡️ Mon plan de défense</b> : quand on t'attaque, ton deck joue seul, comme ça (et il utilise sa compétence au bon moment).</p>
+        <div class="bt-plans">${Object.entries(BT_PLAN).map(([k, [i, n, d]]) => `<button type="button" data-plan="${k}" aria-pressed="${(h.plan || "spec") === k}"><span>${i}</span><b>${n}</b><small>${d}</small></button>`).join("")}</div></div>` : ""}</section>
     <div class="bt-cols">
       <section><h3>Mes dernières batailles</h3>${h.history.length ? `<ul class="bt-hist">${h.history.map(x => `<li class="${x.won ? "w" : "l"}">
         <span class="bt-res">${x.won ? "Victoire" : "Défaite"}</span><span>${x.mode === "live" ? "en direct contre" : x.mode === "friend" ? (x.attack ? "amicale contre" : "amicale, défense contre") : x.attack ? "contre" : "défense contre"} <button class="ps-link" data-p="${x.other_id || ""}">${esc(x.other || "?")}</button> · ${x.score}</span>
@@ -97,6 +135,8 @@ async function renderBattle() {
   $("#btFight").onclick = () => battleStart();
   $("#btFriendsB").onclick = () => btFriends();
   $("#btLeagues").onclick = () => { BT.sub = "leagues"; renderBattle(); };
+  $("#btTuto").onclick = () => btTuto();
+  box.querySelectorAll("[data-plan]").forEach(b => b.onclick = async () => { try { await rpc("set_battle_plan", { p_plan: b.dataset.plan }); toast(`Plan de défense : ${BT_PLAN[b.dataset.plan][0]} ${BT_PLAN[b.dataset.plan][1]}`); renderBattle(); } catch (e) { toast(message(e)); } });
   window.b2Panel?.(box);                           // the Bataille 2.0 in simulation (admins only)
   $("#btEdit").onclick = () => btPick();
   const he = $("#btHeadEdit"); if (he) he.onclick = () => btPick();
@@ -149,7 +189,7 @@ async function btPick() {
     const picked = BT.edit.map(id => list.find(([, cp]) => cp.id === id)?.[0]).filter(Boolean);
     const synIn = c => { const deck = picked.includes(c) ? picked : [...picked, c].slice(-5); return btSynergy(deck)[deck.indexOf(c)]; };
     const vOf = ([c, cp]) => { const st = stats(c), star = head && head[0].t === c.a, syn = head ? star ? synOf(head) : auraOf(head) : 0, sy = synIn(c), b = c.tier * 3 + gb(cp) + (cp.holo ? 4 : 0) + syn + sy.sb;
-      return { flow: st.flow + b, endu: st.endu + b, hype: st.hype + b, pw: st.pw + b, grade: cp.grade, syn, star, head: head?.[0].t, sb: sy.sb, syns: sy.syns }; };
+      return { flow: st.flow + b, endu: st.endu + b, hype: st.hype + b, pw: st.pw + b, grade: cp.grade, syn, star, head: head?.[0].t, sb: sy.sb, syns: sy.syns, fam: btFamOf(c), skill: btSkillOf(c.id, c.tier) }; };
     $("#btSynNow").innerHTML = btSynHTML(btSynList(btSynergy(picked)), picked.length ? "Aucune pour l'instant. Les chiffres des cartes montrent ce qu'elles vaudraient avec ton deck." : "Les chiffres des cartes tiennent compte des synergies avec les cartes déjà choisies.");
     const k = BT.sort || "best", shown = list.map(x => [...x, vOf(x)]);   // "Recommandé": the usual order (the strongest cards overall)
     if (k !== "best") shown.sort((a, b) => b[2][k] - a[2][k]);
@@ -170,9 +210,40 @@ async function btPick() {
   draw(); box.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
+/* ---------------------------------------------------------------- the tactics in 4 screens */
+function btTuto(then) {
+  const pages = [
+    { i: "✨", t: "Les compétences", d: "Chaque Mythique et Légendaire a un pouvoir, toujours le même (l'étiquette ✨ sous la carte). En combat, choisis ta carte, puis active sa compétence si tu veux. Attention : <b>une seule par combat</b>.",
+      v: `<ul class="bt-tsk">${Object.values(BT_SK).map(([i, n, d]) => `<li><span>${i}</span><b>${n}</b><small>${d}</small></li>`).join("")}</ul>` },
+    { i: "🎸", t: "Les familles", d: "Chaque morceau a une famille. Comme pierre-feuille-ciseaux : si la famille de ta carte bat celle de la sienne, <b>+10</b> pour toi.",
+      v: `<div class="bt-tri">${[0, 1, 2, 0].map((f, k) => `${k ? "<i>bat</i>" : ""}<span style="--c:${BT_FAM[f][2]}">${BT_FAM[f][0]}<b>${BT_FAM[f][1]}</b>${k < 3 ? `<small>${BT_FAM[f][3]}</small>` : ""}</span>`).join("")}</div>` },
+    { i: "🛡️", t: "Ton plan de défense", d: "Quand quelqu'un attaque ton deck, il joue seul. Choisis son style dans « Mon deck » : les attaquants devront le deviner.",
+      v: `<ul class="bt-tsk">${Object.values(BT_PLAN).map(([i, n, d]) => `<li><span>${i}</span><b>${n}</b><small>${d}</small></li>`).join("")}</ul>` },
+    { i: "⚔️", t: "En combat", d: "1. Touche une carte de ta main. 2. Si elle a une compétence, active-la (ou garde-la pour plus tard). 3. Joue ! La valeur affichée tient compte de tout, sauf de la famille de sa carte, que tu découvres à la révélation.",
+      v: "" },
+  ];
+  let k = 0;
+  const el = document.createElement("div"); el.className = "bt-tuto"; el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); el.setAttribute("aria-label", "Les tactiques de la Bataille");
+  document.body.appendChild(el); requestAnimationFrame(() => el.classList.add("on"));
+  const done = () => { try { localStorage.setItem("zh-bt-tactics", "1"); } catch (e) {} el.classList.remove("on"); setTimeout(() => { el.remove(); then?.(); }, 300); };
+  const draw = () => { const x = pages[k], last = k === pages.length - 1;
+    el.innerHTML = `<div class="bt-tin"><button class="news-x" type="button" aria-label="Fermer">×</button>
+      <p class="bt-k">Les tactiques · ${k + 1} / ${pages.length}</p><div class="bt-ti">${x.i}</div><h2>${x.t}</h2><p>${x.d}</p>${x.v}
+      <div class="bt-tdots">${pages.map((_, i) => `<i class="${i === k ? "on" : ""}"></i>`).join("")}</div>
+      <div class="bt-acts">${k ? `<button class="btn" data-t="prev">Retour</button>` : ""}<button class="btn primary" data-t="next">${last ? (then ? "Au combat !" : "Compris") : "Suivant"}</button></div></div>`;
+    el.querySelector(".news-x").onclick = done;
+    el.querySelector('[data-t="next"]').onclick = () => last ? done() : (k++, draw());
+    const pv = el.querySelector('[data-t="prev"]'); if (pv) pv.onclick = () => { k--; draw(); };
+    el.querySelector('[data-t="next"]').focus({ preventScroll: true }); };
+  el.addEventListener("keydown", e => { if (e.key === "Escape") done(); });
+  draw();
+}
+const btTutoSeen = () => { try { return !!localStorage.getItem("zh-bt-tactics"); } catch (e) { return true; } };
+
 /* ---------------------------------------------------------------- the battle */
 const BT_MODE = { ranked: "Classée", friend: "Amicale", live: "En direct" };
 function btOpen() {
+  BT.sel = null; BT.skOn = false;
   if (BT.el) return BT.el;
   const el = BT.el = document.createElement("div"); el.className = "bt-arena"; el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); el.setAttribute("aria-label", "Bataille de cartes");
   document.body.appendChild(el); document.body.classList.add("fx-on");
@@ -181,7 +252,9 @@ function btOpen() {
 }
 // ranked (no friend) or friendly (a friend's deck answers for him)
 async function battleStart(friend) {
-  if (BT.busy) return; BT.busy = true;
+  if (BT.busy) return;
+  if (!btTutoSeen()) return btTuto(() => battleStart(friend));
+  BT.busy = true;
   try { BT.b = await rpc("battle_start", { p_friend: friend || null }); } catch (e) { BT.busy = false; return toast(message(e)); }
   BT.busy = false; BT.again = friend ? { friend } : {}; BT.revenge = false;
   btOpen(); btIntro();
@@ -288,20 +361,48 @@ function btDraw() {
   const st = b.stat ? BT_STAT[b.stat] : null, his = b.log.map(x => x.his), live = b.mode === "live";
   el.innerHTML = `<button class="bt-quit" aria-label="Quitter">×</button>
     <div class="bt-top"><div class="bt-who">${btEmblem(b.opp.league, 30)}<b>${esc(b.opp.pseudo)}</b><em class="bt-tag">${BT_MODE[b.mode]}</em></div>
-      <div class="bt-opp">${Array.from({ length: 5 }, (_, i) => his[i] ? `<div class="bt-mini shown">${btCardEl(his[i]).outerHTML}</div>` : `<div class="bt-mini back"><span>?</span></div>`).join("")}</div></div>
+      <div class="bt-opp">${Array.from({ length: 5 }, (_, i) => his[i] ? `<div class="bt-mini shown">${btCardEl(his[i]).outerHTML}</div>` : `<div class="bt-mini back"><span>?</span></div>`).join("")}</div>
+      ${b.opp_skill_used !== undefined ? `<div class="bt-oinfo ${b.opp_skill_used ? "off" : ""}">✨ Sa compétence : <b>${b.opp_skill_used ? "déjà utilisée" : "encore en main"}</b></div>` : ""}</div>
     <div class="bt-mid">
       <div class="bt-score"><b class="bt-me">${b.a_won}</b><span>Manche ${Math.min(b.round + 1, 5)} / 5</span><b class="bt-op">${b.d_won}</b></div>
       ${live ? `<div class="bt-timer"><i><s id="btTime"></s></i><small id="btTimeT"></small></div>` : ""}
       <div class="bt-clash" id="btClash"></div>
       ${st ? `<div class="bt-stat" data-s="${b.stat}"><span>${st[2]}</span><div><b>${st[0]}</b><small>${st[1]} · la plus haute gagne</small></div></div>` : ""}
     </div>
-    <div class="bt-hand">${b.mine.map((j, i) => `<button class="bt-card${b.used.includes(i) ? " used" : ""}" data-i="${i}"${b.used.includes(i) || b.status !== "playing" || b.picked ? " disabled" : ""}>
-      <div class="bt-cw"></div>${st ? `<span class="bt-val">${j[b.stat]}</span>` : ""}</button>`).join("")}</div>`;
+    ${btCtrl(b)}
+    <div class="bt-hand">${b.mine.map((j, i) => `<button class="bt-card${b.used.includes(i) ? " used" : ""}${BT.sel === i ? " bt-sel" : ""}" data-i="${i}"${b.used.includes(i) || b.status !== "playing" || b.picked ? " disabled" : ""}>
+      <div class="bt-cw"></div>${st ? `<span class="bt-val">${j[b.stat] + (BT.sel === i ? btSkAdd(b, j) : 0)}</span>` : ""}${j.skill ? `<span class="bt-hsk" title="${esc(BT_SK[j.skill]?.[1] || "")}">${BT_SK[j.skill]?.[0] || "✨"}</span>` : ""}${j.fam != null ? `<span class="bt-hf">${BT_FAM[j.fam][0]}</span>` : ""}</button>`).join("")}</div>`;
   el.querySelectorAll(".bt-card").forEach((btn, i) => btn.querySelector(".bt-cw").appendChild(btCardEl(b.mine[i])));
   el.querySelector(".bt-quit").onclick = () => {
     if (b.status === "playing" && !confirm(live ? "Quitter le combat ? Tes cartes seront jouées au hasard." : "Abandonner la bataille ? Elle sera comptée comme perdue dans 10 minutes.")) return; btClose(); };
-  el.querySelectorAll(".bt-card:not([disabled])").forEach(btn => btn.onclick = () => btPlay(+btn.dataset.i));
+  // a card: picked first (to see its skill and its value), then played
+  el.querySelectorAll(".bt-card:not([disabled])").forEach(btn => btn.onclick = () => { const i = +btn.dataset.i;
+    if (b.skill_used === undefined) return btPlay(i);                     // an older battle: played at once
+    if (BT.sel === i) return btPlay(i);
+    BT.sel = i; BT.skOn = false; btDraw(); });
+  const sk = $("#btSk"); if (sk) sk.onclick = () => { BT.skOn = !BT.skOn; btDraw(); };
+  const go = $("#btGo"); if (go) go.onclick = () => btPlay(BT.sel);
   if (live) { btTimer(); if (b.picked) btWait(); }
+}
+// what a skill adds to my card for sure (the rest depends on his card)
+function btSkAdd(b, j) {
+  if (!BT.skOn || !j.skill) return 0;
+  const lostPrev = b.log.length && !b.log[b.log.length - 1].won, point = b.a_won === 2 || b.d_won === 2;
+  return j.skill === "ovation" ? 8 : j.skill === "refrain" && lostPrev ? 12 : j.skill === "hymne" && point ? 10
+    : j.skill === "feat" && b.used.some(u => b.mine[u].artist === j.artist) ? 10 : 0;
+}
+// under the stat: the card picked, its skill to fire (or not), and the button to play
+function btCtrl(b) {
+  if (b.skill_used === undefined || b.status !== "playing" || b.picked) return "";
+  const j = BT.sel != null && !b.used.includes(BT.sel) ? b.mine[BT.sel] : null;
+  if (!j) return `<div class="bt-ctrl"><p class="bt-hint">Touche une carte de ta main pour la choisir${b.mine.some((x, i) => x.skill && !b.used.includes(i)) && !b.skill_used ? " · les cartes ✨ ont une compétence" : ""}.</p></div>`;
+  const s = BT_SK[j.skill], can = j.skill && !b.skill_used, add = btSkAdd(b, j), f = j.fam;
+  return `<div class="bt-ctrl on"><div class="bt-ctrl-r">
+      ${can ? `<button type="button" class="bt-skb${BT.skOn ? " on" : ""}" id="btSk">${s[0]} ${BT.skOn ? "Compétence activée" : "Activer"} : ${s[1]}<small>${s[2]}${BT.skOn ? "" : " · une seule par combat"}</small></button>`
+        : j.skill ? `<span class="bt-skx">✨ Tu as déjà utilisé ta compétence dans ce combat</span>` : ""}
+      <button class="btn primary bt-go2" id="btGo">⚔️ Jouer ${esc(j.title || "")}</button></div>
+    <p class="bt-hint">Valeur : <b>${j[b.stat]}</b>${add ? ` + ${add} = <b class="g">${j[b.stat] + add}</b>` : ""}${BT.skOn && j.skill === "larsen" ? " · <b>−10 pour lui</b>" : ""}${BT.skOn && j.skill === "remix" ? " · la stat va être retirée au sort !" : ""}
+      ${f != null ? `<small>${BT_FAM[f][0]} +10 si sa carte est ${BT_FAM[(f + 1) % 3][0]} ${BT_FAM[(f + 1) % 3][1]} · +10 pour lui si elle est ${BT_FAM[(f + 2) % 3][0]} ${BT_FAM[(f + 2) % 3][1]}</small>` : ""}</p></div>`;
 }
 // live: the time left to play this round
 function btTimer() {
@@ -329,7 +430,8 @@ async function btPlay(i) {
   const b = BT.b, el = BT.el;
   el.querySelectorAll(".bt-card").forEach(x => x.disabled = true);
   el.querySelector(`.bt-card[data-i="${i}"]`)?.classList.add("go");
-  let r; try { r = await rpc("battle_play", { p_battle: b.id, p_slot: i }); } catch (e) { BT.busy = false; toast(message(e)); return btDraw(); }
+  const skill = !!BT.skOn && !b.skill_used && !!b.mine[i]?.skill; BT.sel = null; BT.skOn = false; el.querySelector(".bt-ctrl")?.remove();
+  let r; try { r = await rpc("battle_play", skill ? { p_battle: b.id, p_slot: i, p_skill: true } : { p_battle: b.id, p_slot: i }); } catch (e) { BT.busy = false; toast(message(e)); return btDraw(); }
   BT.busy = false;
   if (!r.last) { BT.b = r; return btWait(); }          // live: the other one has not played yet
   clearInterval(BT.tick);
@@ -339,8 +441,9 @@ async function btPlay(i) {
 async function btShow(x, r) {
   const b = BT.b, clash = $("#btClash"); if (!clash) { BT.b = r; return btDraw(); }
   BT.busy = true;
-  clash.innerHTML = `<div class="bt-duel"><div class="bt-c bt-me"><div class="bt-cw"></div><b class="bt-v" data-v="${x.mv}">0</b></div>
-    <div class="bt-c bt-op"><div class="bt-flip"><div class="bt-back"><span>?</span></div><div class="bt-front"></div></div><b class="bt-v" data-v="${x.hv}">0</b></div></div>`;
+  const bon = (base, l, sk) => base == null ? "" : `<ul class="bt-bon"><li>Base <b>${base}</b></li>${(l || []).map(y => `<li class="${y.v < 0 ? "neg" : ""}">${esc(y.t)} <b>${y.v > 0 ? "+" : ""}${y.v}</b></li>`).join("")}${sk && BT_SK[sk] ? `<li class="sk">${BT_SK[sk][0]} ${BT_SK[sk][1]}</li>` : ""}</ul>`;
+  clash.innerHTML = `${x.stat0 && x.stat !== x.stat0 ? `<p class="bt-remix">🎛️ Remix ! La stat devient <b>${BT_STAT[x.stat][0]}</b></p>` : ""}<div class="bt-duel"><div class="bt-c bt-me"><div class="bt-cw"></div><b class="bt-v" data-v="${x.mv}">0</b>${bon(x.mb, x.mbon, x.msk)}</div>
+    <div class="bt-c bt-op"><div class="bt-flip"><div class="bt-back"><span>?</span></div><div class="bt-front"></div></div><b class="bt-v" data-v="${x.hv}">0</b>${bon(x.hb, x.hbon, x.hsk)}</div></div>`;
   clash.querySelector(".bt-me .bt-cw").appendChild(btCardEl(b.mine[x.mine]));
   clash.querySelector(".bt-front").appendChild(btCardEl(x.his));
   await wait(450); clash.querySelector(".bt-flip").classList.add("on");
