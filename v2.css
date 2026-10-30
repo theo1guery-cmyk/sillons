@@ -93,7 +93,7 @@
 .tear-hint{display:none;margin:-10px 0 0;font:500 .72rem var(--mono);letter-spacing:.14em;text-transform:uppercase;color:#cdbfdc;text-align:center}
 .pack.gl+.tear-hint{display:block}
 .rip .tear-hint{display:none!important}
-.tear-stage{position:fixed;inset:0;z-index:50;display:grid;place-items:center;align-content:center;gap:14px;padding:20px;background:rgba(6,4,10,.8);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);animation:tsIn .3s ease-out}
+.tear-stage{position:fixed;inset:0;z-index:50;display:grid;place-items:center;align-content:center;gap:14px;padding:20px;background:rgba(6,4,10,.95);animation:tsIn .3s ease-out}
 .tear-stage[hidden]{display:none}
 @keyframes tsIn{from{opacity:0}}
 .ts-head{text-align:center}
@@ -295,7 +295,7 @@
 
 /* the booster's cards one by one, big in the middle of the screen (soloReveal) */
 .solo{position:fixed;inset:0;z-index:42;display:grid;grid-template-rows:auto 1fr auto;justify-items:center;padding:18px 16px 26px;cursor:pointer;
-  background:radial-gradient(ellipse at 50% 45%,rgba(40,24,60,.55),rgba(6,4,10,.9) 70%);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);animation:tsIn .3s ease-out}
+  background:radial-gradient(ellipse at 50% 45%,rgba(40,24,60,.92),rgba(6,4,10,.97) 70%);animation:tsIn .3s ease-out}
 .solo.out{animation:fade-out .26s ease forwards}
 .solo-head{width:min(560px,100%);display:flex;justify-content:space-between;align-items:center;gap:12px}
 .solo-n{font-family:var(--mono);font-size:.8rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
@@ -312,7 +312,7 @@
 /* ---------- the opening scene (app.js: startOpening): booster → cards one by one → the booster laid out ---------- */
 body.op-on{overflow:hidden}
 .op{position:fixed;inset:0;z-index:44;display:grid;grid-template-rows:auto 1fr auto auto auto;justify-items:center;gap:10px;padding:18px 16px 22px;
-  --best:#e7b14a;background:radial-gradient(ellipse at 50% 46%,rgba(46,26,70,.6),rgba(5,3,9,.94) 68%);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);animation:tsIn .3s ease-out}
+  --best:#e7b14a;background:radial-gradient(ellipse at 50% 46%,rgba(46,26,70,.93),rgba(5,3,9,.98) 68%);animation:tsIn .3s ease-out}
 .op[hidden]{display:none}
 .op-head{text-align:center;min-height:44px}
 .op-head b{display:block;font:900 clamp(20px,3vw,28px) var(--display);color:#ffe2a0}

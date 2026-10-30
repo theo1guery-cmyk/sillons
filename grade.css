@@ -185,3 +185,10 @@
   background:linear-gradient(90deg,#c9952f,#fff2c6,#e8bf62,#c9952f);background-size:200% 100%;box-shadow:0 0 24px rgba(240,190,90,.6);
   animation:checkIn .5s .1s ease both,firstShine 2.4s linear infinite}
 @keyframes firstShine{to{background-position:-200% 0}}
+
+/* smooth scrolling in the lists of slabs: the boxes out of view are not drawn, and the costly effects (the soft
+   shadow of the card, the glare of the plexi) are kept for the box in hand (the modal, the grading screen) */
+.slab-cell{content-visibility:auto;contain-intrinsic-size:auto 300px}
+.slab-cell .slab .well>.cq{filter:none}
+.slab-cell .slab .well>.cq>*{box-shadow:0 .8cqw 2cqw rgba(0,0,0,.45)}
+.slab-cell .slab:not(:hover) .glare{display:none}

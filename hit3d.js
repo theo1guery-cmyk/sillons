@@ -26,12 +26,12 @@ const loadImg = src => new Promise(r => { const i = new Image(); i.onload = () =
 export async function create(host) {
   const mobile = Math.min(innerWidth, innerHeight) < 600 || /Android|iPhone|iPad/.test(navigator.userAgent);
   const renderer = new THREE.WebGLRenderer({ antialias: !mobile, powerPreference: "high-performance" });
-  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, mobile ? 1.5 : 1.75));
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, mobile ? 1.25 : 1.75));   // phones: fewer pixels, a smoother film
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = mobile ? 1.15 : 1;
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = mobile ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
   renderer.setClearColor(0x020203, 1);
   const canvas = renderer.domElement; canvas.className = "fx-gl";
   host.prepend(canvas);
