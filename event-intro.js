@@ -26,7 +26,7 @@ function halloweenIntro() {
       <p class="si-line">Jusqu'à <b>70 citrouilles par nuit</b>. Les quêtes reviennent chaque jour à minuit.</p></div>`,
     `<div class="si-s"><p class="si-kick">Chez la sorcière</p><h2>Le chaudron de transmutation</h2>
       <div class="ei-pot"><div class="ei-falls">${Array.from({ length: 5 }, (_, i) => `<i style="--i:${i}"></i>`).join("")}</div><div class="ei-cauldron"><span></span></div></div>
-      <div class="si-chips">${[["5 Rares → une Épique", "20 🎃"], ["5 Épiques → une Mythique", "40 🎃"], ["5 Mythiques → une Légendaire (1 chance sur 2)", "80 🎃"]]
+      <div class="si-chips">${[["5 Rares → une Épique", "20 🎃"], ["5 Épiques → une Mythique", "40 🎃"], ["5 Mythiques → une Légendaire", "80 🎃"]]
         .map(([t, p], i) => `<span style="--i:${i}">${esc(t)} · <b>${p}</b></span>`).join("")}</div></div>`,
     `<div class="si-s"><p class="si-kick">Chez la sorcière</p><h2>L'élixir de restauration</h2>
       <div class="ei-elix"><div class="ei-bottle"></div><div class="ei-drops"><i></i><i></i><i></i></div><div class="ei-grade"><b>8</b><b>9</b></div></div>
