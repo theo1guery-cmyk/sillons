@@ -24,7 +24,7 @@ async function beat() {
 /* ---------- maintenance: the whole game behind one screen (admins excepted, the server says who) ---------- */
 // emergency switch on the game's side: shown at once, even on the sign-in screen and when the server does not answer
 // (open the game once with ?admin to pass it on this device)
-const FORCE_MAINT = { msg: "Gros bug : le jeu est en maintenance. On revient très vite !" };
+const FORCE_MAINT = null;   // e.g. { msg: "Le jeu est en maintenance. On revient très vite !" }
 const maintPass = (() => { try { if (/[?&]admin\b/.test(location.search)) localStorage.setItem("zh-maint-pass", "1"); return localStorage.getItem("zh-maint-pass") === "1"; } catch (e) { return false; } })();
 function showMaintenance(m) {
   if (!m && FORCE_MAINT && !maintPass) m = FORCE_MAINT;
