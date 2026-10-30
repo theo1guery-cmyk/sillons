@@ -405,14 +405,19 @@ Object.assign(Online, {
       if (!/need_proposals|_not_found 0\b/.test(e?.message || "")) throw e;
       res = await rpc("finish_pack", { p_pack: pk.id, p_tracks: await proposals(p, pk) });
     }
-    const trackIds = res.filter(r => r.kind !== "artist").map(r => r.track);
-    const artistIds = res.filter(r => r.kind === "artist").map(r => r.track);
-    const [tq, aq] = await Promise.all([
-      trackIds.length ? sb.from("tracks").select("*").in("id", trackIds) : { data: [] },
-      artistIds.length ? sb.from("artists").select("id,name,picture,fans,nb_album").in("id", artistIds) : { data: [] },
-    ]);
-    if (tq.error || aq.error) throw tq.error || aq.error;
-    const byTrack = Object.fromEntries(tq.data.map(t => [t.id, t])), byArtist = Object.fromEntries(aq.data.map(a => [a.id, a]));
+    // the server sends what the cards show with them; an older server needs one more request
+    const byTrack = {}, byArtist = {};
+    for (const r of res) if (r.meta) (r.kind === "artist" ? byArtist : byTrack)[r.track] = r.meta;
+    const trackIds = res.filter(r => r.kind !== "artist" && !r.meta).map(r => r.track);
+    const artistIds = res.filter(r => r.kind === "artist" && !r.meta).map(r => r.track);
+    if (trackIds.length || artistIds.length) {
+      const [tq, aq] = await Promise.all([
+        trackIds.length ? sb.from("tracks").select("*").in("id", trackIds) : { data: [] },
+        artistIds.length ? sb.from("artists").select("id,name,picture,fans,nb_album").in("id", artistIds) : { data: [] },
+      ]);
+      if (tq.error || aq.error) throw tq.error || aq.error;
+      tq.data.forEach(t => { byTrack[t.id] = t; }); aq.data.forEach(a => { byArtist[a.id] = a; });
+    }
     const pulls = res.map(r => {
       const artist = r.kind === "artist";
       const row = { id: r.card, kind: r.kind || "track", track_id: artist ? null : r.track, artist_id: artist ? r.track : null,

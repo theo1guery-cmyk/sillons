@@ -1060,6 +1060,7 @@ async function openPack(p, opts = {}) {
   try {
     const pulls = p.demo ? await window.Haunted.demoPulls() : serverPack ? await Online.drawPack(p, serverPack) : await drawPack(p, god, opts.slots, opts.artist);
     if (god && reduceMotion()) toast("GOD PACK ! Que des Mythiques et des Légendaires.");   // the GOD pack has its own announcement
+    for (const pl of pulls) if (pl.c.cov) { const im = new Image(); im.decoding = "async"; im.src = pl.c.cov; }   // the covers load while the first card turns
     renderCounters();
     if (pulls.some(Stage.isHit)) Stage.prepare(pulls);
     for (const pl of pulls) if (Stage.isHit(pl)) Stage.warm(pl);   // the hits' tracks load while the first cards flip
