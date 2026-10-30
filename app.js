@@ -1026,6 +1026,7 @@ async function openPack(p, opts = {}) {
   refill();
   if (!Online.active && !TEST_MODE && S.stock <= 0) { renderStock(); toast("Plus de booster pour l'instant. Le prochain arrive dans " + Math.ceil(nextRefillMs() / 60000) + " min."); return; }
   busy = true; lastPack = p;
+  const t0 = performance.now();          // the torn sachet's exit plays in full, even when the server answers at once
   // local preview only (#god, #demo, #shiny, #platine, #diamant…): drawn here even when signed in, and never sent to
   // the server (with an account nothing is saved locally either, so the preview card is gone on reload)
   const devHash = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && p === BOOSTER && /^#(god|demo|shiny|platine|diamant)(-shiny)?$/.test(location.hash) ? location.hash : "";
@@ -1069,7 +1070,9 @@ async function openPack(p, opts = {}) {
     if (pulls.snowflakes) toast(`+${pulls.snowflakes} ❄ cachés dans ce booster !`);
     const xp = p.demo ? 0 : window.packXp?.(p, god);
     if (xp) { const t = document.createElement("span"); t.className = "op-xp"; t.textContent = `+${xp} XP`; $o(".op-head").appendChild(t); setTimeout(() => t.remove(), 2600); }
+    if (!reduceMotion()) await wait(Math.max(0, 900 - (performance.now() - t0)));
     if (god && !reduceMotion()) {                   // the GOD pack keeps its own film, then the booster laid out
+      Stage.cover();                                // dark at once: the laid-out booster under it stays unseen
       OP.pulls = pulls; opRecap();
       await Stage.god(pulls, [...$o(".op-recap").querySelectorAll(".flip")]);
     } else opCards(pulls);
@@ -1287,10 +1290,15 @@ const Stage = (() => {
   /* GOD pack: "GOD PACK" is written in gold in the dark, the lamp lights a solid gold record, the needle lands, light
      leaks out of the grooves and the record bursts into five cards turning in a ring around the deck. Each tap brings
      one card to the front (its colour, its track); at the end the five fly down to the table. False if no 3D. */
+  // the GOD film's dark screen, up before the cards are laid out under it
+  function cover() {
+    if (!el) build();
+    el.className = "fx-screen three god"; el.hidden = false; document.body.classList.add("fx-on");
+  }
   async function god(pulls, flips) {
     if (!el) build();
     const g = await Promise.race([load3d(), wait(2500)]);
-    if (!g) return false;
+    if (!g) { el.hidden = true; el.className = "fx-screen"; document.body.classList.remove("fx-on"); return false; }
     const tap = () => new Promise(r => { tapped = r; }).then(() => { tapped = null; });
     const flash = () => { const f = document.createElement("div"); f.className = "flash"; document.body.appendChild(f); setTimeout(() => f.remove(), 900); };
     el.className = "fx-screen three god"; el.hidden = false; document.body.classList.add("fx-on");
@@ -1373,7 +1381,7 @@ const Stage = (() => {
   }
   // the signed sleeve, prepared ahead of time (on a computer, once the page is open)
   function preload() { if (!el) build(); loadSleeve(); }
-  return { isHit, warm, hit, god, prepare, preload };
+  return { isHit, warm, hit, god, cover, prepare, preload };
 })();
 
 // the files of the artists' animation are kept on the device after the first visit (sw.js); on a computer, its 3D scene
