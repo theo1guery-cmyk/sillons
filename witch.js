@@ -5,7 +5,7 @@
 const W = { st: null, tier: 2, sel: [], elix: null, busy: false, sub: "hx" };
 // the sub-sections of the page, one at a time: [key, label]
 const WZ_SUBS = [["hx", "🦇 Collection Hantée"], ["quests", "🎃 Quêtes"], ["cauldron", "🧪 Chaudron"], ["elixir", "✨ Élixir"], ["shop", "🛒 Citrouilles"]];
-const CAULDRON = { 2: [3, 20, 100], 3: [4, 40, 100], 4: [5, 80, 50] };   // from: [to, pumpkins, % of success]
+const CAULDRON = { 2: [3, 20, 100], 3: [4, 40, 100], 4: [5, 80, 100] };   // from: [to, pumpkins, % of success]
 const ELIXIR = g => g <= 5 ? 70 : g === 6 ? 50 : g === 7 ? 35 : g === 8 ? 20 : 0;
 
 function witchTab() {
